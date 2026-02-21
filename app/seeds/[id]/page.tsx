@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Pencil, MapPin, Users, Building2, Droplets, Sun } from "lucide-react";
+import { Pencil, Users, Building2, Droplets, Sun } from "lucide-react";
 import { auth } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -152,17 +152,13 @@ export default async function SeedPage(props: {
           </div>
         </div>
 
-        {/* Map — top right on desktop, below on mobile */}
+        {/* Map — top right on desktop, below on mobile; expands full-width */}
         {hasLocation && (
-          <div className="flex flex-col gap-2">
-            <SeedDetailMap lat={seed.locationLat!} lng={seed.locationLng!} />
-            {seed.locationAddress && (
-              <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                <MapPin className="size-3.5 shrink-0" />
-                {seed.locationAddress}
-              </p>
-            )}
-          </div>
+          <SeedDetailMap
+            lat={seed.locationLat!}
+            lng={seed.locationLng!}
+            address={seed.locationAddress}
+          />
         )}
       </div>
 
@@ -187,10 +183,28 @@ export default async function SeedPage(props: {
       {/* Details grid */}
       <div className="grid gap-8 sm:grid-cols-2">
         <DetailList items={seed.gardeners} icon={Users} label="Gardeners" />
-        <DetailList items={seed.roots} icon={Building2} label="Roots (Organizations)" />
-        <DetailList items={seed.supportPeople} icon={Users} label="Support (People)" />
-        <DetailList items={seed.waterHave} icon={Droplets} label="Water: What We Have" iconClassName="text-blue-500" />
-        <DetailList items={seed.waterNeed} icon={Droplets} label="Water: What We Need" iconClassName="text-cyan-500" />
+        <DetailList
+          items={seed.roots}
+          icon={Building2}
+          label="Roots (Organizations)"
+        />
+        <DetailList
+          items={seed.supportPeople}
+          icon={Users}
+          label="Support (People)"
+        />
+        <DetailList
+          items={seed.waterHave}
+          icon={Droplets}
+          label="Water: What We Have"
+          iconClassName="text-blue-500"
+        />
+        <DetailList
+          items={seed.waterNeed}
+          icon={Droplets}
+          label="Water: What We Need"
+          iconClassName="text-cyan-500"
+        />
       </div>
 
       {/* Supporters */}
