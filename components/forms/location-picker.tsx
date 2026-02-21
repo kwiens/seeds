@@ -108,6 +108,7 @@ export function LocationPicker({
       {lat && lng && (
         <div className="mt-3">
           <SeedMap
+            key={`${lat},${lng}`}
             singleMarker={{ lat, lng }}
             zoom={14}
             className="h-48 w-full rounded-lg"

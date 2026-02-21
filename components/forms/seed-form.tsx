@@ -229,16 +229,25 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         {seed && (
           <div className="space-y-3">
             <Label>Illustration</Label>
+            <p className="text-xs text-muted-foreground">
+              Improve the image by editing your description
+            </p>
             {imageUrl ? (
-              <div className="relative aspect-square w-full max-w-xs overflow-hidden rounded-lg">
+              <a
+                href={imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block max-w-xs overflow-hidden rounded-lg"
+              >
                 <Image
                   src={imageUrl}
                   alt={seed.name}
-                  fill
-                  className="object-cover"
+                  width={320}
+                  height={320}
+                  className="h-auto w-full"
                   sizes="320px"
                 />
-              </div>
+              </a>
             ) : (
               <p className="text-muted-foreground text-sm">
                 No image generated yet.

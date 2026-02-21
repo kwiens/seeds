@@ -153,16 +153,22 @@ export default async function SeedPage(props: {
         {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
           {seed.imageUrl ? (
-            <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
+            <a
+              href={seed.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-2xl"
+            >
               <Image
                 src={seed.imageUrl}
                 alt={buildImagePrompt(seed)}
-                fill
-                className="object-cover"
+                width={720}
+                height={720}
+                className="h-auto w-full"
                 sizes="(max-width: 768px) 100vw, 360px"
                 priority
               />
-            </div>
+            </a>
           ) : (
             canEdit && <SeedImageGenerator seedId={seed.id} />
           )}

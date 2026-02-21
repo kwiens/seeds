@@ -31,15 +31,23 @@ function buildVisibilityFilter(options: {
   return conditions.length > 1 ? and(...conditions) : conditions[0];
 }
 
+export type SortOption = "newest" | "supported";
+
 export async function getApprovedSeeds(options: {
   category?: CategoryKey;
   page?: number;
   userId?: string;
+  sort?: SortOption;
 }) {
-  const { page = 1 } = options;
+  const { page = 1, sort = "newest" } = options;
   const offset = (page - 1) * SEEDS_PER_PAGE;
 
   const where = buildVisibilityFilter(options);
+
+  const orderBy =
+    sort === "supported"
+      ? [desc(supportCountSql), desc(seeds.createdAt)]
+      : [desc(seeds.createdAt)];
 
   const [seedRows, countResult] = await Promise.all([
     db
@@ -58,7 +66,7 @@ export async function getApprovedSeeds(options: {
       })
       .from(seeds)
       .where(where)
-      .orderBy(desc(seeds.createdAt))
+      .orderBy(...orderBy)
       .limit(SEEDS_PER_PAGE)
       .offset(offset),
     db.select({ count: count() }).from(seeds).where(where),

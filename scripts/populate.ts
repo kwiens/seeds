@@ -74,7 +74,7 @@ async function generateImage(seed: {
     config: {
       responseModalities: ["IMAGE"],
       imageConfig: {
-        aspectRatio: "1:1",
+        aspectRatio: "3:4",
       },
     },
   });
