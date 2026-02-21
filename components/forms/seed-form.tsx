@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { SeedIcon } from "@/components/icons/seed-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -115,7 +116,10 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       <fieldset disabled={!isSignedIn || isPending} className="space-y-6">
         {/* Name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Name of Project</Label>
+          <Label htmlFor="name" className="flex items-center gap-2">
+            <SeedIcon name="idea" />
+            Name of Project
+          </Label>
           <Input
             id="name"
             value={name}
@@ -131,7 +135,10 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
 
         {/* Summary */}
         <div className="space-y-2">
-          <Label htmlFor="summary">Summary (The Idea)</Label>
+          <Label htmlFor="summary" className="flex items-center gap-2">
+            <SeedIcon name="idea" />
+            Summary (The Idea)
+          </Label>
           <Textarea
             id="summary"
             value={summary}
@@ -177,7 +184,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <SortableList
           items={gardeners}
           onItemsChange={setGardeners}
-          label="Gardeners (Project organizers)"
+          label={
+            <>
+              <SeedIcon name="gardeners" />
+              Gardeners (Project organizers)
+            </>
+          }
           placeholder="Add a gardener..."
         />
 
@@ -197,7 +209,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <SortableList
           items={roots}
           onItemsChange={setRoots}
-          label="Roots (Organizations)"
+          label={
+            <>
+              <SeedIcon name="roots" />
+              Roots (Organizations)
+            </>
+          }
           placeholder="Add an organization..."
         />
 
@@ -205,7 +222,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <SortableList
           items={supportPeople}
           onItemsChange={setSupportPeople}
-          label="Support (People)"
+          label={
+            <>
+              <SeedIcon name="support" />
+              Support (People)
+            </>
+          }
           placeholder="Add a person..."
         />
 
@@ -213,7 +235,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <SortableList
           items={waterHave}
           onItemsChange={setWaterHave}
-          label="Water: What do you have?"
+          label={
+            <>
+              <SeedIcon name="water" />
+              Water: What do you have?
+            </>
+          }
           placeholder="e.g. Funding, materials, venue..."
         />
 
@@ -221,14 +248,22 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <SortableList
           items={waterNeed}
           onItemsChange={setWaterNeed}
-          label="Water: What do you need?"
+          label={
+            <>
+              <SeedIcon name="water" />
+              Water: What do you need?
+            </>
+          }
           placeholder="e.g. Volunteers, permits, equipment..."
         />
 
         {/* Illustration (edit mode only) */}
         {seed && (
           <div className="space-y-3">
-            <Label>Illustration</Label>
+            <Label className="flex items-center gap-2">
+              <SeedIcon name="harvest" />
+              Illustration
+            </Label>
             <p className="text-xs text-muted-foreground">
               Improve the image by editing your description
             </p>

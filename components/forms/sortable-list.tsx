@@ -10,7 +10,7 @@ interface SortableListProps {
   items: string[];
   onItemsChange: (items: string[]) => void;
   placeholder?: string;
-  label: string;
+  label: React.ReactNode;
 }
 
 export function SortableList({
@@ -53,7 +53,9 @@ export function SortableList({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium">
+        {label}
+      </span>
       {items.length > 0 && (
         <ul className="mb-2 space-y-1">
           {items.map((item, index) => (

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { SeedIcon } from "@/components/icons/seed-icons";
 import { SeedMap } from "@/components/map/seed-map";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -74,10 +74,10 @@ export function LocationPicker({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium">
-        <MapPin className="mr-1 inline size-4" />
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium">
+        <SeedIcon name="soil" />
         Soil (Location)
-      </label>
+      </span>
       <div className="relative">
         <Input
           value={query}

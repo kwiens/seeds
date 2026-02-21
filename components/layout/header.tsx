@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Sprout } from "lucide-react";
 import { auth } from "@/auth";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { UserMenu } from "@/components/auth/user-menu";
@@ -12,8 +12,12 @@ export async function Header() {
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 max-w-6xl items-center px-4">
         <Link href="/" className="flex items-center gap-2 font-bold">
-          <Sprout className="size-6 text-primary" />
-          <span className="text-lg">Seeds</span>
+          <Image
+            src="/logo.svg"
+            alt="National Park City Seeds"
+            width={137}
+            height={44}
+          />
         </Link>
 
         <nav className="ml-8 hidden items-center gap-6 md:flex">
@@ -22,6 +26,12 @@ export async function Header() {
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
             Explore
+          </Link>
+          <Link
+            href="/about"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            About
           </Link>
           <Link
             href="/seeds/new"

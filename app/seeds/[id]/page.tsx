@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
-import { Mail, Pencil, Users, Building2, Droplets, Sun } from "lucide-react";
+import { Mail, Pencil } from "lucide-react";
+import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,20 +23,18 @@ import { buildImagePrompt } from "@/lib/image-prompt";
 
 function DetailList({
   items,
-  icon: Icon,
+  seedIcon,
   label,
-  iconClassName,
 }: {
   items: string[];
-  icon: LucideIcon;
+  seedIcon: SeedIconName;
   label: string;
-  iconClassName?: string;
 }) {
   if (items.length === 0) return null;
   return (
     <div>
       <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <Icon className={`size-4${iconClassName ? ` ${iconClassName}` : ""}`} />
+        <SeedIcon name={seedIcon} />
         {label}
       </h3>
       <ul className="space-y-1">
@@ -192,30 +190,28 @@ export default async function SeedPage(props: {
       <div className="grid gap-8 sm:grid-cols-2">
         <DetailList
           items={seed.gardeners}
-          icon={Users}
+          seedIcon="gardeners"
           label="Gardeners (Organizers)"
         />
         <DetailList
           items={seed.roots}
-          icon={Building2}
+          seedIcon="roots"
           label="Roots (Organizations)"
         />
         <DetailList
           items={seed.supportPeople}
-          icon={Users}
+          seedIcon="support"
           label="Support (People)"
         />
         <DetailList
           items={seed.waterHave}
-          icon={Droplets}
+          seedIcon="water"
           label="Water: What We Have"
-          iconClassName="text-blue-500"
         />
         <DetailList
           items={seed.waterNeed}
-          icon={Droplets}
+          seedIcon="water"
           label="Water: What We Need"
-          iconClassName="text-cyan-500"
         />
       </div>
 
@@ -223,7 +219,7 @@ export default async function SeedPage(props: {
       {supporters.length > 0 && (
         <div className="mt-8">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <Sun className="size-4 text-amber-500" />
+            <SeedIcon name="sunlight" />
             Sunlight ({supportCount}{" "}
             {supportCount === 1 ? "supporter" : "supporters"})
           </h3>

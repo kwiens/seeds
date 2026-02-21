@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Menu, Sprout } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -26,8 +27,12 @@ export function MobileNav({ isLoggedIn }: { isLoggedIn: boolean }) {
       <SheetContent side="right" className="w-64">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Sprout className="size-5 text-primary" />
-            Seeds
+            <Image
+              src="/logo.svg"
+              alt="National Park City Seeds"
+              width={120}
+              height={39}
+            />
           </SheetTitle>
         </SheetHeader>
         <nav className="mt-6 flex flex-col gap-4">
@@ -37,6 +42,13 @@ export function MobileNav({ isLoggedIn }: { isLoggedIn: boolean }) {
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
             Explore
+          </Link>
+          <Link
+            href="/about"
+            onClick={() => setOpen(false)}
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            About
           </Link>
           <Link
             href="/seeds/new"
