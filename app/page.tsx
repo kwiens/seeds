@@ -4,19 +4,26 @@ import { Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import type { CategoryKey } from "@/lib/categories";
-import { getApprovedSeeds, getAllSeedsForMap } from "@/lib/db/queries/seeds";
+import {
+  getApprovedSeeds,
+  getAllSeedsForMap,
+  type SortOption,
+} from "@/lib/db/queries/seeds";
 import { HomeContent } from "./home-content";
 
 export default async function HomePage(props: {
-  searchParams: Promise<{ category?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; page?: string; sort?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const session = await auth();
   const category = searchParams.category as CategoryKey | undefined;
   const page = Number(searchParams.page) || 1;
+  const sort = (
+    searchParams.sort === "supported" ? "supported" : "newest"
+  ) as SortOption;
 
   const [seedResult, mapSeeds] = await Promise.all([
-    getApprovedSeeds({ category, page, userId: session?.user?.id }),
+    getApprovedSeeds({ category, page, sort, userId: session?.user?.id }),
     getAllSeedsForMap({ category, userId: session?.user?.id }),
   ]);
 
@@ -44,6 +51,7 @@ export default async function HomePage(props: {
           currentPage={seedResult.currentPage}
           totalPages={seedResult.totalPages}
           activeCategory={category}
+          activeSort={sort}
         />
       </Suspense>
     </div>

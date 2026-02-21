@@ -5,8 +5,10 @@ import { CategoryFilter } from "@/components/seeds/category-filter";
 import { Pagination } from "@/components/seeds/pagination";
 import { SeedListView } from "@/components/seeds/seed-list-view";
 import { SeedMapView } from "@/components/seeds/seed-map-view";
+import { SortFilter } from "@/components/seeds/sort-filter";
 import { ViewToggle } from "@/components/seeds/view-toggle";
 import type { CategoryKey } from "@/lib/categories";
+import type { SortOption } from "@/lib/db/queries/seeds";
 
 interface SeedRow {
   id: string;
@@ -36,12 +38,14 @@ export function HomeContent({
   currentPage,
   totalPages,
   activeCategory,
+  activeSort = "newest",
 }: {
   seeds: SeedRow[];
   mapSeeds: MapSeedRow[];
   currentPage: number;
   totalPages: number;
   activeCategory?: CategoryKey;
+  activeSort?: SortOption;
 }) {
   const [view, setView] = useState<"grid" | "map">("grid");
 
@@ -49,7 +53,10 @@ export function HomeContent({
     <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <CategoryFilter activeCategory={activeCategory} />
-        <ViewToggle view={view} onViewChange={setView} />
+        <div className="flex flex-col items-end gap-2">
+          <ViewToggle view={view} onViewChange={setView} />
+          <SortFilter activeSort={activeSort} />
+        </div>
       </div>
 
       {view === "grid" ? (
