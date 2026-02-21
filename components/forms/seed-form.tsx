@@ -24,16 +24,19 @@ import type { Seed } from "@/lib/db/types";
 
 interface SeedFormProps {
   seed?: Seed;
+  planterName?: string;
 }
 
-export function SeedForm({ seed }: SeedFormProps) {
+export function SeedForm({ seed, planterName }: SeedFormProps) {
   const { data: session } = useSession();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState(seed?.name ?? "");
   const [summary, setSummary] = useState(seed?.summary ?? "");
-  const [gardeners, setGardeners] = useState<string[]>(seed?.gardeners ?? []);
+  const [gardeners, setGardeners] = useState<string[]>(
+    seed?.gardeners ?? (planterName ? [planterName] : []),
+  );
   const [locationAddress, setLocationAddress] = useState(
     seed?.locationAddress ?? "",
   );
@@ -174,7 +177,7 @@ export function SeedForm({ seed }: SeedFormProps) {
         <SortableList
           items={gardeners}
           onItemsChange={setGardeners}
-          label="Gardeners (People posting this idea)"
+          label="Gardeners (Project organizers)"
           placeholder="Add a gardener..."
         />
 
@@ -250,11 +253,7 @@ export function SeedForm({ seed }: SeedFormProps) {
         )}
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending
-            ? "Planting..."
-            : seed
-              ? "Update Seed"
-              : "Plant This Seed"}
+          {isPending ? "Planting..." : seed ? "Update Seed" : "Plant This Seed"}
         </Button>
       </fieldset>
     </form>

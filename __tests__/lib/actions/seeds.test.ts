@@ -198,9 +198,9 @@ describe("updateSeed", () => {
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    await expect(
-      updateSeed("seed-1", validSeedFormData()),
-    ).rejects.toThrow("NEXT_REDIRECT");
+    await expect(updateSeed("seed-1", validSeedFormData())).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
 
     expect(db.update).toHaveBeenCalled();
   });
@@ -224,9 +224,9 @@ describe("updateSeed", () => {
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    await expect(
-      updateSeed("seed-1", validSeedFormData()),
-    ).rejects.toThrow("NEXT_REDIRECT");
+    await expect(updateSeed("seed-1", validSeedFormData())).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
     expect(revalidatePath).toHaveBeenCalledWith("/");

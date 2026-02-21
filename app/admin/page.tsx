@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
-import { getAllSeeds } from "@/lib/db/queries/admin";
+import { getAllSeeds, getSupporterEmailsMap } from "@/lib/db/queries/admin";
 
 export const metadata: Metadata = {
   title: "Admin | Seeds",
@@ -14,7 +14,10 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const allSeeds = await getAllSeeds();
+  const [allSeeds, supporterEmailsMap] = await Promise.all([
+    getAllSeeds(),
+    getSupporterEmailsMap(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -25,7 +28,10 @@ export default async function AdminPage() {
         </p>
       </div>
 
-      <AdminSeedTable seeds={allSeeds} />
+      <AdminSeedTable
+        seeds={allSeeds}
+        supporterEmailsMap={Object.fromEntries(supporterEmailsMap)}
+      />
     </div>
   );
 }

@@ -230,7 +230,10 @@ describe("regenerateSeedImage", () => {
   it("allows owner to regenerate", async () => {
     vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
-      mockSeed({ createdBy: "user-1", imageUrl: "https://old.com/img.png" }) as any,
+      mockSeed({
+        createdBy: "user-1",
+        imageUrl: "https://old.com/img.png",
+      }) as any,
     );
     setupGeminiMock();
     const chain = mockDbUpdateChain();

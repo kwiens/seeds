@@ -44,7 +44,9 @@ export function SupportButton({
       variant={optimistic.supported ? "default" : "outline"}
       className="min-w-44 gap-2"
     >
-      <Sun className={`size-4 ${optimistic.supported ? "text-amber-300" : "text-amber-500"}`} />
+      <Sun
+        className={`size-4 ${optimistic.supported ? "text-amber-300" : "text-amber-500"}`}
+      />
       {optimistic.supported ? "Supporting" : "Support This Seed"}
       <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">
         {optimistic.count}

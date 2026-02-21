@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Pencil, Users, Building2, Droplets, Sun } from "lucide-react";
+import { Mail, Pencil, Users, Building2, Droplets, Sun } from "lucide-react";
 import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ import {
   getSeedSupporters,
   hasUserSupported,
 } from "@/lib/db/queries/seeds";
+import { buildImagePrompt } from "@/lib/image-prompt";
 
 function DetailList({
   items,
@@ -155,7 +156,7 @@ export default async function SeedPage(props: {
             <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
               <Image
                 src={seed.imageUrl}
-                alt={seed.name}
+                alt={buildImagePrompt(seed)}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 360px"
@@ -183,7 +184,11 @@ export default async function SeedPage(props: {
 
       {/* Details grid */}
       <div className="grid gap-8 sm:grid-cols-2">
-        <DetailList items={seed.gardeners} icon={Users} label="Gardeners" />
+        <DetailList
+          items={seed.gardeners}
+          icon={Users}
+          label="Gardeners (Organizers)"
+        />
         <DetailList
           items={seed.roots}
           icon={Building2}
@@ -217,12 +222,28 @@ export default async function SeedPage(props: {
             {supportCount === 1 ? "supporter" : "supporters"})
           </h3>
           <div className="flex flex-wrap gap-2">
-            {supporters.map((s) => (
-              <Badge key={s.id} variant="secondary">
-                {formatSupporterName(s.name)}
-              </Badge>
-            ))}
+            {supporters.map((s) =>
+              canEdit ? (
+                <a key={s.id} href={`mailto:${s.email}`} title={s.name}>
+                  <Badge variant="secondary" className="hover:bg-secondary/80">
+                    {formatSupporterName(s.name)}
+                  </Badge>
+                </a>
+              ) : (
+                <Badge key={s.id} variant="secondary">
+                  {formatSupporterName(s.name)}
+                </Badge>
+              ),
+            )}
           </div>
+          {canEdit && (
+            <Button variant="outline" size="sm" className="mt-3" asChild>
+              <a href={`mailto:${supporters.map((s) => s.email).join(",")}`}>
+                <Mail className="mr-1.5 size-3.5" />
+                Email Supporters
+              </a>
+            </Button>
+          )}
         </div>
       )}
     </div>

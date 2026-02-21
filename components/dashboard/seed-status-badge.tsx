@@ -2,7 +2,10 @@ import { Badge } from "@/components/ui/badge";
 
 const statusConfig: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
+  {
+    label: string;
+    variant: "default" | "secondary" | "outline" | "destructive";
+  }
 > = {
   draft: { label: "Draft", variant: "outline" },
   pending: { label: "Pending Review", variant: "secondary" },

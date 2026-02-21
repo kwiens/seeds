@@ -35,7 +35,13 @@ interface AdminSeed {
   supportCount: number;
 }
 
-export function AdminSeedTable({ seeds }: { seeds: AdminSeed[] }) {
+export function AdminSeedTable({
+  seeds,
+  supporterEmailsMap,
+}: {
+  seeds: AdminSeed[];
+  supporterEmailsMap: Record<string, string[]>;
+}) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -107,9 +113,12 @@ export function AdminSeedTable({ seeds }: { seeds: AdminSeed[] }) {
                   <TableCell className="hidden md:table-cell">
                     <div>
                       <p className="text-sm">{seed.creatorName}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <a
+                        href={`mailto:${seed.creatorEmail}`}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
                         {seed.creatorEmail}
-                      </p>
+                      </a>
                     </div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -128,6 +137,7 @@ export function AdminSeedTable({ seeds }: { seeds: AdminSeed[] }) {
                     <SeedActions
                       seedId={seed.id}
                       status={seed.status}
+                      supporterEmails={supporterEmailsMap[seed.id]}
                     />
                   </TableCell>
                 </TableRow>

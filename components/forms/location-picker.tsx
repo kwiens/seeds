@@ -33,34 +33,31 @@ export function LocationPicker({
   const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const searchAddress = useCallback(
-    async (value: string) => {
-      if (value.length < 3 || !MAPBOX_TOKEN) {
+  const searchAddress = useCallback(async (value: string) => {
+    if (value.length < 3 || !MAPBOX_TOKEN) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?access_token=${MAPBOX_TOKEN}&proximity=-85.3097,35.0456&limit=5`,
+      );
+      if (!res.ok) {
         setSuggestions([]);
         return;
       }
-
-      try {
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?access_token=${MAPBOX_TOKEN}&proximity=-85.3097,35.0456&limit=5`,
-        );
-        if (!res.ok) {
-          setSuggestions([]);
-          return;
-        }
-        const data = await res.json();
-        const features = (data.features ?? []).filter(
-          (f: GeocodingFeature) =>
-            f.place_name && Array.isArray(f.center) && f.center.length === 2,
-        );
-        setSuggestions(features);
-        setShowSuggestions(true);
-      } catch {
-        setSuggestions([]);
-      }
-    },
-    [],
-  );
+      const data = await res.json();
+      const features = (data.features ?? []).filter(
+        (f: GeocodingFeature) =>
+          f.place_name && Array.isArray(f.center) && f.center.length === 2,
+      );
+      setSuggestions(features);
+      setShowSuggestions(true);
+    } catch {
+      setSuggestions([]);
+    }
+  }, []);
 
   function selectSuggestion(feature: GeocodingFeature) {
     if (!feature.center || feature.center.length < 2) return;

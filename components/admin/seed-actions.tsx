@@ -6,6 +6,7 @@ import {
   Archive,
   ArchiveRestore,
   CheckCircle,
+  Mail,
   MoreHorizontal,
   Pencil,
   XCircle,
@@ -27,9 +28,11 @@ import {
 export function SeedActions({
   seedId,
   status,
+  supporterEmails,
 }: {
   seedId: string;
   status: string;
+  supporterEmails?: string[];
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -43,7 +46,11 @@ export function SeedActions({
       <DropdownMenuContent align="end">
         {status === "pending" && (
           <DropdownMenuItem
-            onClick={() => startTransition(async () => { await approveSeed(seedId); })}
+            onClick={() =>
+              startTransition(async () => {
+                await approveSeed(seedId);
+              })
+            }
           >
             <CheckCircle className="mr-2 size-4 text-green-600" />
             Approve
@@ -55,9 +62,21 @@ export function SeedActions({
             Edit
           </Link>
         </DropdownMenuItem>
+        {supporterEmails && supporterEmails.length > 0 && (
+          <DropdownMenuItem asChild>
+            <a href={`mailto:${supporterEmails.join(",")}`}>
+              <Mail className="mr-2 size-4" />
+              Email Supporters
+            </a>
+          </DropdownMenuItem>
+        )}
         {status !== "archived" && (
           <DropdownMenuItem
-            onClick={() => startTransition(async () => { await archiveSeed(seedId); })}
+            onClick={() =>
+              startTransition(async () => {
+                await archiveSeed(seedId);
+              })
+            }
           >
             <Archive className="mr-2 size-4" />
             Archive
@@ -65,7 +84,11 @@ export function SeedActions({
         )}
         {status === "archived" && (
           <DropdownMenuItem
-            onClick={() => startTransition(async () => { await unarchiveSeed(seedId); })}
+            onClick={() =>
+              startTransition(async () => {
+                await unarchiveSeed(seedId);
+              })
+            }
           >
             <ArchiveRestore className="mr-2 size-4 text-green-600" />
             Unarchive
@@ -73,7 +96,11 @@ export function SeedActions({
         )}
         {status === "approved" && (
           <DropdownMenuItem
-            onClick={() => startTransition(async () => { await unapproveSeed(seedId); })}
+            onClick={() =>
+              startTransition(async () => {
+                await unapproveSeed(seedId);
+              })
+            }
           >
             <XCircle className="mr-2 size-4 text-amber-600" />
             Unapprove

@@ -29,7 +29,7 @@ export function SeedCard({
     <Link href={`/seeds/${id}`}>
       <Card className="group h-full gap-0 py-0 transition-shadow hover:shadow-md">
         {imageUrl ? (
-          <div className="relative h-40 overflow-hidden rounded-t-lg">
+          <div className="relative h-52 overflow-hidden rounded-t-lg sm:h-40">
             <Image
               src={imageUrl}
               alt={name}
@@ -40,7 +40,7 @@ export function SeedCard({
           </div>
         ) : (
           <div
-            className={`relative flex h-40 items-center justify-center rounded-t-lg bg-gradient-to-br ${info.gradient}`}
+            className={`relative flex h-52 items-center justify-center rounded-t-lg bg-gradient-to-br sm:h-40 ${info.gradient}`}
           >
             <Icon className="size-16 text-white/80 transition-transform group-hover:scale-110" />
           </div>

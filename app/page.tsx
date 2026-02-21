@@ -4,10 +4,7 @@ import { Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import type { CategoryKey } from "@/lib/categories";
-import {
-  getApprovedSeeds,
-  getAllSeedsForMap,
-} from "@/lib/db/queries/seeds";
+import { getApprovedSeeds, getAllSeedsForMap } from "@/lib/db/queries/seeds";
 import { HomeContent } from "./home-content";
 
 export default async function HomePage(props: {
@@ -27,9 +24,7 @@ export default async function HomePage(props: {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Explore Seeds
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Explore Seeds</h1>
           <p className="text-muted-foreground mt-1">
             Discover community ideas growing across Chattanooga
           </p>
