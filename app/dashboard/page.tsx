@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { DashboardSeedList } from "@/components/dashboard/seed-list-table";
-import type { CategoryKey } from "@/lib/categories";
 import { getSeedsByUser } from "@/lib/db/queries/seeds";
 
 export const metadata: Metadata = {
@@ -13,7 +13,10 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const session = await auth();
-  const userSeeds = await getSeedsByUser(session!.user.id);
+  if (!session?.user?.id) {
+    redirect("/api/auth/signin");
+  }
+  const userSeeds = await getSeedsByUser(session.user.id);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -42,12 +45,7 @@ export default async function DashboardPage() {
           </Button>
         </div>
       ) : (
-        <DashboardSeedList
-          seeds={userSeeds.map((s) => ({
-            ...s,
-            category: s.category as CategoryKey,
-          }))}
-        />
+        <DashboardSeedList seeds={userSeeds} />
       )}
     </div>
   );

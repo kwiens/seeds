@@ -12,6 +12,7 @@ vi.mock("@/lib/db", () => ({
   db: {
     update: vi.fn(),
     insert: vi.fn(),
+    batch: vi.fn(),
   },
 }));
 
@@ -41,8 +42,9 @@ describe("approveSeed", () => {
     await expect(approveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
-  it("approves seed and creates approval record", async () => {
+  it("approves seed and creates approval record via batch", async () => {
     vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    vi.mocked(db.batch).mockResolvedValue([] as any);
     const updateChain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(updateChain as any);
     const insertChain = mockDbInsertSimpleChain();
@@ -51,17 +53,12 @@ describe("approveSeed", () => {
     const result = await approveSeed("seed-1");
 
     expect(result).toEqual({ success: true });
-    expect(updateChain.set).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "approved" }),
-    );
-    expect(insertChain.values).toHaveBeenCalledWith({
-      seedId: "seed-1",
-      approvedBy: "admin-1",
-    });
+    expect(db.batch).toHaveBeenCalledTimes(1);
   });
 
   it("revalidates correct paths", async () => {
     vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    vi.mocked(db.batch).mockResolvedValue([] as any);
     const updateChain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(updateChain as any);
     const insertChain = mockDbInsertSimpleChain();

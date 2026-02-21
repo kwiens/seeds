@@ -14,18 +14,37 @@ async function requireAdmin() {
   return session;
 }
 
-export async function approveSeed(seedId: string) {
-  const session = await requireAdmin();
+async function updateSeedStatus(
+  seedId: string,
+  status: "pending" | "approved" | "archived",
+  extraPaths: string[] = [],
+) {
+  await requireAdmin();
 
   await db
     .update(seeds)
-    .set({ status: "approved", updatedAt: new Date() })
+    .set({ status, updatedAt: new Date() })
     .where(eq(seeds.id, seedId));
 
-  await db.insert(seedApprovals).values({
-    seedId,
-    approvedBy: session.user.id,
-  });
+  revalidatePath("/admin");
+  revalidatePath("/");
+  for (const p of extraPaths) revalidatePath(p);
+  return { success: true };
+}
+
+export async function approveSeed(seedId: string) {
+  const session = await requireAdmin();
+
+  await db.batch([
+    db
+      .update(seeds)
+      .set({ status: "approved", updatedAt: new Date() })
+      .where(eq(seeds.id, seedId)),
+    db.insert(seedApprovals).values({
+      seedId,
+      approvedBy: session.user.id,
+    }),
+  ]);
 
   revalidatePath("/admin");
   revalidatePath("/");
@@ -34,42 +53,13 @@ export async function approveSeed(seedId: string) {
 }
 
 export async function archiveSeed(seedId: string) {
-  await requireAdmin();
-
-  await db
-    .update(seeds)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
-
-  revalidatePath("/admin");
-  revalidatePath("/");
-  return { success: true };
+  return updateSeedStatus(seedId, "archived");
 }
 
 export async function unarchiveSeed(seedId: string) {
-  await requireAdmin();
-
-  await db
-    .update(seeds)
-    .set({ status: "pending", updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
-
-  revalidatePath("/admin");
-  revalidatePath("/");
-  return { success: true };
+  return updateSeedStatus(seedId, "pending");
 }
 
 export async function unapproveSeed(seedId: string) {
-  await requireAdmin();
-
-  await db
-    .update(seeds)
-    .set({ status: "pending", updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
-
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidatePath(`/seeds/${seedId}`);
-  return { success: true };
+  return updateSeedStatus(seedId, "pending", [`/seeds/${seedId}`]);
 }
-

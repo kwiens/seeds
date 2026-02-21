@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
+import { canEditSeed } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -27,7 +28,7 @@ export default async function DashboardSeedDetailPage(props: {
   const seed = await getSeedById(params.id);
   if (!seed) notFound();
 
-  if (seed.createdBy !== session.user.id && session.user.role !== "admin") {
+  if (!canEditSeed(session, seed)) {
     redirect("/dashboard");
   }
 
@@ -50,7 +51,9 @@ export default async function DashboardSeedDetailPage(props: {
             {supporters.length === 1 ? "supporter" : "supporters"}
           </p>
         </div>
-        {supporters.length > 0 && <SupporterExport supporters={supporters} seedName={seed.name} />}
+        {supporters.length > 0 && (
+          <SupporterExport supporters={supporters} seedName={seed.name} />
+        )}
       </div>
 
       {supporters.length === 0 ? (

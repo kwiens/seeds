@@ -19,15 +19,17 @@ export async function toggleSupport(seedId: string) {
     ),
   });
 
-  if (existing) {
-    await db
-      .delete(seedSupports)
-      .where(eq(seedSupports.id, existing.id));
-  } else {
-    await db.insert(seedSupports).values({
-      seedId,
-      userId: session.user.id,
-    });
+  try {
+    if (existing) {
+      await db.delete(seedSupports).where(eq(seedSupports.id, existing.id));
+    } else {
+      await db.insert(seedSupports).values({
+        seedId,
+        userId: session.user.id,
+      });
+    }
+  } catch {
+    // Unique constraint violation from concurrent double-click — treat as no-op
   }
 
   revalidatePath(`/seeds/${seedId}`);

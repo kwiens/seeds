@@ -16,57 +16,39 @@ export function SeedDetailMap({
 }) {
   const [expanded, setExpanded] = useState(true);
 
-  if (expanded) {
-    return (
-      <div className="col-span-full">
-        <div className="relative">
-          <SeedMap
-            key="expanded"
-            singleMarker={{ lat, lng }}
-            zoom={13}
-            className="h-80 w-full rounded-lg sm:h-96"
-            interactive
-          />
-          <Button
-            variant="secondary"
-            size="icon"
-            className="absolute top-[5.25rem] left-2 size-8 shadow-md"
-            onClick={() => setExpanded(false)}
-          >
-            <Minimize2 className="size-3.5" />
-          </Button>
-        </div>
-        {address && (
-          <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-sm">
-            <MapPin className="size-3.5 shrink-0" />
-            {address}
-          </p>
-        )}
-      </div>
-    );
-  }
+  const mapConfig = expanded
+    ? {
+        className: "h-80 w-full rounded-lg sm:h-96",
+        zoom: 13,
+        interactive: true,
+      }
+    : { className: "h-48 w-full rounded-lg", zoom: 14, interactive: false };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={expanded ? "col-span-full" : "flex flex-col gap-2"}>
       <div className="relative">
         <SeedMap
-          key="collapsed"
+          key={expanded ? "expanded" : "collapsed"}
           singleMarker={{ lat, lng }}
-          zoom={14}
-          className="h-48 w-full rounded-lg"
-          interactive={false}
+          zoom={mapConfig.zoom}
+          className={mapConfig.className}
+          interactive={mapConfig.interactive}
         />
         <Button
           variant="secondary"
           size="icon"
           className="absolute top-[5.25rem] left-2 size-8 shadow-md"
-          onClick={() => setExpanded(true)}
+          onClick={() => setExpanded(!expanded)}
         >
-          <Maximize2 className="size-3.5" />
+          {expanded ? (
+            <Minimize2 className="size-3.5" />
+          ) : (
+            <Maximize2 className="size-3.5" />
+          )}
         </Button>
       </div>
       {address && (
-        <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+        <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-sm">
           <MapPin className="size-3.5 shrink-0" />
           {address}
         </p>

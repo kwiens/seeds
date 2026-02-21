@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { canEditSeed } from "@/lib/auth-utils";
 import { SeedForm } from "@/components/forms/seed-form";
 import { getSeedById } from "@/lib/db/queries/seeds";
 
@@ -21,7 +22,7 @@ export default async function EditSeedPage(props: {
   const seed = await getSeedById(params.id);
   if (!seed) notFound();
 
-  if (seed.createdBy !== session.user.id && session.user.role !== "admin") {
+  if (!canEditSeed(session, seed)) {
     redirect(`/seeds/${seed.id}`);
   }
 

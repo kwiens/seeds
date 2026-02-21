@@ -5,6 +5,11 @@ import type { CategoryKey } from "@/lib/categories";
 
 const SEEDS_PER_PAGE = 20;
 
+export const supportCountSql = sql<number>`(
+  select count(*) from seed_supports
+  where seed_supports.seed_id = seeds.id
+)`.as("support_count");
+
 function buildVisibilityFilter(options: {
   category?: CategoryKey;
   userId?: string;
@@ -49,20 +54,14 @@ export async function getApprovedSeeds(options: {
         status: seeds.status,
         createdBy: seeds.createdBy,
         createdAt: seeds.createdAt,
-        supportCount: sql<number>`(
-          select count(*) from seed_supports
-          where seed_supports.seed_id = seeds.id
-        )`.as("support_count"),
+        supportCount: supportCountSql,
       })
       .from(seeds)
       .where(where)
       .orderBy(desc(seeds.createdAt))
       .limit(SEEDS_PER_PAGE)
       .offset(offset),
-    db
-      .select({ count: count() })
-      .from(seeds)
-      .where(where),
+    db.select({ count: count() }).from(seeds).where(where),
   ]);
 
   return {
@@ -115,19 +114,6 @@ export async function getSeedSupporters(seedId: string) {
       id: users.id,
       name: users.name,
       email: users.email,
-      createdAt: seedSupports.createdAt,
-    })
-    .from(seedSupports)
-    .innerJoin(users, eq(seedSupports.userId, users.id))
-    .where(eq(seedSupports.seedId, seedId))
-    .orderBy(desc(seedSupports.createdAt));
-}
-
-export async function getSeedSupporterNames(seedId: string) {
-  return db
-    .select({
-      id: users.id,
-      name: users.name,
       createdAt: seedSupports.createdAt,
     })
     .from(seedSupports)

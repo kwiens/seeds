@@ -5,9 +5,10 @@ import { revalidatePath } from "next/cache";
 import { GoogleGenAI } from "@google/genai";
 import { put } from "@vercel/blob";
 import { auth } from "@/auth";
+import { canEditSeed } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { seeds } from "@/lib/db/schema";
-import { categories, type CategoryKey } from "@/lib/categories";
+import { categories } from "@/lib/categories";
 
 async function callGeminiAndUpload(seed: {
   id: string;
@@ -22,8 +23,7 @@ async function callGeminiAndUpload(seed: {
     return { error: "Image generation is not configured." };
   }
 
-  const categoryLabel =
-    categories[seed.category as CategoryKey]?.label ?? seed.category;
+  const categoryLabel = categories[seed.category]?.label ?? seed.category;
   const summarySnippet = seed.summary.slice(0, 500);
 
   const details: string[] = [];
@@ -96,6 +96,12 @@ export async function generateSeedImage(seedId: string) {
     return { error: "Seed not found." };
   }
 
+  if (!canEditSeed(session, seed)) {
+    return {
+      error: "You don't have permission to generate an image for this seed.",
+    };
+  }
+
   if (seed.imageUrl) {
     return { imageUrl: seed.imageUrl };
   }
@@ -122,7 +128,7 @@ export async function regenerateSeedImage(seedId: string) {
     return { error: "Seed not found." };
   }
 
-  if (seed.createdBy !== session.user.id && session.user.role !== "admin") {
+  if (!canEditSeed(session, seed)) {
     return { error: "You don't have permission to regenerate this image." };
   }
 

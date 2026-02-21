@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Pencil, Users, Building2, Droplets, Sun } from "lucide-react";
 import { auth } from "@/auth";
+import { canEditSeed } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,10 @@ import { CategoryBadge } from "@/components/seeds/category-badge";
 import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
 import { SeedDetailMap } from "./seed-detail-map";
-import type { CategoryKey } from "@/lib/categories";
 import {
   getSeedById,
   getSeedSupportCount,
-  getSeedSupporterNames,
+  getSeedSupporters,
   hasUserSupported,
 } from "@/lib/db/queries/seeds";
 
@@ -76,24 +76,18 @@ export default async function SeedPage(props: {
   const seed = await getSeedById(params.id);
   if (!seed) notFound();
 
-  // If not approved and not the owner/admin, 404
-  if (seed.status !== "approved") {
-    if (
-      !session?.user?.id ||
-      (seed.createdBy !== session.user.id && session.user.role !== "admin")
-    ) {
-      notFound();
-    }
+  // Archived seeds are only visible to owner/admin
+  if (seed.status === "archived" && !canEditSeed(session, seed)) {
+    notFound();
   }
 
   const [supportCount, supporters, userHasSupported] = await Promise.all([
     getSeedSupportCount(seed.id),
-    getSeedSupporterNames(seed.id),
+    getSeedSupporters(seed.id),
     session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
   ]);
 
-  const canEdit =
-    session?.user?.id === seed.createdBy || session?.user?.role === "admin";
+  const canEdit = canEditSeed(session, seed);
 
   const hasLocation = seed.locationLat && seed.locationLng;
 
@@ -104,14 +98,16 @@ export default async function SeedPage(props: {
         <div>
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <CategoryBadge
-                category={seed.category as CategoryKey}
-                className="mb-2"
-              />
+              <CategoryBadge category={seed.category} className="mb-2" />
               <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
-              {seed.status !== "approved" && (
+              {seed.status === "pending" && (
                 <Badge variant="outline" className="mt-2">
-                  {seed.status}
+                  Pending Approval
+                </Badge>
+              )}
+              {seed.status === "archived" && (
+                <Badge variant="outline" className="mt-2">
+                  Archived
                 </Badge>
               )}
             </div>

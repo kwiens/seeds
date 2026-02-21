@@ -1,6 +1,7 @@
-import { desc, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { seeds, users } from "@/lib/db/schema";
+import { supportCountSql } from "./seeds";
 
 export async function getAllSeeds() {
   return db
@@ -12,12 +13,9 @@ export async function getAllSeeds() {
       createdAt: seeds.createdAt,
       creatorName: users.name,
       creatorEmail: users.email,
-      supportCount: sql<number>`(
-        select count(*) from seed_supports
-        where seed_supports.seed_id = seeds.id
-      )`.as("support_count"),
+      supportCount: supportCountSql,
     })
     .from(seeds)
-    .innerJoin(users, sql`${seeds.createdBy} = ${users.id}`)
+    .innerJoin(users, eq(seeds.createdBy, users.id))
     .orderBy(desc(seeds.createdAt));
 }

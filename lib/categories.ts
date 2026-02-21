@@ -6,13 +6,9 @@ import {
   Trees,
   type LucideIcon,
 } from "lucide-react";
+import { categoryEnum } from "@/lib/db/schema";
 
-export type CategoryKey =
-  | "daily_access"
-  | "outdoor_play"
-  | "balanced_growth"
-  | "respect"
-  | "connected_communities";
+export type CategoryKey = (typeof categoryEnum.enumValues)[number];
 
 export interface CategoryInfo {
   label: string;

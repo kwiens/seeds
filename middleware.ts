@@ -5,17 +5,9 @@ import { authConfig } from "./auth.config";
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isLoggedIn = !!req.auth;
-
-  if (pathname.startsWith("/dashboard") && !isLoggedIn) {
+  if (!req.auth) {
     return NextResponse.redirect(new URL("/api/auth/signin", req.url));
   }
-
-  if (pathname.startsWith("/admin") && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/api/auth/signin", req.url));
-  }
-
   return NextResponse.next();
 });
 

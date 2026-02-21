@@ -4,9 +4,26 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { canEditSeed } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { seeds } from "@/lib/db/schema";
-import { seedFormSchema } from "@/lib/validations/seed";
+import { seedFormSchema, type SeedFormValues } from "@/lib/validations/seed";
+
+function seedFormToDbFields(values: SeedFormValues) {
+  return {
+    name: values.name,
+    summary: values.summary,
+    gardeners: values.gardeners,
+    locationAddress: values.locationAddress ?? null,
+    locationLat: values.locationLat ?? null,
+    locationLng: values.locationLng ?? null,
+    category: values.category,
+    roots: values.roots,
+    supportPeople: values.supportPeople,
+    waterHave: values.waterHave,
+    waterNeed: values.waterNeed,
+  };
+}
 
 export async function createSeed(data: unknown) {
   const session = await auth();
@@ -24,17 +41,7 @@ export async function createSeed(data: unknown) {
   const [created] = await db
     .insert(seeds)
     .values({
-      name: values.name,
-      summary: values.summary,
-      gardeners: values.gardeners,
-      locationAddress: values.locationAddress ?? null,
-      locationLat: values.locationLat ?? null,
-      locationLng: values.locationLng ?? null,
-      category: values.category,
-      roots: values.roots,
-      supportPeople: values.supportPeople,
-      waterHave: values.waterHave,
-      waterNeed: values.waterNeed,
+      ...seedFormToDbFields(values),
       status: "pending",
       createdBy: session.user.id,
     })
@@ -59,7 +66,7 @@ export async function updateSeed(id: string, data: unknown) {
     return { error: "Seed not found." };
   }
 
-  if (seed.createdBy !== session.user.id && session.user.role !== "admin") {
+  if (!canEditSeed(session, seed)) {
     return { error: "You don't have permission to edit this seed." };
   }
 
@@ -73,17 +80,7 @@ export async function updateSeed(id: string, data: unknown) {
   await db
     .update(seeds)
     .set({
-      name: values.name,
-      summary: values.summary,
-      gardeners: values.gardeners,
-      locationAddress: values.locationAddress ?? null,
-      locationLat: values.locationLat ?? null,
-      locationLng: values.locationLng ?? null,
-      category: values.category,
-      roots: values.roots,
-      supportPeople: values.supportPeople,
-      waterHave: values.waterHave,
-      waterNeed: values.waterNeed,
+      ...seedFormToDbFields(values),
       updatedAt: new Date(),
     })
     .where(eq(seeds.id, id));
@@ -93,4 +90,3 @@ export async function updateSeed(id: string, data: unknown) {
   revalidatePath("/dashboard");
   redirect(`/seeds/${id}`);
 }
-
