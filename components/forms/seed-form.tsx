@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RegenerateImageButton } from "@/components/seeds/regenerate-image-button";
 import {
   Select,
   SelectContent,
@@ -50,6 +52,9 @@ export function SeedForm({ seed }: SeedFormProps) {
   );
   const [waterHave, setWaterHave] = useState<string[]>(seed?.waterHave ?? []);
   const [waterNeed, setWaterNeed] = useState<string[]>(seed?.waterNeed ?? []);
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    seed?.imageUrl ?? null,
+  );
 
   const isSignedIn = !!session?.user;
 
@@ -216,6 +221,33 @@ export function SeedForm({ seed }: SeedFormProps) {
           label="Water: What do you need?"
           placeholder="e.g. Volunteers, permits, equipment..."
         />
+
+        {/* Illustration (edit mode only) */}
+        {seed && (
+          <div className="space-y-3">
+            <Label>Illustration</Label>
+            {imageUrl ? (
+              <div className="relative aspect-square w-full max-w-xs overflow-hidden rounded-lg">
+                <Image
+                  src={imageUrl}
+                  alt={seed.name}
+                  fill
+                  className="object-cover"
+                  sizes="320px"
+                />
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No image generated yet.
+              </p>
+            )}
+            <RegenerateImageButton
+              seedId={seed.id}
+              hasImage={!!imageUrl}
+              onImageGenerated={setImageUrl}
+            />
+          </div>
+        )}
 
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending

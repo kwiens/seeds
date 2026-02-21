@@ -42,7 +42,7 @@ export function SupportButton({
       onClick={handleClick}
       disabled={isPending}
       variant={optimistic.supported ? "default" : "outline"}
-      className="gap-2"
+      className="min-w-44 gap-2"
     >
       <Sun className={`size-4 ${optimistic.supported ? "text-amber-300" : "text-amber-500"}`} />
       {optimistic.supported ? "Supporting" : "Support This Seed"}

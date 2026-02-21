@@ -8,9 +8,11 @@ import { regenerateSeedImage } from "@/lib/actions/generate-image";
 export function RegenerateImageButton({
   seedId,
   hasImage,
+  onImageGenerated,
 }: {
   seedId: string;
   hasImage: boolean;
+  onImageGenerated?: (url: string) => void;
 }) {
   const [status, setStatus] = useState<"idle" | "generating" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,6 +27,9 @@ export function RegenerateImageButton({
       setErrorMessage(result.error);
     } else {
       setStatus("idle");
+      if (result.imageUrl) {
+        onImageGenerated?.(result.imageUrl);
+      }
     }
   }
 

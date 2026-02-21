@@ -68,8 +68,7 @@ async function callGeminiAndUpload(seed: {
   const blob = await put(`seeds/${seed.id}.${extension}`, imageBuffer, {
     access: "public",
     contentType: mimeType,
-    addRandomSuffix: false,
-    allowOverwrite: true,
+    addRandomSuffix: true,
   });
 
   await db

@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { authConfig } from "./auth.config";
 
 const adminEmails = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
@@ -10,8 +10,7 @@ const adminEmails = (process.env.ADMIN_EMAILS ?? "")
   .filter(Boolean);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Google],
-  secret: process.env.AUTH_SECRET,
+  ...authConfig,
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false;

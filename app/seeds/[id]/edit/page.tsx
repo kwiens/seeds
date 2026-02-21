@@ -1,9 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { SeedForm } from "@/components/forms/seed-form";
-import { RegenerateImageButton } from "@/components/seeds/regenerate-image-button";
 import { getSeedById } from "@/lib/db/queries/seeds";
 
 export const metadata: Metadata = {
@@ -35,28 +33,6 @@ export default async function EditSeedPage(props: {
           Update your community project proposal.
         </p>
       </div>
-
-      {/* Image section */}
-      <div className="mb-8 space-y-3">
-        <h2 className="text-sm font-medium">Illustration</h2>
-        {seed.imageUrl ? (
-          <div className="relative aspect-square w-full max-w-xs overflow-hidden rounded-lg">
-            <Image
-              src={seed.imageUrl}
-              alt={seed.name}
-              fill
-              className="object-cover"
-              sizes="320px"
-            />
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            No image generated yet.
-          </p>
-        )}
-        <RegenerateImageButton seedId={seed.id} hasImage={!!seed.imageUrl} />
-      </div>
-
       <SeedForm seed={seed} />
     </div>
   );
