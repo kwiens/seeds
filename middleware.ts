@@ -12,13 +12,8 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/api/auth/signin", req.url));
   }
 
-  if (pathname.startsWith("/admin")) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/api/auth/signin", req.url));
-    }
-    if (req.auth?.user?.role !== "admin") {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+  if (pathname.startsWith("/admin") && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/api/auth/signin", req.url));
   }
 
   return NextResponse.next();
