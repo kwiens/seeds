@@ -148,33 +148,33 @@ export default async function SeedPage(props: {
           </div>
         </div>
 
-        {/* Map — top right on desktop, below on mobile; expands full-width */}
-        {hasLocation && (
-          <SeedDetailMap
-            lat={seed.locationLat!}
-            lng={seed.locationLng!}
-            address={seed.locationAddress}
-          />
-        )}
+        {/* Image + map — top right on desktop, below on mobile */}
+        <div className="flex flex-col gap-4">
+          {seed.imageUrl ? (
+            <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
+              <Image
+                src={seed.imageUrl}
+                alt={seed.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 280px"
+                priority
+              />
+            </div>
+          ) : (
+            canEdit && <SeedImageGenerator seedId={seed.id} />
+          )}
+          {hasLocation && (
+            <SeedDetailMap
+              lat={seed.locationLat!}
+              lng={seed.locationLng!}
+              address={seed.locationAddress}
+            />
+          )}
+        </div>
       </div>
 
       <Separator className="mb-8" />
-
-      {/* Image — 1:1 with rounded corners */}
-      {seed.imageUrl ? (
-        <div className="relative mx-auto mb-8 aspect-square w-full max-w-md overflow-hidden rounded-2xl">
-          <Image
-            src={seed.imageUrl}
-            alt={seed.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 448px"
-            priority
-          />
-        </div>
-      ) : (
-        canEdit && <SeedImageGenerator seedId={seed.id} />
-      )}
 
       {/* Details grid */}
       <div className="grid gap-8 sm:grid-cols-2">
