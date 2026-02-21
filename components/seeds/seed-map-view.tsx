@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { SeedMap } from "@/components/map/seed-map";
 import type { CategoryKey } from "@/lib/categories";
 
@@ -13,8 +12,6 @@ interface MapSeedData {
 }
 
 export function SeedMapView({ seeds }: { seeds: MapSeedData[] }) {
-  const router = useRouter();
-
   const seedsWithLocation = seeds.filter(
     (s) => s.locationLat != null && s.locationLng != null,
   );
@@ -23,7 +20,6 @@ export function SeedMapView({ seeds }: { seeds: MapSeedData[] }) {
     <SeedMap
       seeds={seedsWithLocation}
       className="h-[500px] w-full rounded-lg"
-      onMarkerClick={(seedId) => router.push(`/seeds/${seedId}`)}
     />
   );
 }

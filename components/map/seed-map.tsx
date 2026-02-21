@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import Map, {
   Marker,
   NavigationControl,
@@ -109,12 +110,15 @@ export function SeedMap({
             closeButton
             closeOnClick={false}
           >
-            <div className="p-1">
+            <Link
+              href={`/seeds/${popupSeed.id}`}
+              className="block p-1 no-underline"
+            >
               <p className="text-sm font-medium">{popupSeed.name}</p>
               <p className="text-muted-foreground text-xs">
                 {categories[popupSeed.category].label}
               </p>
-            </div>
+            </Link>
           </Popup>
         )}
       </Map>
