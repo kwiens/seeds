@@ -93,41 +93,42 @@ export default async function SeedPage(props: {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      {/* Header: title + map side by side on desktop */}
-      <div className="mb-8 grid gap-6 md:grid-cols-[1fr_280px]">
+      {/* Title row — full width */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CategoryBadge category={seed.category} className="mb-2" />
-              <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
-              {seed.status === "pending" && (
-                <Badge variant="outline" className="mt-2">
-                  Pending Approval
-                </Badge>
-              )}
-              {seed.status === "archived" && (
-                <Badge variant="outline" className="mt-2">
-                  Archived
-                </Badge>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {canEdit && (
-                <Button variant="outline" asChild>
-                  <Link href={`/seeds/${seed.id}/edit`}>
-                    <Pencil className="mr-1.5 size-3.5" />
-                    Edit
-                  </Link>
-                </Button>
-              )}
-              <SupportButton
-                seedId={seed.id}
-                supportCount={supportCount}
-                hasSupported={userHasSupported}
-              />
-            </div>
-          </div>
+          <CategoryBadge category={seed.category} className="mb-2" />
+          <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
+          {seed.status === "pending" && (
+            <Badge variant="outline" className="mt-2">
+              Pending Approval
+            </Badge>
+          )}
+          {seed.status === "archived" && (
+            <Badge variant="outline" className="mt-2">
+              Archived
+            </Badge>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {canEdit && (
+            <Button variant="outline" asChild>
+              <Link href={`/seeds/${seed.id}/edit`}>
+                <Pencil className="mr-1.5 size-3.5" />
+                Edit
+              </Link>
+            </Button>
+          )}
+          <SupportButton
+            seedId={seed.id}
+            supportCount={supportCount}
+            hasSupported={userHasSupported}
+          />
+        </div>
+      </div>
 
+      {/* Creator + summary beside image */}
+      <div className="mb-8 grid gap-6 md:grid-cols-[1fr_360px]">
+        <div>
           {/* Creator */}
           <div className="mb-4 flex items-center gap-3">
             <Avatar className="size-8">
@@ -148,7 +149,7 @@ export default async function SeedPage(props: {
           </div>
         </div>
 
-        {/* Image + map — top right on desktop, below on mobile */}
+        {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
           {seed.imageUrl ? (
             <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
@@ -157,22 +158,26 @@ export default async function SeedPage(props: {
                 alt={seed.name}
                 fill
                 className="object-cover"
-                sizes="(max-width: 768px) 100vw, 280px"
+                sizes="(max-width: 768px) 100vw, 360px"
                 priority
               />
             </div>
           ) : (
             canEdit && <SeedImageGenerator seedId={seed.id} />
           )}
-          {hasLocation && (
-            <SeedDetailMap
-              lat={seed.locationLat!}
-              lng={seed.locationLng!}
-              address={seed.locationAddress}
-            />
-          )}
         </div>
       </div>
+
+      {/* Map — full width */}
+      {hasLocation && (
+        <div className="mb-8">
+          <SeedDetailMap
+            lat={seed.locationLat!}
+            lng={seed.locationLng!}
+            address={seed.locationAddress}
+          />
+        </div>
+      )}
 
       <Separator className="mb-8" />
 

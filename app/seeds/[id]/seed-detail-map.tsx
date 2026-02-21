@@ -16,8 +16,8 @@ export function SeedDetailMap({
     <div className="flex flex-col gap-2">
       <SeedMap
         singleMarker={{ lat, lng }}
-        zoom={14}
-        className="h-48 w-full rounded-lg"
+        zoom={13}
+        className="h-80 w-full rounded-lg sm:h-96"
         interactive
       />
       {address && (
