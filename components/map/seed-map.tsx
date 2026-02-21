@@ -2,11 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import Map, {
-  Marker,
-  NavigationControl,
-  Popup,
-} from "react-map-gl/mapbox";
+import Map, { Marker, NavigationControl, Popup } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Sprout } from "lucide-react";
 import { categories, type CategoryKey } from "@/lib/categories";
@@ -66,7 +62,7 @@ export function SeedMap({
           zoom,
         }}
         style={{ width: "100%", height: "100%" }}
-        mapStyle="mapbox://styles/mapbox/outdoors-v12"
+        mapStyle="mapbox://styles/kwiens/cm6au0n48006h01s28k1p0faz"
         mapboxAccessToken={MAPBOX_TOKEN}
         interactive={interactive}
       >
@@ -109,12 +105,13 @@ export function SeedMap({
             onClose={() => setPopupSeed(null)}
             closeButton
             closeOnClick={false}
+            offset={12}
           >
             <Link
               href={`/seeds/${popupSeed.id}`}
-              className="block p-1 no-underline"
+              className="block pr-4 no-underline"
             >
-              <p className="text-sm font-medium">{popupSeed.name}</p>
+              <p className="text-sm font-semibold">{popupSeed.name}</p>
               <p className="text-muted-foreground text-xs">
                 {categories[popupSeed.category].label}
               </p>
