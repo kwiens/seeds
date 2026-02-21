@@ -17,7 +17,12 @@ vi.mock("@/lib/db", () => ({
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { approveSeed, archiveSeed } from "@/lib/actions/admin";
+import {
+  approveSeed,
+  archiveSeed,
+  unapproveSeed,
+  unarchiveSeed,
+} from "@/lib/actions/admin";
 
 describe("approveSeed", () => {
   beforeEach(() => {
@@ -109,5 +114,90 @@ describe("archiveSeed", () => {
 
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
     expect(revalidatePath).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("unarchiveSeed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects unauthenticated users", async () => {
+    vi.mocked(auth).mockResolvedValue(null);
+
+    await expect(unarchiveSeed("seed-1")).rejects.toThrow("Unauthorized");
+  });
+
+  it("rejects non-admin users", async () => {
+    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+
+    await expect(unarchiveSeed("seed-1")).rejects.toThrow("Unauthorized");
+  });
+
+  it("sets status to pending", async () => {
+    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    const chain = mockDbUpdateChain();
+    vi.mocked(db.update).mockReturnValue(chain as any);
+
+    const result = await unarchiveSeed("seed-1");
+
+    expect(result).toEqual({ success: true });
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "pending" }),
+    );
+  });
+
+  it("revalidates correct paths", async () => {
+    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    const chain = mockDbUpdateChain();
+    vi.mocked(db.update).mockReturnValue(chain as any);
+
+    await unarchiveSeed("seed-1");
+
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("unapproveSeed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects unauthenticated users", async () => {
+    vi.mocked(auth).mockResolvedValue(null);
+
+    await expect(unapproveSeed("seed-1")).rejects.toThrow("Unauthorized");
+  });
+
+  it("rejects non-admin users", async () => {
+    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+
+    await expect(unapproveSeed("seed-1")).rejects.toThrow("Unauthorized");
+  });
+
+  it("sets status to pending", async () => {
+    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    const chain = mockDbUpdateChain();
+    vi.mocked(db.update).mockReturnValue(chain as any);
+
+    const result = await unapproveSeed("seed-1");
+
+    expect(result).toEqual({ success: true });
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "pending" }),
+    );
+  });
+
+  it("revalidates correct paths", async () => {
+    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    const chain = mockDbUpdateChain();
+    vi.mocked(db.update).mockReturnValue(chain as any);
+
+    await unapproveSeed("seed-1");
+
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
   });
 });

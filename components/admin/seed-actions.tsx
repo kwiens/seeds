@@ -4,20 +4,25 @@ import { useTransition } from "react";
 import Link from "next/link";
 import {
   Archive,
+  ArchiveRestore,
   CheckCircle,
   MoreHorizontal,
   Pencil,
-  Trash2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { approveSeed, archiveSeed } from "@/lib/actions/admin";
+import {
+  approveSeed,
+  archiveSeed,
+  unapproveSeed,
+  unarchiveSeed,
+} from "@/lib/actions/admin";
 
 export function SeedActions({
   seedId,
@@ -58,18 +63,22 @@ export function SeedActions({
             Archive
           </DropdownMenuItem>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive"
-          onClick={() => {
-            if (confirm("Are you sure you want to archive this seed?")) {
-              startTransition(async () => { await archiveSeed(seedId); });
-            }
-          }}
-        >
-          <Trash2 className="mr-2 size-4" />
-          Delete
-        </DropdownMenuItem>
+        {status === "archived" && (
+          <DropdownMenuItem
+            onClick={() => startTransition(async () => { await unarchiveSeed(seedId); })}
+          >
+            <ArchiveRestore className="mr-2 size-4 text-green-600" />
+            Unarchive
+          </DropdownMenuItem>
+        )}
+        {status === "approved" && (
+          <DropdownMenuItem
+            onClick={() => startTransition(async () => { await unapproveSeed(seedId); })}
+          >
+            <XCircle className="mr-2 size-4 text-amber-600" />
+            Unapprove
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

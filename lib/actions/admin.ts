@@ -46,3 +46,30 @@ export async function archiveSeed(seedId: string) {
   return { success: true };
 }
 
+export async function unarchiveSeed(seedId: string) {
+  await requireAdmin();
+
+  await db
+    .update(seeds)
+    .set({ status: "pending", updatedAt: new Date() })
+    .where(eq(seeds.id, seedId));
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function unapproveSeed(seedId: string) {
+  await requireAdmin();
+
+  await db
+    .update(seeds)
+    .set({ status: "pending", updatedAt: new Date() })
+    .where(eq(seeds.id, seedId));
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath(`/seeds/${seedId}`);
+  return { success: true };
+}
+
