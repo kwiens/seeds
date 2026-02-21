@@ -14,13 +14,14 @@ export function SeedDetailMap({
   lng: number;
   address?: string | null;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   if (expanded) {
     return (
       <div className="col-span-full">
         <div className="relative">
           <SeedMap
+            key="expanded"
             singleMarker={{ lat, lng }}
             zoom={13}
             className="h-80 w-full rounded-lg sm:h-96"
@@ -29,7 +30,7 @@ export function SeedDetailMap({
           <Button
             variant="secondary"
             size="icon"
-            className="absolute bottom-2 right-2 size-8 shadow-md"
+            className="absolute top-[5.25rem] left-2 size-8 shadow-md"
             onClick={() => setExpanded(false)}
           >
             <Minimize2 className="size-3.5" />
@@ -49,6 +50,7 @@ export function SeedDetailMap({
     <div className="flex flex-col gap-2">
       <div className="relative">
         <SeedMap
+          key="collapsed"
           singleMarker={{ lat, lng }}
           zoom={14}
           className="h-48 w-full rounded-lg"
@@ -57,7 +59,7 @@ export function SeedDetailMap({
         <Button
           variant="secondary"
           size="icon"
-          className="absolute bottom-2 right-2 size-8 shadow-md"
+          className="absolute top-[5.25rem] left-2 size-8 shadow-md"
           onClick={() => setExpanded(true)}
         >
           <Maximize2 className="size-3.5" />

@@ -66,7 +66,7 @@ export function SeedMap({
         mapboxAccessToken={MAPBOX_TOKEN}
         interactive={interactive}
       >
-        <NavigationControl position="top-right" />
+        <NavigationControl position="top-left" showCompass={false} />
 
         {singleMarker && (
           <Marker latitude={singleMarker.lat} longitude={singleMarker.lng}>
