@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import { Pencil, MapPin, Users, Building2, Droplets, Sun } from "lucide-react";
 import { auth } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,9 +16,38 @@ import type { CategoryKey } from "@/lib/categories";
 import {
   getSeedById,
   getSeedSupportCount,
-  getSeedSupporters,
+  getSeedSupporterNames,
   hasUserSupported,
 } from "@/lib/db/queries/seeds";
+
+function DetailList({
+  items,
+  icon: Icon,
+  label,
+  iconClassName,
+}: {
+  items: string[];
+  icon: LucideIcon;
+  label: string;
+  iconClassName?: string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+        <Icon className={`size-4${iconClassName ? ` ${iconClassName}` : ""}`} />
+        {label}
+      </h3>
+      <ul className="space-y-1">
+        {items.map((item, i) => (
+          <li key={i} className="text-muted-foreground text-sm">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function formatSupporterName(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -58,7 +88,7 @@ export default async function SeedPage(props: {
 
   const [supportCount, supporters, userHasSupported] = await Promise.all([
     getSeedSupportCount(seed.id),
-    getSeedSupporters(seed.id),
+    getSeedSupporterNames(seed.id),
     session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
   ]);
 
@@ -156,90 +186,11 @@ export default async function SeedPage(props: {
 
       {/* Details grid */}
       <div className="grid gap-8 sm:grid-cols-2">
-        {/* Gardeners */}
-        {seed.gardeners.length > 0 && (
-          <div>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Users className="size-4" />
-              Gardeners
-            </h3>
-            <ul className="space-y-1">
-              {seed.gardeners.map((name, i) => (
-                <li key={i} className="text-muted-foreground text-sm">
-                  {name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Roots (organizations) */}
-        {seed.roots.length > 0 && (
-          <div>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Building2 className="size-4" />
-              Roots (Organizations)
-            </h3>
-            <ul className="space-y-1">
-              {seed.roots.map((name, i) => (
-                <li key={i} className="text-muted-foreground text-sm">
-                  {name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Support people */}
-        {seed.supportPeople.length > 0 && (
-          <div>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Users className="size-4" />
-              Support (People)
-            </h3>
-            <ul className="space-y-1">
-              {seed.supportPeople.map((name, i) => (
-                <li key={i} className="text-muted-foreground text-sm">
-                  {name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Water: Have */}
-        {seed.waterHave.length > 0 && (
-          <div>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Droplets className="size-4 text-blue-500" />
-              Water: What We Have
-            </h3>
-            <ul className="space-y-1">
-              {seed.waterHave.map((item, i) => (
-                <li key={i} className="text-muted-foreground text-sm">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Water: Need */}
-        {seed.waterNeed.length > 0 && (
-          <div>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Droplets className="size-4 text-cyan-500" />
-              Water: What We Need
-            </h3>
-            <ul className="space-y-1">
-              {seed.waterNeed.map((item, i) => (
-                <li key={i} className="text-muted-foreground text-sm">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <DetailList items={seed.gardeners} icon={Users} label="Gardeners" />
+        <DetailList items={seed.roots} icon={Building2} label="Roots (Organizations)" />
+        <DetailList items={seed.supportPeople} icon={Users} label="Support (People)" />
+        <DetailList items={seed.waterHave} icon={Droplets} label="Water: What We Have" iconClassName="text-blue-500" />
+        <DetailList items={seed.waterNeed} icon={Droplets} label="Water: What We Need" iconClassName="text-cyan-500" />
       </div>
 
       {/* Supporters */}

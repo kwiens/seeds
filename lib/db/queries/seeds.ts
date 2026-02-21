@@ -5,30 +5,36 @@ import type { CategoryKey } from "@/lib/categories";
 
 const SEEDS_PER_PAGE = 20;
 
-export async function getApprovedSeeds(options: {
+function buildVisibilityFilter(options: {
   category?: CategoryKey;
-  page?: number;
   userId?: string;
 }) {
-  const { category, page = 1, userId } = options;
-  const offset = (page - 1) * SEEDS_PER_PAGE;
-
   const conditions = [];
 
-  if (userId) {
-    // Show approved seeds OR user's own seeds
+  if (options.userId) {
     conditions.push(
-      or(eq(seeds.status, "approved"), eq(seeds.createdBy, userId)),
+      or(eq(seeds.status, "approved"), eq(seeds.createdBy, options.userId)),
     );
   } else {
     conditions.push(eq(seeds.status, "approved"));
   }
 
-  if (category) {
-    conditions.push(eq(seeds.category, category));
+  if (options.category) {
+    conditions.push(eq(seeds.category, options.category));
   }
 
-  const where = conditions.length > 1 ? and(...conditions) : conditions[0];
+  return conditions.length > 1 ? and(...conditions) : conditions[0];
+}
+
+export async function getApprovedSeeds(options: {
+  category?: CategoryKey;
+  page?: number;
+  userId?: string;
+}) {
+  const { page = 1 } = options;
+  const offset = (page - 1) * SEEDS_PER_PAGE;
+
+  const where = buildVisibilityFilter(options);
 
   const [seedRows, countResult] = await Promise.all([
     db
@@ -117,6 +123,19 @@ export async function getSeedSupporters(seedId: string) {
     .orderBy(desc(seedSupports.createdAt));
 }
 
+export async function getSeedSupporterNames(seedId: string) {
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      createdAt: seedSupports.createdAt,
+    })
+    .from(seedSupports)
+    .innerJoin(users, eq(seedSupports.userId, users.id))
+    .where(eq(seedSupports.seedId, seedId))
+    .orderBy(desc(seedSupports.createdAt));
+}
+
 export async function hasUserSupported(seedId: string, userId: string) {
   const result = await db.query.seedSupports.findFirst({
     where: and(
@@ -131,22 +150,7 @@ export async function getAllSeedsForMap(options: {
   category?: CategoryKey;
   userId?: string;
 }) {
-  const { category, userId } = options;
-  const conditions = [];
-
-  if (userId) {
-    conditions.push(
-      or(eq(seeds.status, "approved"), eq(seeds.createdBy, userId)),
-    );
-  } else {
-    conditions.push(eq(seeds.status, "approved"));
-  }
-
-  if (category) {
-    conditions.push(eq(seeds.category, category));
-  }
-
-  const where = conditions.length > 1 ? and(...conditions) : conditions[0];
+  const where = buildVisibilityFilter(options);
 
   return db
     .select({

@@ -16,13 +16,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@dnd-kit/abstract": "^0.3.2",
-    "@dnd-kit/dom": "^0.3.2",
-    "@dnd-kit/react": "^0.3.2",
     "@google/genai": "^1.42.0",
-    "@mapbox/search-js-react": "^1.5.1",
     "@neondatabase/serverless": "^1.0.2",
-    "@tanstack/react-table": "^8.21.3",
     "@vercel/blob": "^2.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

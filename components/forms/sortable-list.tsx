@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GripVertical, Plus, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -62,9 +63,10 @@ export function SortableList({
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
-              className={`flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm ${
-                dragIndex === index ? "opacity-50" : ""
-              }`}
+              className={cn(
+                "flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm",
+                dragIndex === index && "opacity-50",
+              )}
             >
               <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
               <span className="flex-1">{item}</span>

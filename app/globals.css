@@ -46,12 +46,6 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  /* Nature / seed category colors */
-  --color-seed-daily-access: oklch(0.65 0.19 145);
-  --color-seed-outdoor-play: oklch(0.72 0.17 130);
-  --color-seed-balanced-growth: oklch(0.58 0.16 155);
-  --color-seed-respect: oklch(0.63 0.12 175);
-  --color-seed-connected: oklch(0.75 0.15 85);
 }
 
 :root {

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import type { CategoryKey } from "@/lib/categories";
 import { getAllSeeds } from "@/lib/db/queries/admin";
@@ -8,6 +10,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
+  const session = await auth();
+  if (session?.user?.role !== "admin") {
+    redirect("/");
+  }
+
   const allSeeds = await getAllSeeds();
 
   return (

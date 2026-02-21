@@ -83,6 +83,11 @@ async function callGeminiAndUpload(seed: {
 }
 
 export async function generateSeedImage(seedId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "You must be signed in." };
+  }
+
   const seed = await db.query.seeds.findFirst({
     where: eq(seeds.id, seedId),
   });

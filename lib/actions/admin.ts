@@ -46,15 +46,3 @@ export async function archiveSeed(seedId: string) {
   return { success: true };
 }
 
-export async function adminDeleteSeed(seedId: string) {
-  await requireAdmin();
-
-  await db
-    .update(seeds)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
-
-  revalidatePath("/admin");
-  revalidatePath("/");
-  return { success: true };
-}

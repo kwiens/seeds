@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { approveSeed, archiveSeed, adminDeleteSeed } from "@/lib/actions/admin";
+import { approveSeed, archiveSeed } from "@/lib/actions/admin";
 
 export function SeedActions({
   seedId,
@@ -62,8 +62,8 @@ export function SeedActions({
         <DropdownMenuItem
           className="text-destructive"
           onClick={() => {
-            if (confirm("Are you sure you want to delete this seed?")) {
-              startTransition(async () => { await adminDeleteSeed(seedId); });
+            if (confirm("Are you sure you want to archive this seed?")) {
+              startTransition(async () => { await archiveSeed(seedId); });
             }
           }}
         >

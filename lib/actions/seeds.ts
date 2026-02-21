@@ -94,30 +94,3 @@ export async function updateSeed(id: string, data: unknown) {
   redirect(`/seeds/${id}`);
 }
 
-export async function deleteSeed(id: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
-
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, id),
-  });
-
-  if (!seed) {
-    return { error: "Seed not found." };
-  }
-
-  if (seed.createdBy !== session.user.id && session.user.role !== "admin") {
-    return { error: "You don't have permission to delete this seed." };
-  }
-
-  await db
-    .update(seeds)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(eq(seeds.id, id));
-
-  revalidatePath("/");
-  revalidatePath("/dashboard");
-  return { success: true };
-}
