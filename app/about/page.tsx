@@ -4,7 +4,8 @@ import { ArrowRight, Calendar } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { categories, categoryKeys } from "@/lib/categories";
+import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "About | Seeds — Chattanooga National Park City",
@@ -88,7 +89,7 @@ const timeline = [
 ];
 
 const commitmentDetails: Record<
-  string,
+  CategoryKey,
   { principle: string; commitment: string }
 > = {
   daily_access: {
@@ -125,12 +126,9 @@ export default function AboutPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="text-white" style={{ backgroundColor: "#2D5334" }}>
+      <section className="bg-[#2D5334] text-white">
         <div className="mx-auto max-w-4xl px-4 py-16 md:py-24">
-          <p
-            className="mb-3 text-sm font-semibold uppercase tracking-widest"
-            style={{ color: "#74BB23" }}
-          >
+          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#74BB23]">
             1st National Park City in America
           </p>
           <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl">
@@ -210,9 +208,12 @@ export default function AboutPage() {
                 <div key={key} className="rounded-xl border bg-card p-5">
                   <div className="mb-2 flex items-center gap-3">
                     <div
-                      className={`flex size-9 items-center justify-center rounded-lg ${cat.bgClass}`}
+                      className={cn(
+                        "flex size-9 items-center justify-center rounded-lg",
+                        cat.bgClass,
+                      )}
                     >
-                      <Icon className={`size-5 ${cat.textClass}`} />
+                      <Icon className={cn("size-5", cat.textClass)} />
                     </div>
                     <h3 className="text-lg font-semibold">{cat.label}</h3>
                   </div>
@@ -240,10 +241,7 @@ export default function AboutPage() {
             {timeline.map((step, i) => (
               <div key={step.phase} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <div
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                    style={{ backgroundColor: "#3AAB9B" }}
-                  >
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3AAB9B] text-sm font-bold text-white">
                     {i + 1}
                   </div>
                   {i < timeline.length - 1 && (

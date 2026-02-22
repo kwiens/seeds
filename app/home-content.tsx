@@ -53,7 +53,7 @@ export function HomeContent({
     <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <CategoryFilter activeCategory={activeCategory} />
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
           <ViewToggle view={view} onViewChange={setView} />
           <SortFilter activeSort={activeSort} />
         </div>
