@@ -75,18 +75,19 @@ export default async function SeedPage(props: {
   const seed = await getSeedById(params.id);
   if (!seed) notFound();
 
-  // Archived seeds are only visible to owner/admin
-  if (seed.status === "archived" && !canEditSeed(session, seed)) {
+  const canEdit = canEditSeed(session, seed);
+
+  // Pending seeds are intentionally public so creators can share links
+  // before approval. Only archived seeds are restricted to owner/admin.
+  if (seed.status === "archived" && !canEdit) {
     notFound();
   }
 
   const [supportCount, supporters, userHasSupported] = await Promise.all([
     getSeedSupportCount(seed.id),
-    getSeedSupporters(seed.id),
+    getSeedSupporters(seed.id, { includeEmail: canEdit }),
     session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
   ]);
-
-  const canEdit = canEditSeed(session, seed);
 
   const hasLocation = seed.locationLat && seed.locationLng;
 

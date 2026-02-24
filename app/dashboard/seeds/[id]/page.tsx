@@ -32,7 +32,7 @@ export default async function DashboardSeedDetailPage(props: {
     redirect("/dashboard");
   }
 
-  const supporters = await getSeedSupporters(seed.id);
+  const supporters = await getSeedSupporters(seed.id, { includeEmail: true });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

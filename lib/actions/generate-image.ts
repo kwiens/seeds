@@ -10,6 +10,24 @@ import { db } from "@/lib/db";
 import { seeds } from "@/lib/db/schema";
 import { buildImagePrompt } from "@/lib/image-prompt";
 
+// In-memory rate limiter: 10 requests per 10 minutes per user
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(userId) ?? [];
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(userId, recent);
+    return false;
+  }
+  recent.push(now);
+  rateLimitMap.set(userId, recent);
+  return true;
+}
+
 async function callGeminiAndUpload(seed: {
   id: string;
   name: string;
@@ -60,6 +78,10 @@ async function callGeminiAndUpload(seed: {
     addRandomSuffix: true,
   });
 
+  if (!blob.url.startsWith("https://")) {
+    return { error: "Unexpected storage URL format." };
+  }
+
   await db
     .update(seeds)
     .set({ imageUrl: blob.url, updatedAt: new Date() })
@@ -95,6 +117,10 @@ export async function generateSeedImage(seedId: string) {
     return { imageUrl: seed.imageUrl };
   }
 
+  if (!checkRateLimit(session.user.id)) {
+    return { error: "Too many image requests. Please try again later." };
+  }
+
   try {
     return await callGeminiAndUpload(seed);
   } catch (error) {
@@ -119,6 +145,10 @@ export async function regenerateSeedImage(seedId: string) {
 
   if (!canEditSeed(session, seed)) {
     return { error: "You don't have permission to regenerate this image." };
+  }
+
+  if (!checkRateLimit(session.user.id)) {
+    return { error: "Too many image requests. Please try again later." };
   }
 
   try {

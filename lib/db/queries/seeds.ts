@@ -116,8 +116,13 @@ export async function getSeedSupportCount(seedId: string) {
   return result[0]?.count ?? 0;
 }
 
-export async function getSeedSupporters(seedId: string) {
-  return db
+export async function getSeedSupporters(
+  seedId: string,
+  options?: { includeEmail?: boolean },
+) {
+  const includeEmail = options?.includeEmail ?? false;
+
+  const rows = await db
     .select({
       id: users.id,
       name: users.name,
@@ -128,6 +133,11 @@ export async function getSeedSupporters(seedId: string) {
     .innerJoin(users, eq(seedSupports.userId, users.id))
     .where(eq(seedSupports.seedId, seedId))
     .orderBy(desc(seedSupports.createdAt));
+
+  if (includeEmail) return rows;
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return rows.map(({ email: _email, ...rest }) => ({ ...rest, email: "" }));
 }
 
 export async function hasUserSupported(seedId: string, userId: string) {

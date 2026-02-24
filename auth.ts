@@ -39,12 +39,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user }) {
+      // On initial sign-in, populate token.id from the DB user
       if (user?.email) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.email, user.email.toLowerCase()),
         });
         if (dbUser) {
           token.id = dbUser.id;
+          token.role = dbUser.role;
+        }
+      } else if (token.id) {
+        // On subsequent requests, re-fetch role so revocations take effect
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.id, token.id as string),
+          columns: { role: true },
+        });
+        if (dbUser) {
           token.role = dbUser.role;
         }
       }
