@@ -176,12 +176,7 @@ describe("removeAdminEmail", () => {
 
   it("does not demote user if email is in env var", async () => {
     vi.mocked(auth).mockResolvedValue(mockAdminSession());
-    const envEmail = (process.env.ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean)[0];
 
-    // If no ADMIN_EMAILS env var in test, set one temporarily
     const originalEnv = process.env.ADMIN_EMAILS;
     process.env.ADMIN_EMAILS = "protected@example.com";
 

@@ -50,13 +50,17 @@ export const seeds = pgTable("seeds", {
   locationLat: doublePrecision("location_lat"),
   locationLng: doublePrecision("location_lng"),
   category: categoryEnum("category").notNull(),
-  roots: jsonb("roots").$type<string[]>().notNull().default([]),
+  roots: jsonb("roots")
+    .$type<{ name: string; committed: boolean }[]>()
+    .notNull()
+    .default([]),
   supportPeople: jsonb("support_people")
     .$type<string[]>()
     .notNull()
     .default([]),
   waterHave: jsonb("water_have").$type<string[]>().notNull().default([]),
   waterNeed: jsonb("water_need").$type<string[]>().notNull().default([]),
+  obstacles: text("obstacles"),
   imageUrl: text("image_url"),
   status: statusEnum("status").notNull().default("pending"),
   createdBy: uuid("created_by")

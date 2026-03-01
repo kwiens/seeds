@@ -269,11 +269,11 @@ export default function AboutPage() {
         <Separator className="my-10" />
 
         {/* CTA */}
-        <section className="text-center">
+        <section className="flex flex-col items-center">
           <h2 className="mb-4 text-2xl font-bold tracking-tight">
             How You Can Help
           </h2>
-          <ul className="text-muted-foreground mx-auto mb-8 max-w-lg space-y-2 text-sm">
+          <ol className="text-muted-foreground mb-8 max-w-lg list-decimal space-y-2 pl-5 text-left text-sm">
             <li>Bring your best ideas to the table</li>
             <li>Help spread the word in your community</li>
             <li>Join Seeds as a mentor or supporting organization</li>
@@ -281,7 +281,7 @@ export default function AboutPage() {
             <li>
               Make yourself available for a coffee conversation with Seed teams
             </li>
-          </ul>
+          </ol>
           <Button size="lg" asChild>
             <Link href="/seeds/new">
               Plant a Seed

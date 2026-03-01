@@ -39,10 +39,11 @@ export function mockSeed(overrides?: Record<string, unknown>) {
     locationLat: 35.0456,
     locationLng: -85.3097,
     category: "daily_access",
-    roots: ["Org A"],
+    roots: [{ name: "Org A", committed: false }],
     supportPeople: ["Bob"],
     waterHave: ["Tools"],
     waterNeed: ["Seeds"],
+    obstacles: null,
     imageUrl: null,
     status: "pending" as const,
     createdBy: "user-1",
@@ -70,6 +71,7 @@ export function validSeedFormData(overrides?: Record<string, unknown>) {
     supportPeople: [],
     waterHave: ["Tools"],
     waterNeed: ["Seeds"],
+    obstacles: undefined,
     ...overrides,
   };
 }

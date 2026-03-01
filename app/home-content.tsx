@@ -55,7 +55,7 @@ export function HomeContent({
         <CategoryFilter activeCategory={activeCategory} />
         <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
           <ViewToggle view={view} onViewChange={setView} />
-          <SortFilter activeSort={activeSort} />
+          {view === "grid" && <SortFilter activeSort={activeSort} />}
         </div>
       </div>
 

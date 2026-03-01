@@ -22,6 +22,7 @@ function seedFormToDbFields(values: SeedFormValues) {
     supportPeople: values.supportPeople,
     waterHave: values.waterHave,
     waterNeed: values.waterNeed,
+    obstacles: values.obstacles ?? null,
   };
 }
 

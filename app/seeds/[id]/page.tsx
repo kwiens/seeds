@@ -48,6 +48,46 @@ function DetailList({
   );
 }
 
+function RootsDetailList({
+  roots,
+}: {
+  roots: { name: string; committed: boolean }[];
+}) {
+  if (roots.length === 0) return null;
+  return (
+    <div>
+      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+        <SeedIcon name="roots" />
+        Roots (Organizations)
+      </h3>
+      <ul className="space-y-1">
+        {roots.map((root, i) => (
+          <li key={i} className="text-muted-foreground text-sm">
+            {root.name}
+            {!root.committed && (
+              <span className="ml-1 text-xs italic">(not committed yet)</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function parseRoots(raw: unknown): { name: string; committed: boolean }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    if (typeof item === "string") return { name: item, committed: false };
+    if (typeof item === "object" && item && "name" in item) {
+      return {
+        name: String((item as { name: string }).name),
+        committed: Boolean((item as { committed: boolean }).committed),
+      };
+    }
+    return { name: String(item), committed: false };
+  });
+}
+
 function formatSupporterName(name: string) {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
@@ -194,20 +234,16 @@ export default async function SeedPage(props: {
           seedIcon="gardeners"
           label="Gardeners (Organizers)"
         />
-        <DetailList
-          items={seed.roots}
-          seedIcon="roots"
-          label="Roots (Organizations)"
-        />
+        <RootsDetailList roots={parseRoots(seed.roots)} />
         <DetailList
           items={seed.supportPeople}
           seedIcon="support"
-          label="Support (People)"
+          label="Guides (People)"
         />
         <DetailList
           items={seed.waterHave}
-          seedIcon="water"
-          label="Water: What We Have"
+          seedIcon="soil"
+          label="Fertilizer: What We Have"
         />
         <DetailList
           items={seed.waterNeed}
@@ -215,6 +251,16 @@ export default async function SeedPage(props: {
           label="Water: What We Need"
         />
       </div>
+
+      {/* Obstacles */}
+      {seed.obstacles && (
+        <div className="mt-8">
+          <h3 className="mb-2 text-sm font-semibold">Obstacles</h3>
+          <p className="text-muted-foreground whitespace-pre-wrap text-sm">
+            {seed.obstacles}
+          </p>
+        </div>
+      )}
 
       {/* Supporters */}
       {supporters.length > 0 && (

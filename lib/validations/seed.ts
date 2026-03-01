@@ -20,10 +20,19 @@ export const seedFormSchema = z.object({
     "respect",
     "connected_communities",
   ]),
-  roots: z.array(z.string().max(200)).max(50).default([]),
+  roots: z
+    .array(
+      z.object({
+        name: z.string().max(200),
+        committed: z.boolean(),
+      }),
+    )
+    .max(50)
+    .default([]),
   supportPeople: z.array(z.string().max(200)).max(50).default([]),
   waterHave: z.array(z.string().max(200)).max(50).default([]),
   waterNeed: z.array(z.string().max(200)).max(50).default([]),
+  obstacles: z.string().max(10000).optional(),
 });
 
 export type SeedFormValues = z.infer<typeof seedFormSchema>;

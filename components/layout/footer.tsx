@@ -10,7 +10,7 @@ export function Footer() {
           width={220}
           height={70}
         />
-        <p>Growing our region, one seed at a time.</p>
+        <p>We&apos;re growing the best place in the world to live.</p>
         <p className="text-xs">Chattanooga National Park City</p>
       </div>
     </footer>

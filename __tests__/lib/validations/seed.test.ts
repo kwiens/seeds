@@ -11,6 +11,7 @@ describe("seedFormSchema", () => {
     supportPeople: [],
     waterHave: ["Tools"],
     waterNeed: ["Seeds"],
+    obstacles: "Need permits from the city.",
   };
 
   it("accepts valid seed data", () => {
@@ -87,15 +88,14 @@ describe("seedFormSchema", () => {
   });
 
   describe("array field limits", () => {
-    const arrayFields = [
+    const stringArrayFields = [
       "gardeners",
-      "roots",
       "supportPeople",
       "waterHave",
       "waterNeed",
     ] as const;
 
-    for (const field of arrayFields) {
+    for (const field of stringArrayFields) {
       it(`rejects ${field} items longer than 200 characters`, () => {
         const result = seedFormSchema.safeParse({
           ...validData,
@@ -128,5 +128,43 @@ describe("seedFormSchema", () => {
         expect(result.success).toBe(true);
       });
     }
+
+    it("rejects roots items with name longer than 200 characters", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        roots: [{ name: "a".repeat(201), committed: false }],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts roots items with name at exactly 200 characters", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        roots: [{ name: "a".repeat(200), committed: true }],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects roots with more than 50 items", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        roots: Array.from({ length: 51 }, (_, i) => ({
+          name: `org-${i}`,
+          committed: false,
+        })),
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts roots with exactly 50 items", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        roots: Array.from({ length: 50 }, (_, i) => ({
+          name: `org-${i}`,
+          committed: false,
+        })),
+      });
+      expect(result.success).toBe(true);
+    });
   });
 });

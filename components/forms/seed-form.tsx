@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { GripVertical, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,26 @@ import { SignInButton } from "@/components/auth/sign-in-button";
 import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
 import { createSeed, updateSeed } from "@/lib/actions/seeds";
 import type { Seed } from "@/lib/db/types";
+import { cn } from "@/lib/utils";
+
+interface RootItem {
+  name: string;
+  committed: boolean;
+}
+
+function parseRoots(raw: unknown): RootItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    if (typeof item === "string") return { name: item, committed: false };
+    if (typeof item === "object" && item && "name" in item) {
+      return {
+        name: String((item as RootItem).name),
+        committed: Boolean((item as RootItem).committed),
+      };
+    }
+    return { name: String(item), committed: false };
+  });
+}
 
 interface SeedFormProps {
   seed?: Seed;
@@ -50,12 +71,13 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
   const [category, setCategory] = useState<CategoryKey | "">(
     (seed?.category as CategoryKey) ?? "",
   );
-  const [roots, setRoots] = useState<string[]>(seed?.roots ?? []);
+  const [roots, setRoots] = useState<RootItem[]>(parseRoots(seed?.roots));
   const [supportPeople, setSupportPeople] = useState<string[]>(
     seed?.supportPeople ?? [],
   );
   const [waterHave, setWaterHave] = useState<string[]>(seed?.waterHave ?? []);
   const [waterNeed, setWaterNeed] = useState<string[]>(seed?.waterNeed ?? []);
+  const [obstacles, setObstacles] = useState(seed?.obstacles ?? "");
   const [imageUrl, setImageUrl] = useState<string | null>(
     seed?.imageUrl ?? null,
   );
@@ -83,6 +105,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       supportPeople,
       waterHave,
       waterNeed,
+      obstacles: obstacles || undefined,
     };
 
     startTransition(async () => {
@@ -202,46 +225,36 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           }}
         />
 
-        {/* Roots */}
-        <SortableList
-          items={roots}
-          onItemsChange={setRoots}
-          label={
-            <>
-              <SeedIcon name="roots" />
-              Roots (Organizations)
-            </>
-          }
-          placeholder="Add an organization..."
-        />
+        {/* Roots (Organizations) */}
+        <RootsList roots={roots} onRootsChange={setRoots} />
 
-        {/* Support people */}
+        {/* Guides (People) */}
         <SortableList
           items={supportPeople}
           onItemsChange={setSupportPeople}
           label={
             <>
               <SeedIcon name="support" />
-              Support (People)
+              Guides (People)
             </>
           }
           placeholder="Add a person..."
         />
 
-        {/* Water: Have */}
+        {/* Fertilizer: What do you have? */}
         <SortableList
           items={waterHave}
           onItemsChange={setWaterHave}
           label={
             <>
-              <SeedIcon name="water" />
-              Water: What do you have?
+              <SeedIcon name="soil" />
+              Fertilizer: What do you have?
             </>
           }
           placeholder="e.g. Funding, materials, venue..."
         />
 
-        {/* Water: Need */}
+        {/* Water: What do you need? */}
         <SortableList
           items={waterNeed}
           onItemsChange={setWaterNeed}
@@ -253,6 +266,21 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           }
           placeholder="e.g. Volunteers, permits, equipment..."
         />
+
+        {/* Obstacles */}
+        <div className="space-y-2">
+          <Label htmlFor="obstacles" className="flex items-center gap-2">
+            Obstacles
+          </Label>
+          <Textarea
+            id="obstacles"
+            value={obstacles}
+            onChange={(e) => setObstacles(e.target.value)}
+            maxLength={10000}
+            placeholder="Known obstacles, roadblocks, or challenges..."
+            rows={4}
+          />
+        </div>
 
         {/* Illustration (edit mode only) */}
         {seed && (
@@ -298,5 +326,118 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         </Button>
       </fieldset>
     </form>
+  );
+}
+
+function RootsList({
+  roots,
+  onRootsChange,
+}: {
+  roots: RootItem[];
+  onRootsChange: (roots: RootItem[]) => void;
+}) {
+  const [newRoot, setNewRoot] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  function addRoot() {
+    const trimmed = newRoot.trim();
+    if (!trimmed) return;
+    onRootsChange([...roots, { name: trimmed, committed: false }]);
+    setNewRoot("");
+  }
+
+  function removeRoot(index: number) {
+    onRootsChange(roots.filter((_, i) => i !== index));
+  }
+
+  function toggleCommitted(index: number) {
+    const updated = [...roots];
+    updated[index] = {
+      ...updated[index],
+      committed: !updated[index].committed,
+    };
+    onRootsChange(updated);
+  }
+
+  function handleDragStart(index: number) {
+    setDragIndex(index);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    const updated = [...roots];
+    const [moved] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, moved);
+    onRootsChange(updated);
+    setDragIndex(index);
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null);
+  }
+
+  return (
+    <div>
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium">
+        <SeedIcon name="roots" />
+        Roots (Organizations)
+      </span>
+      {roots.length > 0 && (
+        <ul className="mb-2 space-y-1">
+          {roots.map((root, index) => (
+            <li
+              key={`${root.name}-${index}`}
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm",
+                dragIndex === index && "opacity-50",
+              )}
+            >
+              <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
+              <span className="flex-1">{root.name}</span>
+              <button
+                type="button"
+                onClick={() => toggleCommitted(index)}
+                className={cn(
+                  "shrink-0 rounded px-2 py-0.5 text-xs font-medium",
+                  root.committed
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {root.committed ? "Committed" : "Not committed yet"}
+              </button>
+              <button
+                type="button"
+                onClick={() => removeRoot(index)}
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+              >
+                <X className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={newRoot}
+          onChange={(e) => setNewRoot(e.target.value)}
+          placeholder="Add an organization..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addRoot();
+            }
+          }}
+        />
+        <Button type="button" variant="outline" size="icon" onClick={addRoot}>
+          <Plus className="size-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
