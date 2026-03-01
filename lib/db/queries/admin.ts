@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seedSupports, seeds, users } from "@/lib/db/schema";
+import { adminEmails, seedSupports, seeds, users } from "@/lib/db/schema";
 import { supportCountSql } from "./seeds";
 
 export async function getAllSeeds() {
@@ -39,4 +39,25 @@ export async function getSupporterEmailsMap() {
     }
   }
   return map;
+}
+
+export async function getAdminEmails() {
+  return db
+    .select({
+      id: adminEmails.id,
+      email: adminEmails.email,
+      addedByName: users.name,
+      createdAt: adminEmails.createdAt,
+    })
+    .from(adminEmails)
+    .leftJoin(users, eq(adminEmails.addedBy, users.id))
+    .orderBy(desc(adminEmails.createdAt));
+}
+
+export async function isDbAdminEmail(email: string): Promise<boolean> {
+  const row = await db.query.adminEmails.findFirst({
+    where: eq(adminEmails.email, email.toLowerCase()),
+    columns: { id: true },
+  });
+  return !!row;
 }

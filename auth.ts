@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import NextAuth from "next-auth";
 import { db } from "@/lib/db";
+import { isDbAdminEmail } from "@/lib/db/queries/admin";
 import { users } from "@/lib/db/schema";
 import { authConfig } from "./auth.config";
 
@@ -16,7 +17,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!user.email) return false;
 
       const email = user.email.toLowerCase();
-      const isAdmin = adminEmails.includes(email);
+      const isEnvAdmin = adminEmails.includes(email);
+      const isAdmin = isEnvAdmin || (await isDbAdminEmail(email));
 
       const existing = await db.query.users.findFirst({
         where: eq(users.email, email),

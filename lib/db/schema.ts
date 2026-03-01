@@ -102,6 +102,16 @@ export const seedSupports = pgTable(
   (t) => [uniqueIndex("seed_supports_unique").on(t.seedId, t.userId)],
 );
 
+// Admin Emails
+export const adminEmails = pgTable("admin_emails", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  addedBy: uuid("added_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   seeds: many(seeds),
@@ -133,6 +143,13 @@ export const seedApprovalsRelations = relations(seedApprovals, ({ one }) => ({
   }),
   approver: one(users, {
     fields: [seedApprovals.approvedBy],
+    references: [users.id],
+  }),
+}));
+
+export const adminEmailsRelations = relations(adminEmails, ({ one }) => ({
+  addedByUser: one(users, {
+    fields: [adminEmails.addedBy],
     references: [users.id],
   }),
 }));
