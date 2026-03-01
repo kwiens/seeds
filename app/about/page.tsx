@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -62,24 +62,36 @@ const seedTraits: {
 
 const timeline = [
   {
-    phase: "Seed Kickoff",
-    when: "Early March",
-    detail: "Public kickoff, open idea sharing, early teams form",
+    phase: "Seed Drive Kickoff",
+    when: "March 5",
+    location: "iFixit, 812 E 12th St.",
+    detail: "5PM–8PM. Public kickoff, open idea sharing, early teams form",
   },
   {
-    phase: "Seed Sessions",
-    when: "Late March",
-    detail: "Feedback, strengthening, mentor & nonprofit support",
+    phase: "Seed Workshop",
+    when: "March 25",
+    location: "Chatt Library, 1001 Broad St",
+    detail:
+      "4:30PM–7:30PM. Feedback, strengthening, mentor & nonprofit support",
   },
   {
     phase: "Seed Expo",
-    when: "Early April",
-    detail: "Table-style expo, pitch practice, final collaborators",
+    when: "April 11",
+    location: "Choo Choo, 1400 Market St.",
+    detail: "11AM–7PM. Table-style expo, pitch practice, final collaborators",
   },
   {
-    phase: "Earth Week Pitch Night",
-    when: "April",
-    detail: "3-minute pitches, 20–30 Seeds, funding & support awarded",
+    phase: "Seed Pitch Night",
+    when: "April 24",
+    location: "Studio Ours, 1401 Fort St.",
+    detail:
+      "6PM–9PM. Ticketed. 3-minute pitches, 20–30 Seeds, funding & support awarded",
+  },
+  {
+    phase: "NPC Festival",
+    when: "April 25",
+    location: "Greenway Farm, 4960 Gann Store Rd.",
+    detail: "Gear sale, seed pitch, music + more",
   },
   {
     phase: "Harvest",
@@ -257,6 +269,12 @@ export default function AboutPage() {
                     <Calendar className="mr-1 inline size-3.5 align-text-bottom" />
                     {step.when}
                   </p>
+                  {"location" in step && step.location && (
+                    <p className="text-muted-foreground text-sm">
+                      <MapPin className="mr-1 inline size-3.5 align-text-bottom" />
+                      {step.location}
+                    </p>
+                  )}
                   <p className="text-muted-foreground mt-1 text-sm">
                     {step.detail}
                   </p>

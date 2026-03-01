@@ -275,4 +275,33 @@ describe("regenerateSeedImage", () => {
       error: "Failed to generate image. Please try again later.",
     });
   });
+
+  it("returns error when API key is missing", async () => {
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSeed({ createdBy: "user-1" }) as any,
+    );
+
+    const result = await regenerateSeedImage("seed-1");
+    expect(result).toEqual({ error: "Image generation is not configured." });
+  });
+
+  it("revalidates paths after successful regeneration", async () => {
+    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSeed({
+        createdBy: "user-1",
+        imageUrl: "https://old.com/img.png",
+      }) as any,
+    );
+    setupGeminiMock();
+    const chain = mockDbUpdateChain();
+    vi.mocked(db.update).mockReturnValue(chain as any);
+
+    await regenerateSeedImage("seed-1");
+
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/");
+  });
 });

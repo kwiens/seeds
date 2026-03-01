@@ -1377,7 +1377,7 @@ async function main() {
         locationLng: seedData.lng,
         locationAddress: seedData.address,
         gardeners: seedData.gardeners,
-        roots: seedData.roots,
+        roots: seedData.roots.map((name) => ({ name, committed: false })),
         waterHave: seedData.waterHave,
         waterNeed: seedData.waterNeed,
         status: "approved",
