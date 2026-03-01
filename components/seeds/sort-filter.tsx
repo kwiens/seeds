@@ -1,11 +1,17 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clock, Sun } from "lucide-react";
+import { Clock, Heart, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SortOption } from "@/lib/db/queries/seeds";
 
-export function SortFilter({ activeSort }: { activeSort: SortOption }) {
+export function SortFilter({
+  activeSort,
+  isSignedIn,
+}: {
+  activeSort: SortOption;
+  isSignedIn?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -40,6 +46,17 @@ export function SortFilter({ activeSort }: { activeSort: SortOption }) {
         <Sun className="size-4" />
         <span className="hidden sm:inline">Supported</span>
       </Button>
+      {isSignedIn && (
+        <Button
+          variant={activeSort === "mine" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setSort("mine")}
+          className="gap-1.5"
+        >
+          <Heart className="size-4" />
+          <span className="hidden sm:inline">Backing</span>
+        </Button>
+      )}
     </div>
   );
 }

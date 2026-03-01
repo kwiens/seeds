@@ -21,7 +21,7 @@ export interface CategoryInfo {
 
 export const categories: Record<CategoryKey, CategoryInfo> = {
   daily_access: {
-    label: "Daily Access",
+    label: "Everyday Access",
     icon: Sun,
     color: "emerald",
     bgClass: "bg-emerald-100 dark:bg-emerald-900/30",

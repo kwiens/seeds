@@ -28,10 +28,12 @@ import {
 export function SeedActions({
   seedId,
   status,
+  creatorEmail,
   supporterEmails,
 }: {
   seedId: string;
   status: string;
+  creatorEmail: string;
   supporterEmails?: string[];
 }) {
   const [isPending, startTransition] = useTransition();
@@ -62,14 +64,14 @@ export function SeedActions({
             Edit
           </Link>
         </DropdownMenuItem>
-        {supporterEmails && supporterEmails.length > 0 && (
-          <DropdownMenuItem asChild>
-            <a href={`mailto:${supporterEmails.join(",")}`}>
-              <Mail className="mr-2 size-4" />
-              Email Supporters
-            </a>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem asChild>
+          <a
+            href={`mailto:${[creatorEmail, ...(supporterEmails ?? [])].filter((v, i, a) => a.indexOf(v) === i).join(",")}`}
+          >
+            <Mail className="mr-2 size-4" />
+            Email{supporterEmails?.length ? " Team" : " Creator"}
+          </a>
+        </DropdownMenuItem>
         {status !== "archived" && (
           <DropdownMenuItem
             onClick={() =>

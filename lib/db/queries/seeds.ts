@@ -31,7 +31,7 @@ function buildVisibilityFilter(options: {
   return conditions.length > 1 ? and(...conditions) : conditions[0];
 }
 
-export type SortOption = "newest" | "supported";
+export type SortOption = "newest" | "supported" | "mine";
 
 export async function getApprovedSeeds(options: {
   category?: CategoryKey;
@@ -49,21 +49,51 @@ export async function getApprovedSeeds(options: {
       ? [desc(supportCountSql), desc(seeds.createdAt)]
       : [desc(seeds.createdAt)];
 
+  const selectFields = {
+    id: seeds.id,
+    name: seeds.name,
+    summary: seeds.summary,
+    category: seeds.category,
+    imageUrl: seeds.imageUrl,
+    locationLat: seeds.locationLat,
+    locationLng: seeds.locationLng,
+    status: seeds.status,
+    createdBy: seeds.createdBy,
+    createdAt: seeds.createdAt,
+    supportCount: supportCountSql,
+  };
+
+  // "mine" filter: only seeds the current user has supported
+  if (sort === "mine" && options.userId) {
+    const mineWhere = and(where, eq(seedSupports.userId, options.userId));
+
+    const [seedRows, countResult] = await Promise.all([
+      db
+        .select(selectFields)
+        .from(seeds)
+        .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
+        .where(mineWhere)
+        .orderBy(desc(seedSupports.createdAt))
+        .limit(SEEDS_PER_PAGE)
+        .offset(offset),
+      db
+        .select({ count: count() })
+        .from(seeds)
+        .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
+        .where(mineWhere),
+    ]);
+
+    return {
+      seeds: seedRows,
+      totalCount: countResult[0]?.count ?? 0,
+      totalPages: Math.ceil((countResult[0]?.count ?? 0) / SEEDS_PER_PAGE),
+      currentPage: page,
+    };
+  }
+
   const [seedRows, countResult] = await Promise.all([
     db
-      .select({
-        id: seeds.id,
-        name: seeds.name,
-        summary: seeds.summary,
-        category: seeds.category,
-        imageUrl: seeds.imageUrl,
-        locationLat: seeds.locationLat,
-        locationLng: seeds.locationLng,
-        status: seeds.status,
-        createdBy: seeds.createdBy,
-        createdAt: seeds.createdAt,
-        supportCount: supportCountSql,
-      })
+      .select(selectFields)
       .from(seeds)
       .where(where)
       .orderBy(...orderBy)

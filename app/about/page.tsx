@@ -181,7 +181,7 @@ export default function AboutPage() {
         <Separator className="my-10" />
 
         {/* Every Seed Has */}
-        <section>
+        <section id="every-seed-has">
           <h2 className="mb-6 text-2xl font-bold tracking-tight">
             Every Seed Has
           </h2>
@@ -189,6 +189,7 @@ export default function AboutPage() {
             {seedTraits.map((trait) => (
               <div
                 key={trait.label}
+                id={`seed-${trait.label.toLowerCase()}`}
                 className="rounded-xl border bg-card p-4 text-center"
               >
                 <div className="mb-3 flex justify-center">

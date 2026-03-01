@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { SeedMap } from "@/components/map/seed-map";
@@ -101,6 +102,15 @@ export function LocationPicker({
       <span className="mb-2 flex items-center gap-2 text-sm font-medium">
         <SeedIcon name="soil" />
         Soil (Location)
+        <a
+          href="/about#seed-soil"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-muted-foreground hover:text-foreground"
+          title="Learn more"
+        >
+          <Info className="size-3.5" />
+        </a>
       </span>
       <div className="relative">
         <Input

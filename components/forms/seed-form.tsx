@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { GripVertical, Plus, X } from "lucide-react";
+import { GripVertical, Info, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,20 @@ function parseRoots(raw: unknown): RootItem[] {
     }
     return { name: String(item), committed: false };
   });
+}
+
+function FieldInfoLink({ anchor }: { anchor: string }) {
+  return (
+    <a
+      href={`/about#seed-${anchor}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted-foreground hover:text-foreground"
+      title="Learn more"
+    >
+      <Info className="size-3.5" />
+    </a>
+  );
 }
 
 interface SeedFormProps {
@@ -158,6 +172,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           <Label htmlFor="summary" className="flex items-center gap-2">
             <SeedIcon name="idea" />
             Summary (The Idea)
+            <FieldInfoLink anchor="name" />
           </Label>
           <Textarea
             id="summary"
@@ -208,6 +223,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             <>
               <SeedIcon name="gardeners" />
               Gardeners (Project organizers)
+              <FieldInfoLink anchor="gardeners" />
             </>
           }
           placeholder="Add a gardener..."
@@ -236,6 +252,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             <>
               <SeedIcon name="support" />
               Guides (People)
+              <FieldInfoLink anchor="support" />
             </>
           }
           placeholder="Add a person..."
@@ -249,6 +266,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             <>
               <SeedIcon name="soil" />
               Fertilizer: What do you have?
+              <FieldInfoLink anchor="soil" />
             </>
           }
           placeholder="e.g. Funding, materials, venue..."
@@ -262,6 +280,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             <>
               <SeedIcon name="water" />
               Water: What do you need?
+              <FieldInfoLink anchor="water" />
             </>
           }
           placeholder="e.g. Volunteers, permits, equipment..."
@@ -382,6 +401,7 @@ function RootsList({
       <span className="mb-2 flex items-center gap-2 text-sm font-medium">
         <SeedIcon name="roots" />
         Roots (Organizations)
+        <FieldInfoLink anchor="roots" />
       </span>
       {roots.length > 0 && (
         <ul className="mb-2 space-y-1">

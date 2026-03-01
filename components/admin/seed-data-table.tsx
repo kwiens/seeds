@@ -137,6 +137,7 @@ export function AdminSeedTable({
                     <SeedActions
                       seedId={seed.id}
                       status={seed.status}
+                      creatorEmail={seed.creatorEmail}
                       supporterEmails={supporterEmailsMap[seed.id]}
                     />
                   </TableCell>

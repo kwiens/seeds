@@ -18,9 +18,13 @@ export default async function HomePage(props: {
   const session = await auth();
   const category = searchParams.category as CategoryKey | undefined;
   const page = Number(searchParams.page) || 1;
-  const sort = (
-    searchParams.sort === "supported" ? "supported" : "newest"
-  ) as SortOption;
+  const sortParam = searchParams.sort;
+  const sort: SortOption =
+    sortParam === "supported"
+      ? "supported"
+      : sortParam === "mine" && session?.user
+        ? "mine"
+        : "newest";
 
   const [seedResult, mapSeeds] = await Promise.all([
     getApprovedSeeds({ category, page, sort, userId: session?.user?.id }),
@@ -52,6 +56,7 @@ export default async function HomePage(props: {
           totalPages={seedResult.totalPages}
           activeCategory={category}
           activeSort={sort}
+          isSignedIn={!!session?.user}
         />
       </Suspense>
     </div>

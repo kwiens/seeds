@@ -74,7 +74,7 @@ Copy `.env.example` and fill in the values:
 
 | Category | Description |
 |----------|-------------|
-| Daily Access | Everyday access to nature and outdoors |
+| Everyday Access | Everyday access to nature and outdoors |
 | Outdoor Play | Parks, trails, and recreation |
 | Balanced Growth | Sustainable development and education |
 | Respect | Environmental stewardship and conservation |

@@ -39,6 +39,7 @@ export function HomeContent({
   totalPages,
   activeCategory,
   activeSort = "newest",
+  isSignedIn,
 }: {
   seeds: SeedRow[];
   mapSeeds: MapSeedRow[];
@@ -46,6 +47,7 @@ export function HomeContent({
   totalPages: number;
   activeCategory?: CategoryKey;
   activeSort?: SortOption;
+  isSignedIn?: boolean;
 }) {
   const [view, setView] = useState<"grid" | "map">("grid");
 
@@ -55,7 +57,9 @@ export function HomeContent({
         <CategoryFilter activeCategory={activeCategory} />
         <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
           <ViewToggle view={view} onViewChange={setView} />
-          {view === "grid" && <SortFilter activeSort={activeSort} />}
+          {view === "grid" && (
+            <SortFilter activeSort={activeSort} isSignedIn={isSignedIn} />
+          )}
         </div>
       </div>
 
