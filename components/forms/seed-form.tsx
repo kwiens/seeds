@@ -116,10 +116,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       <fieldset disabled={!isSignedIn || isPending} className="space-y-6">
         {/* Name */}
         <div className="space-y-2">
-          <Label htmlFor="name" className="flex items-center gap-2">
-            <SeedIcon name="idea" />
-            Name of Project
-          </Label>
+          <Label htmlFor="name">Name of Project</Label>
           <Input
             id="name"
             value={name}
@@ -144,7 +141,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             maxLength={10000}
-            placeholder="Describe your idea for Chattanooga..."
+            placeholder="Describe your idea for the community..."
             rows={6}
             required
           />

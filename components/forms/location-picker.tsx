@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { SeedMap } from "@/components/map/seed-map";
@@ -18,9 +18,14 @@ interface LocationPickerProps {
   }) => void;
 }
 
-interface GeocodingFeature {
-  place_name: string;
-  center: [number, number];
+interface Suggestion {
+  name: string;
+  full_address: string;
+  mapbox_id: string;
+}
+
+function generateSessionToken() {
+  return crypto.randomUUID();
 }
 
 export function LocationPicker({
@@ -30,8 +35,9 @@ export function LocationPicker({
   onLocationChange,
 }: LocationPickerProps) {
   const [query, setQuery] = useState(address);
-  const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const sessionToken = useRef(generateSessionToken());
 
   const searchAddress = useCallback(async (value: string) => {
     if (value.length < 3 || !MAPBOX_TOKEN) {
@@ -41,35 +47,53 @@ export function LocationPicker({
 
     try {
       const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?access_token=${MAPBOX_TOKEN}&proximity=-85.3097,35.0456&limit=5`,
+        `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(value)}&access_token=${MAPBOX_TOKEN}&proximity=-85.3097,35.0456&limit=5&language=en&session_token=${sessionToken.current}`,
       );
       if (!res.ok) {
         setSuggestions([]);
         return;
       }
       const data = await res.json();
-      const features = (data.features ?? []).filter(
-        (f: GeocodingFeature) =>
-          f.place_name && Array.isArray(f.center) && f.center.length === 2,
+      const items = (data.suggestions ?? []).filter(
+        (s: Suggestion) => s.mapbox_id && (s.full_address || s.name),
       );
-      setSuggestions(features);
+      setSuggestions(items);
       setShowSuggestions(true);
     } catch {
       setSuggestions([]);
     }
   }, []);
 
-  function selectSuggestion(feature: GeocodingFeature) {
-    if (!feature.center || feature.center.length < 2) return;
-    const [lngVal, latVal] = feature.center;
-    setQuery(feature.place_name);
+  async function selectSuggestion(suggestion: Suggestion) {
+    if (!MAPBOX_TOKEN) return;
+
     setSuggestions([]);
     setShowSuggestions(false);
-    onLocationChange({
-      address: feature.place_name,
-      lat: latVal,
-      lng: lngVal,
-    });
+
+    const displayName = suggestion.full_address || suggestion.name;
+    setQuery(displayName);
+
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/search/searchbox/v1/retrieve/${suggestion.mapbox_id}?access_token=${MAPBOX_TOKEN}&session_token=${sessionToken.current}`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const feature = data.features?.[0];
+      if (!feature?.geometry?.coordinates) return;
+
+      const [lngVal, latVal] = feature.geometry.coordinates;
+      onLocationChange({
+        address: feature.properties?.full_address || displayName,
+        lat: latVal,
+        lng: lngVal,
+      });
+    } catch {
+      // Suggestion was already selected visually, coordinates just won't update
+    }
+
+    // Start a new session for the next search
+    sessionToken.current = generateSessionToken();
   }
 
   return (
@@ -87,18 +111,24 @@ export function LocationPicker({
           }}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder="Search for an address in Chattanooga..."
+          placeholder="Search for a place or address..."
         />
         {showSuggestions && suggestions.length > 0 && (
           <ul className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg">
-            {suggestions.map((feature, i) => (
-              <li key={i}>
+            {suggestions.map((suggestion) => (
+              <li key={suggestion.mapbox_id}>
                 <button
                   type="button"
                   className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                  onMouseDown={() => selectSuggestion(feature)}
+                  onMouseDown={() => selectSuggestion(suggestion)}
                 >
-                  {feature.place_name}
+                  <span className="font-medium">{suggestion.name}</span>
+                  {suggestion.full_address && (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      — {suggestion.full_address}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}

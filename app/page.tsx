@@ -33,7 +33,7 @@ export default async function HomePage(props: {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Explore Seeds</h1>
           <p className="text-muted-foreground mt-1">
-            Discover community ideas growing across Chattanooga
+            Discover community ideas growing across our region
           </p>
         </div>
         <Button asChild>

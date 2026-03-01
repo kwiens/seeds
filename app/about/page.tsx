@@ -135,9 +135,12 @@ export default function AboutPage() {
             Chattanooga National Park City
           </h1>
           <p className="max-w-2xl text-lg text-white/85">
-            Our mission is to lead the world in improving quality of life for
-            all of us by treating nature as our most valuable shared asset —
-            today and for generations to come.
+            Our region — Chattanooga, Hamilton County, and the surrounding
+            communities within roughly 50 miles of downtown — is becoming
+            America&apos;s first National Park City. Our mission is to lead the
+            world in improving quality of life for all of us by treating nature
+            as our most valuable shared asset — today and for generations to
+            come.
           </p>
         </div>
       </section>
@@ -157,8 +160,8 @@ export default function AboutPage() {
             </p>
             <p>
               Seeds with the most community support get planted. Once
-              successful, they can spread to other parts of our community with
-              the benefit of shared learnings.
+              successful, they can spread to other parts of our region with the
+              benefit of shared learnings.
             </p>
           </div>
         </section>
