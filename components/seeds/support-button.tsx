@@ -3,6 +3,7 @@
 import { useOptimistic, useTransition } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { Sun } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { toggleSupport } from "@/lib/actions/support";
 
@@ -31,9 +32,20 @@ export function SupportButton({
       return;
     }
 
+    if (optimistic.supported) {
+      startTransition(async () => {
+        setOptimistic(optimistic);
+        await toggleSupport(seedId);
+      });
+      return;
+    }
+
     startTransition(async () => {
       setOptimistic(optimistic);
       await toggleSupport(seedId);
+      toast(
+        "Your email will be shared with the seed organizer so they can follow up with you.",
+      );
     });
   }
 

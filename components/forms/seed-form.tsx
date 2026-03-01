@@ -272,18 +272,18 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           placeholder="e.g. Funding, materials, venue..."
         />
 
-        {/* Water: What do you need? */}
+        {/* Water: What resources and funding do you need? */}
         <SortableList
           items={waterNeed}
           onItemsChange={setWaterNeed}
           label={
             <>
               <SeedIcon name="water" />
-              Water: What do you need?
+              Water: What resources and funding do you need?
               <FieldInfoLink anchor="water" />
             </>
           }
-          placeholder="e.g. Volunteers, permits, equipment..."
+          placeholder="e.g. Volunteers, money for materials, equipment..."
         />
 
         {/* Obstacles */}
