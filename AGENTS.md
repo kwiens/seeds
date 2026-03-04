@@ -61,6 +61,23 @@ pnpm build
 
 Deployed via Vercel.
 
+## Pre-Commit Checklist
+
+Always run all of these locally before committing changes. Fix any failures before committing.
+
+```bash
+# 1. Format and lint
+pnpm lint:fix
+
+# 2. Run tests
+pnpm test:run
+
+# 3. Type check (must pass with zero errors)
+pnpm exec tsc --noEmit
+```
+
+These three checks match what CI runs. If any fail locally, they will fail in CI. Fix all issues before committing.
+
 ## Architecture Overview
 
 ### Tech Stack
