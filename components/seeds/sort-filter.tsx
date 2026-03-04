@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clock, Heart, Sun } from "lucide-react";
+import { Clock, Flame, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SortOption } from "@/lib/db/queries/seeds";
 
@@ -43,7 +43,7 @@ export function SortFilter({
         onClick={() => setSort("supported")}
         className="gap-1.5"
       >
-        <Sun className="size-4" />
+        <Flame className="size-4" />
         <span className="hidden sm:inline">Supported</span>
       </Button>
       {isSignedIn && (
