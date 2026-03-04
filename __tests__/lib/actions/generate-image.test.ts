@@ -1,10 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterAll, describe, expect, it, vi, beforeEach } from "vitest";
 import { revalidatePath } from "next/cache";
 import {
   mockSession,
   mockAdminSession,
   mockSeed,
   mockDbUpdateChain,
+  setAuthMock,
 } from "../../test-utils";
 
 // Use vi.hoisted so mock fns are available inside vi.mock factories
@@ -73,14 +74,14 @@ describe("generateSeedImage", () => {
   });
 
   it("requires authentication", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     const result = await generateSeedImage("seed-1");
     expect(result).toEqual({ error: "You must be signed in." });
   });
 
   it("returns error when seed not found", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
 
     const result = await generateSeedImage("nonexistent");
@@ -88,7 +89,7 @@ describe("generateSeedImage", () => {
   });
 
   it("returns existing image URL without regenerating", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: "https://existing.com/image.png" }) as any,
     );
@@ -100,7 +101,7 @@ describe("generateSeedImage", () => {
   });
 
   it("generates image when seed has no image", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
@@ -128,7 +129,7 @@ describe("generateSeedImage", () => {
 
   it("returns error when API key is missing", async () => {
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
@@ -138,7 +139,7 @@ describe("generateSeedImage", () => {
   });
 
   it("returns error when Gemini returns no candidates", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
@@ -149,7 +150,7 @@ describe("generateSeedImage", () => {
   });
 
   it("returns error when Gemini returns no image data", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
@@ -162,7 +163,7 @@ describe("generateSeedImage", () => {
   });
 
   it("handles Gemini API errors gracefully", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
@@ -175,7 +176,7 @@ describe("generateSeedImage", () => {
   });
 
   it("revalidates paths after successful generation", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
@@ -201,14 +202,14 @@ describe("regenerateSeedImage", () => {
   });
 
   it("requires authentication", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     const result = await regenerateSeedImage("seed-1");
     expect(result).toEqual({ error: "You must be signed in." });
   });
 
   it("returns error when seed not found", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
 
     const result = await regenerateSeedImage("nonexistent");
@@ -216,7 +217,7 @@ describe("regenerateSeedImage", () => {
   });
 
   it("rejects regeneration by non-owner non-admin", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "other-user" }));
+    setAuthMock(auth, mockSession({ id: "other-user" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
@@ -228,7 +229,7 @@ describe("regenerateSeedImage", () => {
   });
 
   it("allows owner to regenerate", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({
         createdBy: "user-1",
@@ -248,7 +249,7 @@ describe("regenerateSeedImage", () => {
   });
 
   it("allows admin to regenerate any seed image", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "someone-else" }) as any,
     );
@@ -264,7 +265,7 @@ describe("regenerateSeedImage", () => {
   });
 
   it("handles Gemini API errors gracefully", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
@@ -278,7 +279,7 @@ describe("regenerateSeedImage", () => {
 
   it("returns error when API key is missing", async () => {
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
@@ -288,7 +289,7 @@ describe("regenerateSeedImage", () => {
   });
 
   it("revalidates paths after successful regeneration", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({
         createdBy: "user-1",

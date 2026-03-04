@@ -6,6 +6,7 @@ import {
   mockDbInsertSimpleChain,
   mockDbUpdateChain,
   mockDbDeleteChain,
+  setAuthMock,
 } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -31,7 +32,7 @@ describe("addAdminEmail", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     await expect(addAdminEmail("new@example.com")).rejects.toThrow(
       "Unauthorized",
@@ -39,7 +40,7 @@ describe("addAdminEmail", () => {
   });
 
   it("rejects non-admin users", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+    setAuthMock(auth, mockSession({ role: "user" }));
 
     await expect(addAdminEmail("new@example.com")).rejects.toThrow(
       "Unauthorized",
@@ -47,7 +48,7 @@ describe("addAdminEmail", () => {
   });
 
   it("returns error for invalid email", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
 
     const result = await addAdminEmail("not-an-email");
 
@@ -55,7 +56,7 @@ describe("addAdminEmail", () => {
   });
 
   it("returns error for empty email", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
 
     const result = await addAdminEmail("   ");
 
@@ -63,7 +64,7 @@ describe("addAdminEmail", () => {
   });
 
   it("returns error if email already exists in admin list", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.adminEmails.findFirst).mockResolvedValue({
       id: "existing-id",
     } as any);
@@ -74,7 +75,7 @@ describe("addAdminEmail", () => {
   });
 
   it("inserts email and revalidates on success", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.adminEmails.findFirst).mockResolvedValue(undefined);
     vi.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
     const insertChain = mockDbInsertSimpleChain();
@@ -92,7 +93,7 @@ describe("addAdminEmail", () => {
   });
 
   it("promotes existing user to admin", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.adminEmails.findFirst).mockResolvedValue(undefined);
     vi.mocked(db.query.users.findFirst).mockResolvedValue({
       id: "user-99",
@@ -111,7 +112,7 @@ describe("addAdminEmail", () => {
   });
 
   it("does not promote user already admin", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.adminEmails.findFirst).mockResolvedValue(undefined);
     vi.mocked(db.query.users.findFirst).mockResolvedValue({
       id: "user-99",
@@ -132,19 +133,19 @@ describe("removeAdminEmail", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     await expect(removeAdminEmail("id-1")).rejects.toThrow("Unauthorized");
   });
 
   it("rejects non-admin users", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+    setAuthMock(auth, mockSession({ role: "user" }));
 
     await expect(removeAdminEmail("id-1")).rejects.toThrow("Unauthorized");
   });
 
   it("returns error if admin email not found", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.adminEmails.findFirst).mockResolvedValue(undefined);
 
     const result = await removeAdminEmail("nonexistent-id");
@@ -153,7 +154,7 @@ describe("removeAdminEmail", () => {
   });
 
   it("deletes email and demotes user not in env var", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.adminEmails.findFirst).mockResolvedValue({
       email: "demote@example.com",
     } as any);
@@ -175,7 +176,7 @@ describe("removeAdminEmail", () => {
   });
 
   it("does not demote user if email is in env var", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
 
     const originalEnv = process.env.ADMIN_EMAILS;
     process.env.ADMIN_EMAILS = "protected@example.com";

@@ -8,6 +8,7 @@ import {
   validSeedFormData,
   mockDbInsertChain,
   mockDbUpdateChain,
+  setAuthMock,
 } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -29,28 +30,28 @@ describe("createSeed", () => {
   });
 
   it("requires authentication", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     const result = await createSeed(validSeedFormData());
     expect(result).toEqual({ error: "You must be signed in to plant a seed." });
   });
 
   it("validates input data", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
 
     const result = await createSeed({ name: "", summary: "", category: "bad" });
     expect(result).toHaveProperty("error");
   });
 
   it("rejects missing required fields", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
 
     const result = await createSeed({});
     expect(result).toHaveProperty("error");
   });
 
   it("creates seed and redirects on success", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     const chain = mockDbInsertChain([{ id: "new-seed-id" }]);
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
@@ -72,7 +73,7 @@ describe("createSeed", () => {
   });
 
   it("sets status to pending on creation", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     const chain = mockDbInsertChain([{ id: "seed-1" }]);
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
@@ -86,7 +87,7 @@ describe("createSeed", () => {
   });
 
   it("uses the authenticated user's id as createdBy", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "my-user-id" }));
+    setAuthMock(auth, mockSession({ id: "my-user-id" }));
     const chain = mockDbInsertChain([{ id: "seed-1" }]);
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
@@ -100,7 +101,7 @@ describe("createSeed", () => {
   });
 
   it("handles optional location fields", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     const chain = mockDbInsertChain([{ id: "seed-1" }]);
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
@@ -122,7 +123,7 @@ describe("createSeed", () => {
   });
 
   it("nullifies missing location fields", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     const chain = mockDbInsertChain([{ id: "seed-1" }]);
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
@@ -146,14 +147,14 @@ describe("updateSeed", () => {
   });
 
   it("requires authentication", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     const result = await updateSeed("seed-1", validSeedFormData());
     expect(result).toEqual({ error: "You must be signed in." });
   });
 
   it("returns error when seed not found", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
 
     const result = await updateSeed("nonexistent", validSeedFormData());
@@ -161,7 +162,7 @@ describe("updateSeed", () => {
   });
 
   it("rejects edit by non-owner non-admin", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "other-user" }));
+    setAuthMock(auth, mockSession({ id: "other-user" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
@@ -173,7 +174,7 @@ describe("updateSeed", () => {
   });
 
   it("allows owner to edit", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
@@ -191,7 +192,7 @@ describe("updateSeed", () => {
   });
 
   it("allows admin to edit any seed", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "someone-else" }) as any,
     );
@@ -206,7 +207,7 @@ describe("updateSeed", () => {
   });
 
   it("validates input before updating", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
@@ -217,7 +218,7 @@ describe("updateSeed", () => {
   });
 
   it("revalidates correct paths on success", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );

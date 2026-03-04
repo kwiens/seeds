@@ -1,4 +1,16 @@
+import type { Mock } from "vitest";
 import { vi } from "vitest";
+
+// --- Auth mock helper ---
+// next-auth v5 `auth` has overloaded types (session getter + middleware),
+// which confuses vi.mocked(). This helper casts to avoid the type error.
+
+export function setAuthMock(
+  authFn: unknown,
+  session: ReturnType<typeof mockSession> | null,
+) {
+  (authFn as Mock).mockResolvedValue(session);
+}
 
 // --- Mock session factories ---
 

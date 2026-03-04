@@ -5,6 +5,7 @@ import {
   mockAdminSession,
   mockDbUpdateChain,
   mockDbInsertSimpleChain,
+  setAuthMock,
 } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -31,19 +32,19 @@ describe("approveSeed", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     await expect(approveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("rejects non-admin users", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+    setAuthMock(auth, mockSession({ role: "user" }));
 
     await expect(approveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("approves seed and creates approval record via batch", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.batch).mockResolvedValue([] as any);
     const updateChain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(updateChain as any);
@@ -57,7 +58,7 @@ describe("approveSeed", () => {
   });
 
   it("revalidates correct paths", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     vi.mocked(db.batch).mockResolvedValue([] as any);
     const updateChain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(updateChain as any);
@@ -78,19 +79,19 @@ describe("archiveSeed", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     await expect(archiveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("rejects non-admin users", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+    setAuthMock(auth, mockSession({ role: "user" }));
 
     await expect(archiveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("archives seed by setting status", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -103,7 +104,7 @@ describe("archiveSeed", () => {
   });
 
   it("revalidates correct paths", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -120,19 +121,19 @@ describe("unarchiveSeed", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     await expect(unarchiveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("rejects non-admin users", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+    setAuthMock(auth, mockSession({ role: "user" }));
 
     await expect(unarchiveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("sets status to pending", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -145,7 +146,7 @@ describe("unarchiveSeed", () => {
   });
 
   it("revalidates correct paths", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -162,19 +163,19 @@ describe("unapproveSeed", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     await expect(unapproveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("rejects non-admin users", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ role: "user" }));
+    setAuthMock(auth, mockSession({ role: "user" }));
 
     await expect(unapproveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
   it("sets status to pending", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -187,7 +188,7 @@ describe("unapproveSeed", () => {
   });
 
   it("revalidates correct paths", async () => {
-    vi.mocked(auth).mockResolvedValue(mockAdminSession());
+    setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 

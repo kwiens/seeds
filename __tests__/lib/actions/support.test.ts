@@ -4,6 +4,7 @@ import {
   mockSession,
   mockDbInsertSimpleChain,
   mockDbDeleteChain,
+  setAuthMock,
 } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -25,7 +26,7 @@ describe("toggleSupport", () => {
   });
 
   it("requires authentication", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    setAuthMock(auth, null);
 
     const result = await toggleSupport("seed-1");
     expect(result).toEqual({
@@ -34,7 +35,7 @@ describe("toggleSupport", () => {
   });
 
   it("adds support when not already supporting", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seedSupports.findFirst).mockResolvedValue(undefined);
     const chain = mockDbInsertSimpleChain();
     vi.mocked(db.insert).mockReturnValue(chain as any);
@@ -51,7 +52,7 @@ describe("toggleSupport", () => {
   });
 
   it("removes support when already supporting", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "user-1" }));
+    setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seedSupports.findFirst).mockResolvedValue({
       id: "support-1",
       seedId: "seed-1",
@@ -69,7 +70,7 @@ describe("toggleSupport", () => {
   });
 
   it("revalidates correct paths", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession());
+    setAuthMock(auth, mockSession());
     vi.mocked(db.query.seedSupports.findFirst).mockResolvedValue(undefined);
     const chain = mockDbInsertSimpleChain();
     vi.mocked(db.insert).mockReturnValue(chain as any);
@@ -81,7 +82,7 @@ describe("toggleSupport", () => {
   });
 
   it("uses session user id, not client-supplied value", async () => {
-    vi.mocked(auth).mockResolvedValue(mockSession({ id: "real-user-id" }));
+    setAuthMock(auth, mockSession({ id: "real-user-id" }));
     vi.mocked(db.query.seedSupports.findFirst).mockResolvedValue(undefined);
     const chain = mockDbInsertSimpleChain();
     vi.mocked(db.insert).mockReturnValue(chain as any);
