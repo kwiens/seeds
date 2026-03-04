@@ -91,6 +91,10 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
   );
   const [waterHave, setWaterHave] = useState<string[]>(seed?.waterHave ?? []);
   const [waterNeed, setWaterNeed] = useState<string[]>(seed?.waterNeed ?? []);
+  const [locationDescription, setLocationDescription] = useState(
+    seed?.locationDescription ?? "",
+  );
+  const [budget, setBudget] = useState(seed?.budget ?? "");
   const [obstacles, setObstacles] = useState(seed?.obstacles ?? "");
   const [imageUrl, setImageUrl] = useState<string | null>(
     seed?.imageUrl ?? null,
@@ -112,6 +116,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       summary,
       gardeners,
       locationAddress: locationAddress || undefined,
+      locationDescription: locationDescription || undefined,
       locationLat: locationLat ?? undefined,
       locationLng: locationLng ?? undefined,
       category,
@@ -119,6 +124,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       supportPeople,
       waterHave,
       waterNeed,
+      budget: budget || undefined,
       obstacles: obstacles || undefined,
     };
 
@@ -153,13 +159,13 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       <fieldset disabled={!isSignedIn || isPending} className="space-y-6">
         {/* Name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Name of Project</Label>
+          <Label htmlFor="name">Seed Name</Label>
           <Input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={160}
-            placeholder="Give your seed a name..."
+            placeholder="Give your seed a catchy name that's fun to say"
             required
           />
           <p className="mt-1 text-xs text-muted-foreground">
@@ -171,7 +177,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <div className="space-y-2">
           <Label htmlFor="summary" className="flex items-center gap-2">
             <SeedIcon name="idea" />
-            Summary (The Idea)
+            The Idea
             <FieldInfoLink anchor="name" />
           </Label>
           <Textarea
@@ -179,7 +185,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             maxLength={10000}
-            placeholder="Describe your idea for the community..."
+            placeholder="Describe your idea"
             rows={6}
             required
           />
@@ -222,11 +228,11 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           label={
             <>
               <SeedIcon name="gardeners" />
-              Gardeners (Project organizers)
+              Gardeners (Who&apos;s responsible for this seed?)
               <FieldInfoLink anchor="gardeners" />
             </>
           }
-          placeholder="Add a gardener..."
+          placeholder="Add a gardener"
         />
 
         {/* Location */}
@@ -241,6 +247,18 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           }}
         />
 
+        {/* Location Description */}
+        <div className="space-y-2">
+          <Textarea
+            id="locationDescription"
+            value={locationDescription}
+            onChange={(e) => setLocationDescription(e.target.value)}
+            maxLength={10000}
+            placeholder="Describe this location, neighborhood or community"
+            rows={3}
+          />
+        </div>
+
         {/* Roots (Organizations) */}
         <RootsList roots={roots} onRootsChange={setRoots} />
 
@@ -251,11 +269,11 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           label={
             <>
               <SeedIcon name="support" />
-              Guides (People)
+              Guides (Experts who could support)
               <FieldInfoLink anchor="support" />
             </>
           }
-          placeholder="Add a person..."
+          placeholder="Add a person"
         />
 
         {/* Fertilizer: What do you have? */}
@@ -264,12 +282,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           onItemsChange={setWaterHave}
           label={
             <>
-              <SeedIcon name="soil" />
-              Fertilizer: What do you have?
+              <SeedIcon name="fertilizer" />
+              Fertilizer (Resources you already have)
               <FieldInfoLink anchor="soil" />
             </>
           }
-          placeholder="e.g. Funding, materials, venue..."
+          placeholder="Space, materials, volunteers…"
         />
 
         {/* Water: What resources and funding do you need? */}
@@ -279,12 +297,26 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
           label={
             <>
               <SeedIcon name="water" />
-              Water: What resources and funding do you need?
+              Water (Resources you need)
               <FieldInfoLink anchor="water" />
             </>
           }
-          placeholder="e.g. Volunteers, money for materials, equipment..."
+          placeholder="Land, venue, equipment…"
         />
+
+        {/* Budget */}
+        <div className="space-y-2">
+          <Label htmlFor="budget" className="flex items-center gap-2">
+            Budget (How much money do you think you need?)
+          </Label>
+          <Input
+            id="budget"
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+            maxLength={500}
+            placeholder="How much money do you think you need?"
+          />
+        </div>
 
         {/* Obstacles */}
         <div className="space-y-2">
@@ -296,7 +328,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             value={obstacles}
             onChange={(e) => setObstacles(e.target.value)}
             maxLength={10000}
-            placeholder="Known obstacles, roadblocks, or challenges..."
+            placeholder="Known obstacles, challenges or roadblocks"
             rows={4}
           />
         </div>
@@ -400,7 +432,7 @@ function RootsList({
     <div>
       <span className="mb-2 flex items-center gap-2 text-sm font-medium">
         <SeedIcon name="roots" />
-        Roots (Organizations)
+        Roots (Organizations that could help)
         <FieldInfoLink anchor="roots" />
       </span>
       {roots.length > 0 && (
@@ -446,7 +478,7 @@ function RootsList({
         <Input
           value={newRoot}
           onChange={(e) => setNewRoot(e.target.value)}
-          placeholder="Add an organization..."
+          placeholder="Add an organization"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();

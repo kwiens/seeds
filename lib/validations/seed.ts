@@ -11,6 +11,7 @@ export const seedFormSchema = z.object({
     .max(10000, "Summary must be 10,000 characters or fewer"),
   gardeners: z.array(z.string().max(200)).max(50).default([]),
   locationAddress: z.string().optional(),
+  locationDescription: z.string().max(10000).optional(),
   locationLat: z.number().optional(),
   locationLng: z.number().optional(),
   category: z.enum([
@@ -32,6 +33,7 @@ export const seedFormSchema = z.object({
   supportPeople: z.array(z.string().max(200)).max(50).default([]),
   waterHave: z.array(z.string().max(200)).max(50).default([]),
   waterNeed: z.array(z.string().max(200)).max(50).default([]),
+  budget: z.string().max(500).optional(),
   obstacles: z.string().max(10000).optional(),
 });
 

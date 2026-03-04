@@ -15,8 +15,9 @@ export default async function NewSeedPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Plant a Seed</h1>
         <p className="text-muted-foreground mt-1">
-          Share your idea to help our region grow. Every great project starts as
-          a seed.
+          Share your idea to improve the quality of life and access to nature in
+          your community. Build your team, create a plan and get support from
+          other passionate people!
         </p>
       </div>
       <SeedForm planterName={session?.user?.name ?? undefined} />

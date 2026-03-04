@@ -4,6 +4,7 @@ export type SeedIconName =
   | "idea"
   | "gardeners"
   | "soil"
+  | "fertilizer"
   | "roots"
   | "water"
   | "support"
@@ -14,6 +15,7 @@ const iconPaths: Record<SeedIconName, string> = {
   idea: "/icons/idea.svg",
   gardeners: "/icons/gardeners.svg",
   soil: "/icons/soil.svg",
+  fertilizer: "/icons/fertilizer.svg",
   roots: "/icons/roots.svg",
   water: "/icons/water.svg",
   support: "/icons/support.svg",
@@ -25,6 +27,7 @@ const iconLabels: Record<SeedIconName, string> = {
   idea: "Idea",
   gardeners: "Gardeners",
   soil: "Soil",
+  fertilizer: "Fertilizer",
   roots: "Roots",
   water: "Water",
   support: "Support",
@@ -34,7 +37,7 @@ const iconLabels: Record<SeedIconName, string> = {
 
 export function SeedIcon({
   name,
-  size = 32,
+  size = 38,
   className,
 }: {
   name: SeedIconName;

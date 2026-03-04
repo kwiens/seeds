@@ -15,6 +15,7 @@ function seedFormToDbFields(values: SeedFormValues) {
     summary: values.summary,
     gardeners: values.gardeners,
     locationAddress: values.locationAddress ?? null,
+    locationDescription: values.locationDescription ?? null,
     locationLat: values.locationLat ?? null,
     locationLng: values.locationLng ?? null,
     category: values.category,
@@ -22,6 +23,7 @@ function seedFormToDbFields(values: SeedFormValues) {
     supportPeople: values.supportPeople,
     waterHave: values.waterHave,
     waterNeed: values.waterNeed,
+    budget: values.budget ?? null,
     obstacles: values.obstacles ?? null,
   };
 }

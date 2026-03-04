@@ -101,7 +101,7 @@ export function LocationPicker({
     <div>
       <span className="mb-2 flex items-center gap-2 text-sm font-medium">
         <SeedIcon name="soil" />
-        Soil (Location)
+        Soil (The community this is for)
         <a
           href="/about#seed-soil"
           target="_blank"
@@ -121,7 +121,7 @@ export function LocationPicker({
           }}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder="Search for a place or address..."
+          placeholder="Search for places or a nearby address"
         />
         {showSuggestions && suggestions.length > 0 && (
           <ul className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg">

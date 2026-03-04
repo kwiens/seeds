@@ -58,7 +58,7 @@ function RootsDetailList({
     <div>
       <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
         <SeedIcon name="roots" />
-        Roots (Organizations)
+        Roots
       </h3>
       <ul className="space-y-1">
         {roots.map((root, i) => (
@@ -222,6 +222,11 @@ export default async function SeedPage(props: {
             lng={seed.locationLng!}
             address={seed.locationAddress}
           />
+          {seed.locationDescription && (
+            <p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">
+              {seed.locationDescription}
+            </p>
+          )}
         </div>
       )}
 
@@ -232,25 +237,29 @@ export default async function SeedPage(props: {
         <DetailList
           items={seed.gardeners}
           seedIcon="gardeners"
-          label="Gardeners (Organizers)"
+          label="Gardeners"
         />
         <RootsDetailList roots={parseRoots(seed.roots)} />
         <DetailList
           items={seed.supportPeople}
           seedIcon="support"
-          label="Guides (People)"
+          label="Guides"
         />
         <DetailList
           items={seed.waterHave}
-          seedIcon="soil"
-          label="Fertilizer: What We Have"
+          seedIcon="fertilizer"
+          label="Fertilizer"
         />
-        <DetailList
-          items={seed.waterNeed}
-          seedIcon="water"
-          label="Water: What We Need"
-        />
+        <DetailList items={seed.waterNeed} seedIcon="water" label="Water" />
       </div>
+
+      {/* Budget */}
+      {seed.budget && (
+        <div className="mt-8">
+          <h3 className="mb-2 text-sm font-semibold">Budget</h3>
+          <p className="text-muted-foreground text-sm">{seed.budget}</p>
+        </div>
+      )}
 
       {/* Obstacles */}
       {seed.obstacles && (
