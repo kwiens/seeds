@@ -77,12 +77,105 @@ describe("seedFormSchema", () => {
     }
   });
 
+  it("requires summary", () => {
+    const result = seedFormSchema.safeParse({ ...validData, summary: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts name at exactly 160 characters", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      name: "a".repeat(160),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts summary at exactly 10000 characters", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      summary: "a".repeat(10000),
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("accepts optional location fields", () => {
     const result = seedFormSchema.safeParse({
       ...validData,
       locationAddress: "123 Main St",
       locationLat: 35.0456,
       locationLng: -85.3097,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts optional locationDescription", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      locationDescription: "A neighborhood near downtown.",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("enforces locationDescription max length", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      locationDescription: "a".repeat(10001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts locationDescription at exactly 10000 characters", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      locationDescription: "a".repeat(10000),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts optional budget", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      budget: "$5,000",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("enforces budget max length", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      budget: "a".repeat(501),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts budget at exactly 500 characters", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      budget: "a".repeat(500),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts optional obstacles", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      obstacles: undefined,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("enforces obstacles max length", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      obstacles: "a".repeat(10001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts obstacles at exactly 10000 characters", () => {
+    const result = seedFormSchema.safeParse({
+      ...validData,
+      obstacles: "a".repeat(10000),
     });
     expect(result.success).toBe(true);
   });
