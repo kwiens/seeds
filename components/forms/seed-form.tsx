@@ -306,9 +306,6 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
 
         {/* Budget */}
         <div className="space-y-2">
-          <Label htmlFor="budget" className="flex items-center gap-2">
-            Budget (How much money do you think you need?)
-          </Label>
           <Input
             id="budget"
             value={budget}
