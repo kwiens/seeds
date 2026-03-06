@@ -117,7 +117,9 @@ export function AdminSeedTable({
                         href={`mailto:${seed.creatorEmail}`}
                         className="text-xs text-muted-foreground hover:underline"
                       >
-                        {seed.creatorEmail}
+                        {seed.creatorEmail.length > 25
+                          ? `${seed.creatorEmail.slice(0, 25)}…`
+                          : seed.creatorEmail}
                       </a>
                     </div>
                   </TableCell>

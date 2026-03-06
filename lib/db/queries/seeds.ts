@@ -18,10 +18,16 @@ function buildVisibilityFilter(options: {
 
   if (options.userId) {
     conditions.push(
-      or(eq(seeds.status, "approved"), eq(seeds.createdBy, options.userId)),
+      or(
+        eq(seeds.status, "approved"),
+        eq(seeds.status, "pending"),
+        eq(seeds.createdBy, options.userId),
+      ),
     );
   } else {
-    conditions.push(eq(seeds.status, "approved"));
+    conditions.push(
+      or(eq(seeds.status, "approved"), eq(seeds.status, "pending")),
+    );
   }
 
   if (options.category) {
