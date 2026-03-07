@@ -214,6 +214,33 @@ export default async function SeedPage(props: {
         </div>
       </div>
 
+      {/* Photos */}
+      {seed.photos.length > 0 && (
+        <div className="mb-8">
+          <h3 className="mb-3 text-sm font-semibold">Photos</h3>
+          <div className="flex flex-wrap gap-3">
+            {seed.photos.map((url, i) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg"
+              >
+                <Image
+                  src={url}
+                  alt={`${seed.name} photo ${i + 1}`}
+                  width={240}
+                  height={240}
+                  className="size-40 object-cover sm:size-48"
+                  sizes="(max-width: 640px) 160px, 192px"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Map — full width */}
       {hasLocation && (
         <div className="mb-8">

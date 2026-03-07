@@ -35,6 +35,7 @@ export const seedFormSchema = z.object({
   waterNeed: z.array(z.string().max(200)).max(50).default([]),
   budget: z.string().max(500).optional(),
   obstacles: z.string().max(10000).optional(),
+  photos: z.array(z.string().url()).max(5).default([]),
 });
 
 export type SeedFormValues = z.infer<typeof seedFormSchema>;

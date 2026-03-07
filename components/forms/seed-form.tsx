@@ -9,6 +9,7 @@ import { SeedIcon } from "@/components/icons/seed-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PhotoUpload } from "@/components/forms/photo-upload";
 import { RegenerateImageButton } from "@/components/seeds/regenerate-image-button";
 import {
   Select,
@@ -99,6 +100,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(
     seed?.imageUrl ?? null,
   );
+  const [photos, setPhotos] = useState<string[]>(seed?.photos ?? []);
 
   const isSignedIn = !!session?.user;
 
@@ -126,6 +128,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       waterNeed,
       budget: budget || undefined,
       obstacles: obstacles || undefined,
+      photos,
     };
 
     startTransition(async () => {
@@ -329,6 +332,9 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             rows={4}
           />
         </div>
+
+        {/* Photos */}
+        <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
 
         {/* Illustration (edit mode only) */}
         {seed && (
