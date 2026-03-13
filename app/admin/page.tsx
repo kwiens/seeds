@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
+import { ExportButtons } from "@/components/admin/export-buttons";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -43,6 +44,7 @@ export default async function AdminPage() {
       <Tabs defaultValue="seeds">
         <TabsList>
           <TabsTrigger value="seeds">Seeds</TabsTrigger>
+          <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -51,6 +53,18 @@ export default async function AdminPage() {
             seeds={allSeeds}
             supporterEmailsMap={Object.fromEntries(supporterEmailsMap)}
           />
+        </TabsContent>
+
+        <TabsContent value="export">
+          <div className="mt-4 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Export Data</h2>
+              <p className="text-muted-foreground text-sm">
+                Download seed data as CSV files.
+              </p>
+            </div>
+            <ExportButtons />
+          </div>
         </TabsContent>
 
         <TabsContent value="settings">
