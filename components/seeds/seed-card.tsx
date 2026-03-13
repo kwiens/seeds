@@ -34,7 +34,7 @@ export function SeedCard({
               src={imageUrl}
               alt={name}
               fill
-              className="object-cover transition-transform group-hover:scale-105"
+              className="object-cover scale-110 transition-transform group-hover:scale-115"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           </div>
