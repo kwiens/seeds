@@ -51,6 +51,13 @@ export function MobileNav({ isLoggedIn }: { isLoggedIn: boolean }) {
             About
           </Link>
           <Link
+            href="/faq"
+            onClick={() => setOpen(false)}
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            FAQ
+          </Link>
+          <Link
             href="/seeds/new"
             onClick={() => setOpen(false)}
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"

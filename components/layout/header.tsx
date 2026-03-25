@@ -34,6 +34,12 @@ export async function Header() {
             About
           </Link>
           <Link
+            href="/faq"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            FAQ
+          </Link>
+          <Link
             href="/seeds/new"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
