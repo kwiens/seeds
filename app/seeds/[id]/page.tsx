@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
+import { ExpandableText } from "@/components/seeds/expandable-text";
 import { SeedDetailMap } from "./seed-detail-map";
 import {
   getSeedById,
@@ -185,7 +186,7 @@ export default async function SeedPage(props: {
 
           {/* Summary */}
           <div className="prose prose-neutral dark:prose-invert max-w-none">
-            <p className="whitespace-pre-wrap">{seed.summary}</p>
+            <ExpandableText text={seed.summary} />
           </div>
         </div>
 
