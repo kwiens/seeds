@@ -8,7 +8,8 @@ export function Footer() {
           src="/logo-horizontal.svg"
           alt="National Park City Seeds"
           width={220}
-          height={70}
+          height={20}
+          className="h-auto"
         />
         <p>We&apos;re growing the best place in the world to live.</p>
         <p className="text-xs">Chattanooga National Park City</p>

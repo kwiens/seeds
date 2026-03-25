@@ -17,6 +17,7 @@ export async function Header() {
             alt="National Park City Seeds"
             width={137}
             height={44}
+            priority
           />
         </Link>
 

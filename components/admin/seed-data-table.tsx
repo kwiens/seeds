@@ -133,7 +133,7 @@ export function AdminSeedTable({
                     {seed.supportCount}
                   </TableCell>
                   <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                    {new Date(seed.createdAt).toLocaleDateString()}
+                    {new Date(seed.createdAt).toLocaleDateString("en-US")}
                   </TableCell>
                   <TableCell>
                     <SeedActions

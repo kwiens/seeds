@@ -4,7 +4,7 @@ import { authConfig } from "./auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   if (!req.auth) {
     return NextResponse.redirect(new URL("/api/auth/signin", req.url));
   }

@@ -78,7 +78,7 @@ export default async function DashboardSeedDetailPage(props: {
                   <TableCell className="font-medium">{s.name}</TableCell>
                   <TableCell>{s.email}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(s.createdAt).toLocaleDateString()}
+                    {new Date(s.createdAt).toLocaleDateString("en-US")}
                   </TableCell>
                 </TableRow>
               ))}
