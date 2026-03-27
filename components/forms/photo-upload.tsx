@@ -41,16 +41,18 @@ export function PhotoUpload({ photos, onPhotosChange }: PhotoUploadProps) {
     setError(null);
     setUploading(true);
 
+    // Track accumulated URLs so each successful upload is preserved
+    // even if a later upload in the batch fails
+    let current = photos;
     try {
-      const newUrls: string[] = [];
       for (const file of toUpload) {
         const blob = await upload("seeds/photos/photo", file, {
           access: "public",
           handleUploadUrl: "/api/upload",
         });
-        newUrls.push(blob.url);
+        current = [...current, blob.url];
+        onPhotosChange(current);
       }
-      onPhotosChange([...photos, ...newUrls]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -87,7 +89,7 @@ export function PhotoUpload({ photos, onPhotosChange }: PhotoUploadProps) {
               <button
                 type="button"
                 onClick={() => removePhoto(index)}
-                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm opacity-0 transition-all hover:bg-muted-foreground hover:text-background group-hover:opacity-100"
+                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-all hover:bg-muted-foreground hover:text-background"
               >
                 <X className="size-3" />
               </button>
