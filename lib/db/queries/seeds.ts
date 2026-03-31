@@ -1,4 +1,4 @@
-import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { seeds, seedSupports, users } from "@/lib/db/schema";
 import type { CategoryKey } from "@/lib/categories";
@@ -13,6 +13,7 @@ export const supportCountSql = sql<number>`(
 function buildVisibilityFilter(options: {
   category?: CategoryKey;
   userId?: string;
+  search?: string;
 }) {
   const conditions = [];
 
@@ -34,6 +35,13 @@ function buildVisibilityFilter(options: {
     conditions.push(eq(seeds.category, options.category));
   }
 
+  if (options.search) {
+    const pattern = `%${options.search}%`;
+    conditions.push(
+      or(ilike(seeds.name, pattern), ilike(seeds.summary, pattern)),
+    );
+  }
+
   return conditions.length > 1 ? and(...conditions) : conditions[0];
 }
 
@@ -44,6 +52,7 @@ export async function getApprovedSeeds(options: {
   page?: number;
   userId?: string;
   sort?: SortOption;
+  search?: string;
 }) {
   const { page = 1, sort = "newest" } = options;
   const offset = (page - 1) * SEEDS_PER_PAGE;
@@ -189,6 +198,7 @@ export async function hasUserSupported(seedId: string, userId: string) {
 export async function getAllSeedsForMap(options: {
   category?: CategoryKey;
   userId?: string;
+  search?: string;
 }) {
   const where = buildVisibilityFilter(options);
 

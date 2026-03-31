@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CategoryFilter } from "@/components/seeds/category-filter";
 import { Pagination } from "@/components/seeds/pagination";
+import { SearchInput } from "@/components/seeds/search-input";
 import { SeedListView } from "@/components/seeds/seed-list-view";
 import { SeedMapView } from "@/components/seeds/seed-map-view";
 import { SortFilter } from "@/components/seeds/sort-filter";
@@ -53,14 +54,18 @@ export function HomeContent({
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CategoryFilter activeCategory={activeCategory} />
-        <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <SearchInput />
+        <div className="flex items-center gap-2">
           <ViewToggle view={view} onViewChange={setView} />
           {view === "grid" && (
             <SortFilter activeSort={activeSort} isSignedIn={isSignedIn} />
           )}
         </div>
+      </div>
+
+      <div className="mb-6">
+        <CategoryFilter activeCategory={activeCategory} />
       </div>
 
       {view === "grid" ? (

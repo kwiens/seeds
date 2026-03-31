@@ -26,8 +26,8 @@ export function SeedCard({
   const Icon = info.icon;
 
   return (
-    <Link href={`/seeds/${id}`}>
-      <Card className="group h-full gap-0 py-0 transition-shadow hover:shadow-md">
+    <Link href={`/seeds/${id}`} className="min-w-0">
+      <Card className="group h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
         {imageUrl ? (
           <div className="relative h-52 overflow-hidden rounded-t-lg sm:h-40">
             <Image

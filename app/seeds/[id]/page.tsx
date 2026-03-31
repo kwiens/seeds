@@ -10,16 +10,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CategoryBadge } from "@/components/seeds/category-badge";
+import { CommentsSection } from "@/components/seeds/comments-section";
 import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
 import { ExpandableText } from "@/components/seeds/expandable-text";
 import { SeedDetailMap } from "./seed-detail-map";
+import { getCommentsBySeed } from "@/lib/db/queries/comments";
 import {
   getSeedById,
   getSeedSupportCount,
   getSeedSupporters,
   hasUserSupported,
 } from "@/lib/db/queries/seeds";
+import { formatDisplayName } from "@/lib/format";
 import { buildImagePrompt } from "@/lib/image-prompt";
 
 function DetailList({
@@ -89,12 +92,6 @@ function parseRoots(raw: unknown): { name: string; committed: boolean }[] {
   });
 }
 
-function formatSupporterName(name: string) {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
-}
-
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>;
 }) {
@@ -124,11 +121,13 @@ export default async function SeedPage(props: {
     notFound();
   }
 
-  const [supportCount, supporters, userHasSupported] = await Promise.all([
-    getSeedSupportCount(seed.id),
-    getSeedSupporters(seed.id, { includeEmail: canEdit }),
-    session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
-  ]);
+  const [supportCount, supporters, userHasSupported, comments] =
+    await Promise.all([
+      getSeedSupportCount(seed.id),
+      getSeedSupporters(seed.id, { includeEmail: canEdit }),
+      session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
+      getCommentsBySeed(seed.id),
+    ]);
 
   const hasLocation = seed.locationLat && seed.locationLng;
 
@@ -298,6 +297,16 @@ export default async function SeedPage(props: {
         </div>
       )}
 
+      {/* Community Insights */}
+      <div className="mt-8">
+        <CommentsSection
+          seedId={seed.id}
+          seedCreatorId={seed.createdBy}
+          comments={comments}
+          canModerate={canEdit}
+        />
+      </div>
+
       {/* Supporters */}
       {supporters.length > 0 && (
         <div className="mt-8">
@@ -311,12 +320,12 @@ export default async function SeedPage(props: {
               canEdit ? (
                 <a key={s.id} href={`mailto:${s.email}`} title={s.name}>
                   <Badge variant="secondary" className="hover:bg-secondary/80">
-                    {formatSupporterName(s.name)}
+                    {formatDisplayName(s.name)}
                   </Badge>
                 </a>
               ) : (
                 <Badge key={s.id} variant="secondary">
-                  {formatSupporterName(s.name)}
+                  {formatDisplayName(s.name)}
                 </Badge>
               ),
             )}

@@ -12,13 +12,19 @@ import {
 import { HomeContent } from "./home-content";
 
 export default async function HomePage(props: {
-  searchParams: Promise<{ category?: string; page?: string; sort?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    page?: string;
+    sort?: string;
+    search?: string;
+  }>;
 }) {
   const searchParams = await props.searchParams;
   const session = await auth();
   const category = searchParams.category as CategoryKey | undefined;
   const page = Number(searchParams.page) || 1;
   const sortParam = searchParams.sort;
+  const search = searchParams.search || undefined;
   const sort: SortOption =
     sortParam === "supported"
       ? "supported"
@@ -27,12 +33,18 @@ export default async function HomePage(props: {
         : "newest";
 
   const [seedResult, mapSeeds] = await Promise.all([
-    getApprovedSeeds({ category, page, sort, userId: session?.user?.id }),
-    getAllSeedsForMap({ category, userId: session?.user?.id }),
+    getApprovedSeeds({
+      category,
+      page,
+      sort,
+      userId: session?.user?.id,
+      search,
+    }),
+    getAllSeedsForMap({ category, userId: session?.user?.id, search }),
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-6xl overflow-x-hidden px-4 py-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Explore Seeds</h1>

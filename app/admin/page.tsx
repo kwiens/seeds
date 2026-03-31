@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getAllComments } from "@/lib/db/queries/comments";
 import {
   getAdminEmails,
   getAllSeeds,
@@ -26,11 +28,13 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [allSeeds, supporterEmailsMap, adminEmails] = await Promise.all([
-    getAllSeeds(),
-    getSupporterEmailsMap(),
-    getAdminEmails(),
-  ]);
+  const [allSeeds, supporterEmailsMap, adminEmails, allComments] =
+    await Promise.all([
+      getAllSeeds(),
+      getSupporterEmailsMap(),
+      getAdminEmails(),
+      getAllComments(),
+    ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -44,6 +48,7 @@ export default async function AdminPage() {
       <Tabs defaultValue="seeds">
         <TabsList>
           <TabsTrigger value="seeds">Seeds</TabsTrigger>
+          <TabsTrigger value="insights">Comments</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -53,6 +58,18 @@ export default async function AdminPage() {
             seeds={allSeeds}
             supporterEmailsMap={Object.fromEntries(supporterEmailsMap)}
           />
+        </TabsContent>
+
+        <TabsContent value="insights">
+          <div className="mt-4 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Community Insights</h2>
+              <p className="text-muted-foreground text-sm">
+                View and moderate insights across all seeds.
+              </p>
+            </div>
+            <AdminCommentsTable comments={allComments} />
+          </div>
         </TabsContent>
 
         <TabsContent value="export">
