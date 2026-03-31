@@ -236,7 +236,7 @@ function CommentCard({
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <div className="flex items-center gap-x-2">
             <span className="text-sm font-medium">
               {formatDisplayName(comment.userName)}
             </span>
@@ -248,59 +248,58 @@ function CommentCard({
             <span className="text-muted-foreground text-xs">
               {formatRelativeTime(comment.createdAt)}
             </span>
-          </div>
-          <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-sm">
-            {comment.content}
-          </p>
-
-          {canModerate && (
-            <div className="mt-1.5 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-              {showReplyButton && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
-                  onClick={onReply}
-                >
-                  <Reply className="mr-1 size-3" />
-                  Reply
-                </Button>
-              )}
-              <Dialog>
-                <DialogTrigger asChild>
+            {canModerate && (
+              <div className="ml-auto flex gap-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                {showReplyButton && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
+                    onClick={onReply}
                   >
-                    <Archive className="mr-1 size-3" />
-                    Remove
+                    <Reply className="size-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Reply</span>
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Remove this insight?</DialogTitle>
-                    <DialogDescription>
-                      This insight will be archived and hidden from the page.
-                      Admins can restore it later.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                )}
+                <Dialog>
+                  <DialogTrigger asChild>
                     <Button
-                      variant="destructive"
-                      onClick={handleArchive}
-                      disabled={isPending}
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
                     >
-                      Remove
+                      <Archive className="size-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Remove</span>
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Remove this insight?</DialogTitle>
+                      <DialogDescription>
+                        This insight will be archived and hidden from the page.
+                        Admins can restore it later.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <Button
+                        variant="destructive"
+                        onClick={handleArchive}
+                        disabled={isPending}
+                      >
+                        Remove
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+          </div>
+          <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-sm">
+            {comment.content}
+          </p>
         </div>
       </div>
     </div>
