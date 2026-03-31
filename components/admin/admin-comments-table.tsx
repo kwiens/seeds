@@ -101,7 +101,10 @@ export function AdminCommentsTable({ comments }: { comments: AdminComment[] }) {
               </TableCell>
               <TableCell className="text-sm">{comment.userName}</TableCell>
               <TableCell>
-                <p className="max-w-[300px] truncate text-sm">
+                <p
+                  className="max-w-[300px] truncate text-sm"
+                  title={comment.content}
+                >
                   {comment.content}
                 </p>
               </TableCell>

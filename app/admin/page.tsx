@@ -48,7 +48,7 @@ export default async function AdminPage() {
       <Tabs defaultValue="seeds">
         <TabsList>
           <TabsTrigger value="seeds">Seeds</TabsTrigger>
-          <TabsTrigger value="insights">Community Insights</TabsTrigger>
+          <TabsTrigger value="insights">Comments</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
