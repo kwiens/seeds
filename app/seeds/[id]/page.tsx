@@ -92,8 +92,6 @@ function parseRoots(raw: unknown): { name: string; committed: boolean }[] {
   });
 }
 
-const formatSupporterName = formatDisplayName;
-
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>;
 }) {
@@ -322,12 +320,12 @@ export default async function SeedPage(props: {
               canEdit ? (
                 <a key={s.id} href={`mailto:${s.email}`} title={s.name}>
                   <Badge variant="secondary" className="hover:bg-secondary/80">
-                    {formatSupporterName(s.name)}
+                    {formatDisplayName(s.name)}
                   </Badge>
                 </a>
               ) : (
                 <Badge key={s.id} variant="secondary">
-                  {formatSupporterName(s.name)}
+                  {formatDisplayName(s.name)}
                 </Badge>
               ),
             )}

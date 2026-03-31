@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { addComment, archiveComment } from "@/lib/actions/comments";
+import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
 
 interface CommentRow {
@@ -96,7 +97,7 @@ function CommentForm({
   const { data: session } = useSession();
   const [content, setContent] = useState("");
   const [isPending, startTransition] = useTransition();
-  const remaining = 1000 - content.length;
+  const remaining = COMMENT_MAX_LENGTH - content.length;
 
   if (!session) {
     return (
@@ -127,7 +128,7 @@ function CommentForm({
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        maxLength={1000}
+        maxLength={COMMENT_MAX_LENGTH}
         placeholder={
           placeholder ??
           "Maybe you know someone who could help, a similar project worth connecting, or just a thought worth sharing…"
@@ -138,7 +139,7 @@ function CommentForm({
         <span
           className={`text-xs ${remaining < 50 ? "text-destructive font-medium" : "text-muted-foreground"}`}
         >
-          {remaining.toLocaleString()}/1,000
+          {remaining.toLocaleString()}/{COMMENT_MAX_LENGTH.toLocaleString()}
         </span>
         <Button
           size="sm"
@@ -175,7 +176,6 @@ function CommentThread({
         showReplyButton={canModerate}
       />
 
-      {/* Replies */}
       {comment.replies.length > 0 && (
         <div className="mt-3 ml-8 space-y-3 border-l-2 pl-4">
           {comment.replies.map((reply) => (
@@ -189,7 +189,6 @@ function CommentThread({
         </div>
       )}
 
-      {/* Reply form */}
       {showReply && (
         <div className="mt-3 ml-8 border-l-2 pl-4">
           <CommentForm

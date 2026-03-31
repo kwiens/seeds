@@ -20,14 +20,24 @@ export async function getCommentsBySeed(seedId: string) {
     )
     .orderBy(desc(seedComments.createdAt));
 
-  const topLevel = rows.filter((r) => r.parentId === null);
-  const replies = rows.filter((r) => r.parentId !== null);
+  const topLevel: typeof rows = [];
+  const repliesByParent = new Map<string, typeof rows>();
+
+  for (const row of rows) {
+    if (row.parentId === null) {
+      topLevel.push(row);
+    } else {
+      const list = repliesByParent.get(row.parentId) ?? [];
+      list.push(row);
+      repliesByParent.set(row.parentId, list);
+    }
+  }
 
   return topLevel.map((comment) => ({
     ...comment,
-    replies: replies
-      .filter((r) => r.parentId === comment.id)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+    replies: (repliesByParent.get(comment.id) ?? []).sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    ),
   }));
 }
 

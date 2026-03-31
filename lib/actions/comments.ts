@@ -3,6 +3,8 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { canEditSeed } from "@/lib/auth-utils";
+import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { seedComments, seeds } from "@/lib/db/schema";
 
@@ -17,20 +19,19 @@ export async function addComment(
   }
 
   const trimmed = content.trim();
-  if (!trimmed || trimmed.length > 1000) {
-    return { error: "Insight must be between 1 and 1,000 characters." };
+  if (!trimmed || trimmed.length > COMMENT_MAX_LENGTH) {
+    return {
+      error: `Insight must be between 1 and ${COMMENT_MAX_LENGTH.toLocaleString()} characters.`,
+    };
   }
 
-  // Replies are restricted to seed creator and admins
   if (parentId) {
     const seed = await db.query.seeds.findFirst({
       where: eq(seeds.id, seedId),
       columns: { createdBy: true },
     });
     if (!seed) return { error: "Seed not found." };
-    const isCreatorOrAdmin =
-      session.user.id === seed.createdBy || session.user.role === "admin";
-    if (!isCreatorOrAdmin) {
+    if (!canEditSeed(session, seed)) {
       return { error: "Only the seed creator or admins can reply." };
     }
   }
@@ -59,9 +60,7 @@ export async function archiveComment(commentId: string) {
 
   if (!comment) return { error: "Comment not found." };
 
-  const isCreatorOrAdmin =
-    session.user.id === comment.seed.createdBy || session.user.role === "admin";
-  if (!isCreatorOrAdmin) {
+  if (!canEditSeed(session, { createdBy: comment.seed.createdBy })) {
     return { error: "You do not have permission to remove this insight." };
   }
 
