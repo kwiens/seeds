@@ -12,6 +12,9 @@ export function SearchInput() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    const currentSearch = searchParams.get("search") ?? "";
+    if (value === currentSearch) return;
+
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {

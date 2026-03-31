@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
 import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { seedComments, seeds } from "@/lib/db/schema";
+import { seedComments } from "@/lib/db/schema";
 
 export async function addComment(
   seedId: string,
@@ -26,12 +26,17 @@ export async function addComment(
   }
 
   if (parentId) {
-    const seed = await db.query.seeds.findFirst({
-      where: eq(seeds.id, seedId),
-      columns: { createdBy: true },
+    const parent = await db.query.seedComments.findFirst({
+      where: eq(seedComments.id, parentId),
+      with: { seed: { columns: { id: true, createdBy: true } } },
     });
-    if (!seed) return { error: "Seed not found." };
-    if (!canEditSeed(session, seed)) {
+    if (!parent || parent.seed.id !== seedId) {
+      return { error: "Parent comment not found." };
+    }
+    if (parent.parentId !== null) {
+      return { error: "Replies to replies are not supported." };
+    }
+    if (!canEditSeed(session, { createdBy: parent.seed.createdBy })) {
       return { error: "Only the seed creator or admins can reply." };
     }
   }
