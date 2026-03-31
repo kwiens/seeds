@@ -94,7 +94,8 @@ export function AdminCommentsTable({ comments }: { comments: AdminComment[] }) {
               <TableCell>
                 <Link
                   href={`/seeds/${comment.seedId}`}
-                  className="text-sm font-medium hover:underline"
+                  className="block max-w-[400px] truncate text-sm font-medium hover:underline"
+                  title={comment.seedName}
                 >
                   {comment.seedName}
                 </Link>

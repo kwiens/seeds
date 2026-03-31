@@ -105,7 +105,8 @@ export function AdminSeedTable({
                   <TableCell>
                     <Link
                       href={`/seeds/${seed.id}`}
-                      className="font-medium hover:underline"
+                      className="block max-w-[400px] truncate font-medium hover:underline"
+                      title={seed.name}
                     >
                       {seed.name}
                     </Link>
