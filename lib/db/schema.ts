@@ -109,6 +109,23 @@ export const seedSupports = pgTable(
   (t) => [uniqueIndex("seed_supports_unique").on(t.seedId, t.userId)],
 );
 
+// Seed Comments (Community Insights)
+export const seedComments = pgTable("seed_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  seedId: uuid("seed_id")
+    .notNull()
+    .references(() => seeds.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  content: text("content").notNull(),
+  parentId: uuid("parent_id"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+});
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -124,12 +141,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   seeds: many(seeds),
   supports: many(seedSupports),
   approvals: many(seedApprovals),
+  comments: many(seedComments),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
   creator: one(users, { fields: [seeds.createdBy], references: [users.id] }),
   supports: many(seedSupports),
   approvals: many(seedApprovals),
+  comments: many(seedComments),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -153,6 +172,20 @@ export const seedApprovalsRelations = relations(seedApprovals, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const seedCommentsRelations = relations(
+  seedComments,
+  ({ one, many }) => ({
+    seed: one(seeds, { fields: [seedComments.seedId], references: [seeds.id] }),
+    user: one(users, { fields: [seedComments.userId], references: [users.id] }),
+    parent: one(seedComments, {
+      fields: [seedComments.parentId],
+      references: [seedComments.id],
+      relationName: "commentReplies",
+    }),
+    replies: many(seedComments, { relationName: "commentReplies" }),
+  }),
+);
 
 export const adminEmailsRelations = relations(adminEmails, ({ one }) => ({
   addedByUser: one(users, {

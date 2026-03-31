@@ -8,6 +8,13 @@
       "when": 1772589821483,
       "tag": "0000_broad_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774917593606,
+      "tag": "0001_worthless_proemial_gods",
+      "breakpoints": true
     }
   ]
 }
