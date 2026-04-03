@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { seeds } from "@/lib/db/schema";
 
-const BASE_URL = "https://seeds-cha.vercel.app";
+const BASE_URL = "https://www.npcseeds.org";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const approvedSeeds = await db

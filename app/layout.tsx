@@ -14,9 +14,31 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "Seeds | Chattanooga National Park City",
+  metadataBase: new URL("https://www.npcseeds.org"),
+  title: "National Park City Seeds",
   description:
-    "Plant the seeds of change in Chattanooga. Submit community project proposals, support your neighbors' ideas, and help our National Park City grow.",
+    "Grow the best place in the world to live. Community-led projects across Chattanooga.",
+  openGraph: {
+    title: "National Park City Seeds",
+    description:
+      "Grow the best place in the world to live. Community-led projects across Chattanooga.",
+    images: [
+      {
+        url: "/npc_landscape_chattanooga.jpg",
+        width: 1000,
+        height: 522,
+        alt: "Chattanooga National Park City landscape",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "National Park City Seeds",
+    description:
+      "Grow the best place in the world to live. Community-led projects across Chattanooga.",
+    images: ["/npc_landscape_chattanooga.jpg"],
+  },
 };
 
 export default function RootLayout({

@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: "/admin",
     },
-    sitemap: "https://seeds-cha.vercel.app/sitemap.xml",
+    sitemap: "https://www.npcseeds.org/sitemap.xml",
   };
 }
