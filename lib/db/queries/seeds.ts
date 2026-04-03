@@ -38,7 +38,11 @@ function buildVisibilityFilter(options: {
   if (options.search) {
     const pattern = `%${options.search}%`;
     conditions.push(
-      or(ilike(seeds.name, pattern), ilike(seeds.summary, pattern)),
+      or(
+        ilike(seeds.name, pattern),
+        ilike(seeds.summary, pattern),
+        ilike(users.name, pattern),
+      ),
     );
   }
 
@@ -86,6 +90,7 @@ export async function getApprovedSeeds(options: {
       db
         .select(selectFields)
         .from(seeds)
+        .innerJoin(users, eq(seeds.createdBy, users.id))
         .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
         .where(mineWhere)
         .orderBy(desc(seedSupports.createdAt))
@@ -94,6 +99,7 @@ export async function getApprovedSeeds(options: {
       db
         .select({ count: count() })
         .from(seeds)
+        .innerJoin(users, eq(seeds.createdBy, users.id))
         .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
         .where(mineWhere),
     ]);
@@ -110,11 +116,16 @@ export async function getApprovedSeeds(options: {
     db
       .select(selectFields)
       .from(seeds)
+      .innerJoin(users, eq(seeds.createdBy, users.id))
       .where(where)
       .orderBy(...orderBy)
       .limit(SEEDS_PER_PAGE)
       .offset(offset),
-    db.select({ count: count() }).from(seeds).where(where),
+    db
+      .select({ count: count() })
+      .from(seeds)
+      .innerJoin(users, eq(seeds.createdBy, users.id))
+      .where(where),
   ]);
 
   return {
@@ -211,5 +222,6 @@ export async function getAllSeedsForMap(options: {
       locationLng: seeds.locationLng,
     })
     .from(seeds)
+    .innerJoin(users, eq(seeds.createdBy, users.id))
     .where(where);
 }
