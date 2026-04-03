@@ -101,6 +101,9 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
     seed?.imageUrl ?? null,
   );
   const [photos, setPhotos] = useState<string[]>(seed?.photos ?? []);
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(
+    seed?.coverPhotoUrl ?? null,
+  );
 
   const isSignedIn = !!session?.user;
 
@@ -129,6 +132,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       budget: budget || undefined,
       obstacles: obstacles || undefined,
       photos,
+      coverPhotoUrl: coverPhotoUrl ?? null,
     };
 
     startTransition(async () => {
@@ -334,7 +338,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         </div>
 
         {/* Photos */}
-        <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+        <PhotoUpload
+          photos={photos}
+          onPhotosChange={setPhotos}
+          coverPhotoUrl={coverPhotoUrl}
+          onCoverPhotoChange={setCoverPhotoUrl}
+        />
 
         {/* Illustration (edit mode only) */}
         {seed && (

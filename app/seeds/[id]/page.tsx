@@ -191,7 +191,24 @@ export default async function SeedPage(props: {
 
         {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
-          {seed.imageUrl ? (
+          {seed.coverPhotoUrl ? (
+            <a
+              href={seed.coverPhotoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-2xl"
+            >
+              <Image
+                src={seed.coverPhotoUrl}
+                alt={seed.name}
+                width={720}
+                height={720}
+                className="h-auto w-full"
+                sizes="(max-width: 768px) 100vw, 360px"
+                priority
+              />
+            </a>
+          ) : seed.imageUrl ? (
             <a
               href={seed.imageUrl}
               target="_blank"
@@ -214,31 +231,54 @@ export default async function SeedPage(props: {
         </div>
       </div>
 
-      {/* Photos */}
-      {seed.photos.length > 0 && (
-        <div className="mb-8">
-          <h3 className="mb-3 text-sm font-semibold">Photos</h3>
-          <div className="grid grid-cols-3 gap-3">
-            {seed.photos.map((url, i) => (
-              <a
-                key={url}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative block aspect-square overflow-hidden rounded-lg"
-              >
-                <Image
-                  src={url}
-                  alt={`${seed.name} photo ${i + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 33vw, 280px"
-                />
-              </a>
-            ))}
+      {/* Photos — exclude cover (shown above), include AI illustration when cover is a user photo */}
+      {(() => {
+        const displayPhotos = seed.coverPhotoUrl
+          ? seed.photos.filter((url) => url !== seed.coverPhotoUrl)
+          : seed.photos;
+        const showAiInGrid = seed.coverPhotoUrl && seed.imageUrl;
+        if (displayPhotos.length === 0 && !showAiInGrid) return null;
+        return (
+          <div className="mb-8">
+            <h3 className="mb-3 text-sm font-semibold">Photos</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {displayPhotos.map((url, i) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block aspect-square overflow-hidden rounded-lg"
+                >
+                  <Image
+                    src={url}
+                    alt={`${seed.name} photo ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 33vw, 280px"
+                  />
+                </a>
+              ))}
+              {showAiInGrid && (
+                <a
+                  href={seed.imageUrl!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block aspect-square overflow-hidden rounded-lg"
+                >
+                  <Image
+                    src={seed.imageUrl!}
+                    alt={`${seed.name} illustration`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 33vw, 280px"
+                  />
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Map — full width */}
       {hasLocation && (

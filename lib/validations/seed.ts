@@ -36,6 +36,7 @@ export const seedFormSchema = z.object({
   budget: z.string().max(500).optional(),
   obstacles: z.string().max(10000).optional(),
   photos: z.array(z.string().url()).max(5).default([]),
+  coverPhotoUrl: z.string().url().nullable().optional(),
 });
 
 export type SeedFormValues = z.infer<typeof seedFormSchema>;
