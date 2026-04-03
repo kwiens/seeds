@@ -264,7 +264,7 @@ export default async function SeedPage(props: {
                   href={seed.imageUrl!}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative block aspect-square overflow-hidden rounded-lg"
+                  className="relative block aspect-3/4 overflow-hidden rounded-lg"
                 >
                   <Image
                     src={seed.imageUrl!}
