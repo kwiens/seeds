@@ -231,13 +231,12 @@ export default async function SeedPage(props: {
         </div>
       </div>
 
-      {/* Photos — exclude cover (shown above), include AI illustration when cover is a user photo */}
+      {/* Photos — exclude cover photo (already shown as primary) */}
       {(() => {
         const displayPhotos = seed.coverPhotoUrl
           ? seed.photos.filter((url) => url !== seed.coverPhotoUrl)
           : seed.photos;
-        const showAiInGrid = seed.coverPhotoUrl && seed.imageUrl;
-        if (displayPhotos.length === 0 && !showAiInGrid) return null;
+        if (displayPhotos.length === 0) return null;
         return (
           <div className="mb-8">
             <h3 className="mb-3 text-sm font-semibold">Photos</h3>
@@ -259,22 +258,6 @@ export default async function SeedPage(props: {
                   />
                 </a>
               ))}
-              {showAiInGrid && (
-                <a
-                  href={seed.imageUrl!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative block aspect-3/4 overflow-hidden rounded-lg"
-                >
-                  <Image
-                    src={seed.imageUrl!}
-                    alt={`${seed.name} illustration`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 33vw, 280px"
-                  />
-                </a>
-              )}
             </div>
           </div>
         );
@@ -378,6 +361,27 @@ export default async function SeedPage(props: {
               </a>
             </Button>
           )}
+        </div>
+      )}
+
+      {/* AI illustration — shown at bottom when a user photo is the cover */}
+      {seed.coverPhotoUrl && seed.imageUrl && (
+        <div className="mt-12 flex justify-center">
+          <a
+            href={seed.imageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block max-w-xs overflow-hidden rounded-2xl"
+          >
+            <Image
+              src={seed.imageUrl}
+              alt={`${seed.name} illustration`}
+              width={360}
+              height={480}
+              className="h-auto w-full"
+              sizes="320px"
+            />
+          </a>
         </div>
       )}
     </div>
