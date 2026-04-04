@@ -65,6 +65,7 @@ export const seeds = pgTable("seeds", {
   obstacles: text("obstacles"),
   imageUrl: text("image_url"),
   photos: jsonb("photos").$type<string[]>().notNull().default([]),
+  coverPhotoUrl: text("cover_photo_url"),
   status: statusEnum("status").notNull().default("pending"),
   createdBy: uuid("created_by")
     .notNull()

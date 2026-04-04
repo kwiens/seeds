@@ -101,6 +101,9 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
     seed?.imageUrl ?? null,
   );
   const [photos, setPhotos] = useState<string[]>(seed?.photos ?? []);
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(
+    seed?.coverPhotoUrl ?? null,
+  );
 
   const isSignedIn = !!session?.user;
 
@@ -129,6 +132,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       budget: budget || undefined,
       obstacles: obstacles || undefined,
       photos,
+      coverPhotoUrl: coverPhotoUrl ?? null,
     };
 
     startTransition(async () => {
@@ -334,7 +338,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         </div>
 
         {/* Photos */}
-        <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+        <PhotoUpload
+          photos={photos}
+          onPhotosChange={setPhotos}
+          coverPhotoUrl={coverPhotoUrl}
+          onCoverPhotoChange={setCoverPhotoUrl}
+        />
 
         {/* Illustration (edit mode only) */}
         {seed && (
@@ -344,7 +353,10 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
               Illustration
             </Label>
             <p className="text-xs text-muted-foreground">
-              Improve the image by editing your description
+              Improve the automatically generated image by editing your
+              description. The more descriptive your idea, the better the
+              illustration. This will be your cover photo unless you star an
+              image you upload.
             </p>
             {imageUrl ? (
               <a

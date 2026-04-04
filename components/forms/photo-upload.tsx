@@ -3,9 +3,10 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { Check, ImagePlus, Loader2, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const MAX_PHOTOS = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -13,9 +14,16 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 interface PhotoUploadProps {
   photos: string[];
   onPhotosChange: (photos: string[]) => void;
+  coverPhotoUrl: string | null;
+  onCoverPhotoChange: (url: string | null) => void;
 }
 
-export function PhotoUpload({ photos, onPhotosChange }: PhotoUploadProps) {
+export function PhotoUpload({
+  photos,
+  onPhotosChange,
+  coverPhotoUrl,
+  onCoverPhotoChange,
+}: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +70,9 @@ export function PhotoUpload({ photos, onPhotosChange }: PhotoUploadProps) {
   }
 
   function removePhoto(index: number) {
+    if (photos[index] === coverPhotoUrl) {
+      onCoverPhotoChange(null);
+    }
     onPhotosChange(photos.filter((_, i) => i !== index));
   }
 
@@ -77,24 +88,52 @@ export function PhotoUpload({ photos, onPhotosChange }: PhotoUploadProps) {
 
       {photos.length > 0 && (
         <div className="flex flex-wrap gap-3">
-          {photos.map((url, index) => (
-            <div key={url} className="group relative">
-              <Image
-                src={url}
-                alt={`Photo ${index + 1}`}
-                width={120}
-                height={120}
-                className="size-28 rounded-lg border object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => removePhoto(index)}
-                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-all hover:bg-muted-foreground hover:text-background"
-              >
-                <X className="size-3" />
-              </button>
-            </div>
-          ))}
+          {photos.map((url, index) => {
+            const isCover = url === coverPhotoUrl;
+            return (
+              <div key={url} className="group relative">
+                <Image
+                  src={url}
+                  alt={`Photo ${index + 1}`}
+                  width={120}
+                  height={120}
+                  className={cn(
+                    "size-28 rounded-lg border-2 object-cover",
+                    isCover ? "border-primary" : "border-border",
+                  )}
+                />
+                {isCover && (
+                  <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    <Check className="size-2.5" />
+                    Cover
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removePhoto(index)}
+                  className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-all hover:bg-muted-foreground hover:text-background"
+                >
+                  <X className="size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCoverPhotoChange(isCover ? null : url)}
+                  title={isCover ? "Remove as cover" : "Use as cover"}
+                  className={cn(
+                    "absolute -left-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border shadow-sm transition-all",
+                    isCover
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted-foreground hover:text-background",
+                  )}
+                >
+                  <Star
+                    className="size-3"
+                    fill={isCover ? "currentColor" : "none"}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -191,7 +191,24 @@ export default async function SeedPage(props: {
 
         {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
-          {seed.imageUrl ? (
+          {seed.coverPhotoUrl ? (
+            <a
+              href={seed.coverPhotoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-2xl"
+            >
+              <Image
+                src={seed.coverPhotoUrl}
+                alt={seed.name}
+                width={720}
+                height={720}
+                className="h-auto w-full"
+                sizes="(max-width: 768px) 100vw, 360px"
+                priority
+              />
+            </a>
+          ) : seed.imageUrl ? (
             <a
               href={seed.imageUrl}
               target="_blank"
@@ -208,37 +225,43 @@ export default async function SeedPage(props: {
                 priority
               />
             </a>
-          ) : (
-            canEdit && <SeedImageGenerator seedId={seed.id} />
-          )}
+          ) : null}
+          {/* Always generate AI illustration if missing, even when cover photo is set */}
+          {!seed.imageUrl && canEdit && <SeedImageGenerator seedId={seed.id} />}
         </div>
       </div>
 
-      {/* Photos */}
-      {seed.photos.length > 0 && (
-        <div className="mb-8">
-          <h3 className="mb-3 text-sm font-semibold">Photos</h3>
-          <div className="grid grid-cols-3 gap-3">
-            {seed.photos.map((url, i) => (
-              <a
-                key={url}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative block aspect-square overflow-hidden rounded-lg"
-              >
-                <Image
-                  src={url}
-                  alt={`${seed.name} photo ${i + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 33vw, 280px"
-                />
-              </a>
-            ))}
+      {/* Photos — exclude cover photo (already shown as primary) */}
+      {(() => {
+        const displayPhotos = seed.coverPhotoUrl
+          ? seed.photos.filter((url) => url !== seed.coverPhotoUrl)
+          : seed.photos;
+        if (displayPhotos.length === 0) return null;
+        return (
+          <div className="mb-8">
+            <h3 className="mb-3 text-sm font-semibold">Photos</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {displayPhotos.map((url, i) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block aspect-square overflow-hidden rounded-lg"
+                >
+                  <Image
+                    src={url}
+                    alt={`${seed.name} photo ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 33vw, 280px"
+                  />
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Map — full width */}
       {hasLocation && (
@@ -338,6 +361,27 @@ export default async function SeedPage(props: {
               </a>
             </Button>
           )}
+        </div>
+      )}
+
+      {/* AI illustration — shown at bottom when a user photo is the cover */}
+      {seed.coverPhotoUrl && seed.imageUrl && (
+        <div className="mt-12 flex justify-center">
+          <a
+            href={seed.imageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block max-w-xs overflow-hidden rounded-2xl"
+          >
+            <Image
+              src={seed.imageUrl}
+              alt={`${seed.name} illustration`}
+              width={360}
+              height={480}
+              className="h-auto w-full"
+              sizes="320px"
+            />
+          </a>
         </div>
       )}
     </div>
