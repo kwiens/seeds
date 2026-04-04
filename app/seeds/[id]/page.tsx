@@ -225,9 +225,9 @@ export default async function SeedPage(props: {
                 priority
               />
             </a>
-          ) : (
-            canEdit && <SeedImageGenerator seedId={seed.id} />
-          )}
+          ) : null}
+          {/* Always generate AI illustration if missing, even when cover photo is set */}
+          {!seed.imageUrl && canEdit && <SeedImageGenerator seedId={seed.id} />}
         </div>
       </div>
 
