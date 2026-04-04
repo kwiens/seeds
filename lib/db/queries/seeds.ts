@@ -164,6 +164,22 @@ export async function getSeedsByUser(userId: string) {
     .orderBy(desc(seeds.createdAt));
 }
 
+export async function getSupportedSeedsByUser(userId: string) {
+  return db
+    .select({
+      id: seeds.id,
+      name: seeds.name,
+      summary: seeds.summary,
+      category: seeds.category,
+      imageUrl: seeds.imageUrl,
+      supportCount: supportCountSql,
+    })
+    .from(seeds)
+    .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
+    .where(and(eq(seedSupports.userId, userId), eq(seeds.status, "approved")))
+    .orderBy(desc(seedSupports.createdAt));
+}
+
 export async function getSeedSupportCount(seedId: string) {
   const result = await db
     .select({ count: count() })
