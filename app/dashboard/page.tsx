@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -15,16 +14,11 @@ export const metadata: Metadata = {
   title: "Dashboard | Seeds",
 };
 
-export default async function DashboardPage(props: {
-  searchParams: Promise<{ tab?: string }>;
-}) {
+export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/api/auth/signin");
   }
-
-  const searchParams = await props.searchParams;
-  const activeTab = searchParams.tab === "my-seeds" ? "my-seeds" : "supporting";
 
   const [userSeeds, supportedSeeds] = await Promise.all([
     getSeedsByUser(session.user.id),
@@ -48,13 +42,7 @@ export default async function DashboardPage(props: {
         </Button>
       </div>
 
-      <Suspense fallback={<div className="py-8 text-center">Loading...</div>}>
-        <DashboardContent
-          userSeeds={userSeeds}
-          supportedSeeds={supportedSeeds}
-          activeTab={activeTab}
-        />
-      </Suspense>
+      <DashboardContent userSeeds={userSeeds} supportedSeeds={supportedSeeds} />
     </div>
   );
 }

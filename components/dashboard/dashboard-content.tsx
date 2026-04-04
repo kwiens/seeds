@@ -1,14 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Sprout, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardSeedList } from "@/components/dashboard/seed-list-table";
 import { SeedListView } from "@/components/seeds/seed-list-view";
 import type { CategoryKey } from "@/lib/categories";
 
-type DashboardTab = "my-seeds" | "supporting";
+type DashboardTab = "supporting" | "my-seeds";
 
 interface DashboardSeed {
   id: string;
@@ -31,24 +31,11 @@ interface SupportedSeed {
 export function DashboardContent({
   userSeeds,
   supportedSeeds,
-  activeTab = "supporting",
 }: {
   userSeeds: DashboardSeed[];
   supportedSeeds: SupportedSeed[];
-  activeTab?: DashboardTab;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  function setTab(tab: DashboardTab) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (tab === "supporting") {
-      params.delete("tab");
-    } else {
-      params.set("tab", tab);
-    }
-    router.push(`?${params.toString()}`);
-  }
+  const [activeTab, setActiveTab] = useState<DashboardTab>("supporting");
 
   return (
     <>
@@ -56,7 +43,7 @@ export function DashboardContent({
         <Button
           variant={activeTab === "supporting" ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => setTab("supporting")}
+          onClick={() => setActiveTab("supporting")}
           className="gap-1.5"
         >
           <Sun className="size-4" />
@@ -65,7 +52,7 @@ export function DashboardContent({
         <Button
           variant={activeTab === "my-seeds" ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => setTab("my-seeds")}
+          onClick={() => setActiveTab("my-seeds")}
           className="gap-1.5"
         >
           <Sprout className="size-4" />
