@@ -353,7 +353,10 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
               Illustration
             </Label>
             <p className="text-xs text-muted-foreground">
-              Improve the image by editing your description
+              Improve the automatically generated image by editing your
+              description. The more descriptive your idea, the better the
+              illustration. This will be your cover photo unless you star an
+              image you upload.
             </p>
             {imageUrl ? (
               <a
