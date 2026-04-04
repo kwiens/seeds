@@ -15,6 +15,13 @@
       "when": 1774917593606,
       "tag": "0001_worthless_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775261339704,
+      "tag": "0002_cuddly_quasar",
+      "breakpoints": true
     }
   ]
 }
