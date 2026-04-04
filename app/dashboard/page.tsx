@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -23,8 +24,7 @@ export default async function DashboardPage(props: {
   }
 
   const searchParams = await props.searchParams;
-  const activeTab =
-    searchParams.tab === "supporting" ? "supporting" : "my-seeds";
+  const activeTab = searchParams.tab === "my-seeds" ? "my-seeds" : "supporting";
 
   const [userSeeds, supportedSeeds] = await Promise.all([
     getSeedsByUser(session.user.id),
@@ -48,11 +48,13 @@ export default async function DashboardPage(props: {
         </Button>
       </div>
 
-      <DashboardContent
-        userSeeds={userSeeds}
-        supportedSeeds={supportedSeeds}
-        activeTab={activeTab}
-      />
+      <Suspense fallback={<div className="py-8 text-center">Loading...</div>}>
+        <DashboardContent
+          userSeeds={userSeeds}
+          supportedSeeds={supportedSeeds}
+          activeTab={activeTab}
+        />
+      </Suspense>
     </div>
   );
 }

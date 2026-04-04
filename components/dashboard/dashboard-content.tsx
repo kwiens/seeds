@@ -31,7 +31,7 @@ interface SupportedSeed {
 export function DashboardContent({
   userSeeds,
   supportedSeeds,
-  activeTab = "my-seeds",
+  activeTab = "supporting",
 }: {
   userSeeds: DashboardSeed[];
   supportedSeeds: SupportedSeed[];
@@ -42,7 +42,7 @@ export function DashboardContent({
 
   function setTab(tab: DashboardTab) {
     const params = new URLSearchParams(searchParams.toString());
-    if (tab === "my-seeds") {
+    if (tab === "supporting") {
       params.delete("tab");
     } else {
       params.set("tab", tab);
@@ -52,16 +52,7 @@ export function DashboardContent({
 
   return (
     <>
-      <div className="mb-6 flex gap-1 rounded-lg border p-1 self-start w-fit">
-        <Button
-          variant={activeTab === "my-seeds" ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setTab("my-seeds")}
-          className="gap-1.5"
-        >
-          <Sprout className="size-4" />
-          My Seeds
-        </Button>
+      <div className="mb-6 flex w-fit gap-1 self-start rounded-lg border p-1">
         <Button
           variant={activeTab === "supporting" ? "secondary" : "ghost"}
           size="sm"
@@ -71,35 +62,44 @@ export function DashboardContent({
           <Sun className="size-4" />
           Supporting
         </Button>
+        <Button
+          variant={activeTab === "my-seeds" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setTab("my-seeds")}
+          className="gap-1.5"
+        >
+          <Sprout className="size-4" />
+          My Seeds
+        </Button>
       </div>
 
-      {activeTab === "my-seeds" ? (
-        userSeeds.length === 0 ? (
+      {activeTab === "supporting" ? (
+        supportedSeeds.length === 0 ? (
           <div className="rounded-lg border border-dashed py-16 text-center">
             <p className="text-muted-foreground mb-4 text-lg">
-              You haven&apos;t planted any seeds yet.
+              You haven&apos;t supported any seeds yet.
+            </p>
+            <p className="text-muted-foreground mb-4 text-sm">
+              Explore seeds and tap support this seed to show your support.
             </p>
             <Button asChild>
-              <Link href="/seeds/new">Plant Your First Seed</Link>
+              <Link href="/">Explore Seeds</Link>
             </Button>
           </div>
         ) : (
-          <DashboardSeedList seeds={userSeeds} />
+          <SeedListView seeds={supportedSeeds} />
         )
-      ) : supportedSeeds.length === 0 ? (
+      ) : userSeeds.length === 0 ? (
         <div className="rounded-lg border border-dashed py-16 text-center">
           <p className="text-muted-foreground mb-4 text-lg">
-            You haven&apos;t supported any seeds yet.
-          </p>
-          <p className="text-muted-foreground mb-4 text-sm">
-            Explore seeds and tap support this seed to show your support.
+            You haven&apos;t planted any seeds yet.
           </p>
           <Button asChild>
-            <Link href="/">Explore Seeds</Link>
+            <Link href="/seeds/new">Plant Your First Seed</Link>
           </Button>
         </div>
       ) : (
-        <SeedListView seeds={supportedSeeds} />
+        <DashboardSeedList seeds={userSeeds} />
       )}
     </>
   );
