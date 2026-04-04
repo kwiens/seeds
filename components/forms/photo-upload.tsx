@@ -6,6 +6,7 @@ import { upload } from "@vercel/blob/client";
 import { Check, ImagePlus, Loader2, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const MAX_PHOTOS = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -96,7 +97,10 @@ export function PhotoUpload({
                   alt={`Photo ${index + 1}`}
                   width={120}
                   height={120}
-                  className={`size-28 rounded-lg border-2 object-cover ${isCover ? "border-primary" : "border-border"}`}
+                  className={cn(
+                    "size-28 rounded-lg border-2 object-cover",
+                    isCover ? "border-primary" : "border-border",
+                  )}
                 />
                 {isCover && (
                   <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
@@ -115,7 +119,12 @@ export function PhotoUpload({
                   type="button"
                   onClick={() => onCoverPhotoChange(isCover ? null : url)}
                   title={isCover ? "Remove as cover" : "Use as cover"}
-                  className={`absolute -left-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border shadow-sm transition-all ${isCover ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted-foreground hover:text-background"}`}
+                  className={cn(
+                    "absolute -left-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border shadow-sm transition-all",
+                    isCover
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted-foreground hover:text-background",
+                  )}
                 >
                   <Star
                     className="size-3"
