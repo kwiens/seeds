@@ -160,8 +160,24 @@ export async function getSeedsByUser(userId: string) {
       )`.as("support_count"),
     })
     .from(seeds)
-    .where(and(eq(seeds.createdBy, userId), sql`${seeds.status} != 'archived'`))
+    .where(eq(seeds.createdBy, userId))
     .orderBy(desc(seeds.createdAt));
+}
+
+export async function getSupportedSeedsByUser(userId: string) {
+  return db
+    .select({
+      id: seeds.id,
+      name: seeds.name,
+      summary: seeds.summary,
+      category: seeds.category,
+      imageUrl: seeds.imageUrl,
+      supportCount: supportCountSql,
+    })
+    .from(seeds)
+    .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
+    .where(eq(seedSupports.userId, userId))
+    .orderBy(desc(seedSupports.createdAt));
 }
 
 export async function getSeedSupportCount(seedId: string) {
