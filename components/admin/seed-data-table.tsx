@@ -131,7 +131,12 @@ export function AdminSeedTable({
                     <SeedStatusBadge status={seed.status} />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    {seed.supportCount}
+                    <Link
+                      href={`/dashboard/seeds/${seed.id}`}
+                      className="hover:underline"
+                    >
+                      {seed.supportCount}
+                    </Link>
                   </TableCell>
                   <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
                     {new Date(seed.createdAt).toLocaleDateString("en-US")}

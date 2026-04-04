@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Pencil } from "lucide-react";
+import { Mail, Pencil, Sun } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
@@ -370,12 +370,20 @@ export default async function SeedPage(props: {
             )}
           </div>
           {canEdit && (
-            <Button variant="outline" size="sm" className="mt-3" asChild>
-              <a href={`mailto:${supporters.map((s) => s.email).join(",")}`}>
-                <Mail className="mr-1.5 size-3.5" />
-                Email Supporters
-              </a>
-            </Button>
+            <div className="mt-3 flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/seeds/${seed.id}`}>
+                  <Sun className="mr-1.5 size-3.5" />
+                  View Supporters
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a href={`mailto:${supporters.map((s) => s.email).join(",")}`}>
+                  <Mail className="mr-1.5 size-3.5" />
+                  Email Supporters
+                </a>
+              </Button>
+            </div>
           )}
         </div>
       )}
