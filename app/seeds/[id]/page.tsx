@@ -98,7 +98,7 @@ export async function generateMetadata(props: {
   const params = await props.params;
   const seed = await getSeedById(params.id);
   if (!seed) return { title: "Seed Not Found" };
-  const ogImage = seed.imageUrl;
+  const ogImage = seed.coverPhotoUrl ?? seed.imageUrl;
   return {
     title: `${seed.name} | Seeds`,
     description: seed.summary.slice(0, 160),
