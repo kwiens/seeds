@@ -1,9 +1,10 @@
 "use server";
 
-import { eq, desc, ne } from "drizzle-orm";
+import { eq, desc, ne, sql, count } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { seeds, seedSupports, users } from "@/lib/db/schema";
+import { categories, type CategoryKey } from "@/lib/categories";
 
 function escapeCsvField(value: string): string {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
@@ -59,6 +60,98 @@ export async function exportContributorsCsv(): Promise<string> {
       r.createdAt.toISOString(),
     ]),
   );
+
+  return [header, ...lines].join("\n");
+}
+
+export async function exportSeedsCsv(): Promise<string> {
+  await requireAdmin();
+
+  const supportCounts = db
+    .select({
+      seedId: seedSupports.seedId,
+      count: count().as("support_count"),
+    })
+    .from(seedSupports)
+    .groupBy(seedSupports.seedId)
+    .as("support_counts");
+
+  const rows = await db
+    .select({
+      id: seeds.id,
+      name: seeds.name,
+      summary: seeds.summary,
+      category: seeds.category,
+      status: seeds.status,
+      gardeners: seeds.gardeners,
+      locationAddress: seeds.locationAddress,
+      locationDescription: seeds.locationDescription,
+      roots: seeds.roots,
+      supportPeople: seeds.supportPeople,
+      waterHave: seeds.waterHave,
+      waterNeed: seeds.waterNeed,
+      budget: seeds.budget,
+      obstacles: seeds.obstacles,
+      createdAt: seeds.createdAt,
+      creatorName: users.name,
+      creatorEmail: users.email,
+      supportCount: sql<number>`coalesce(${supportCounts.count}, 0)`,
+    })
+    .from(seeds)
+    .innerJoin(users, eq(seeds.createdBy, users.id))
+    .leftJoin(supportCounts, eq(seeds.id, supportCounts.seedId))
+    .where(ne(seeds.status, "archived"))
+    .orderBy(desc(seeds.createdAt));
+
+  const header = toCsvRow([
+    "ID",
+    "Name",
+    "Category",
+    "Status",
+    "Summary",
+    "Gardeners",
+    "Location",
+    "Location Description",
+    "Roots",
+    "Guides",
+    "Fertilizer (Have)",
+    "Water (Need)",
+    "Budget",
+    "Obstacles",
+    "URL",
+    "Created At",
+    "Supporters",
+    "Creator Name",
+    "Creator Email",
+  ]);
+
+  const lines = rows.map((r) => {
+    const rootsList = (r.roots as { name: string; committed: boolean }[])
+      .map((root) => `${root.name}${root.committed ? " (committed)" : ""}`)
+      .join("; ");
+
+    return toCsvRow([
+      r.id,
+      r.name,
+      categories[r.category as CategoryKey]?.label ?? r.category,
+      r.status,
+      r.summary,
+      (r.gardeners as string[]).join("; "),
+      r.locationAddress ?? "",
+      r.locationDescription ?? "",
+      rootsList,
+      (r.supportPeople as string[]).join("; "),
+      (r.waterHave as string[]).join("; "),
+      (r.waterNeed as string[]).join("; "),
+      r.budget ?? "",
+      r.obstacles ?? "",
+      `https://seeds.chattanoogakids.org/seeds/${r.id}`,
+      r.createdAt.toISOString(),
+      String(r.supportCount),
+      r.creatorName,
+      r.creatorEmail,
+    ]);
+  });
 
   return [header, ...lines].join("\n");
 }

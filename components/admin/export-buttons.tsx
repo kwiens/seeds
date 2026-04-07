@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   exportContributorsCsv,
+  exportSeedsCsv,
   exportSupportersCsv,
 } from "@/lib/actions/export";
 
@@ -30,6 +31,14 @@ export function ExportButtons() {
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row">
+      <Button
+        variant="outline"
+        disabled={isPending}
+        onClick={() => handleExport(exportSeedsCsv, "seeds.csv")}
+      >
+        <Download className="mr-2 h-4 w-4" />
+        Download Seeds
+      </Button>
       <Button
         variant="outline"
         disabled={isPending}
