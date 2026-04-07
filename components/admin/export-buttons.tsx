@@ -1,10 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
+import { toast } from "sonner";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   exportContributorsCsv,
+  exportSeedsCsv,
   exportSupportersCsv,
 } from "@/lib/actions/export";
 
@@ -23,13 +25,25 @@ export function ExportButtons() {
 
   function handleExport(exportFn: () => Promise<string>, filename: string) {
     startTransition(async () => {
-      const csv = await exportFn();
-      downloadCsv(csv, filename);
+      try {
+        const csv = await exportFn();
+        downloadCsv(csv, filename);
+      } catch {
+        toast.error("Export failed. Please try again.");
+      }
     });
   }
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row">
+      <Button
+        variant="outline"
+        disabled={isPending}
+        onClick={() => handleExport(exportSeedsCsv, "seeds.csv")}
+      >
+        <Download className="mr-2 h-4 w-4" />
+        Download Seeds
+      </Button>
       <Button
         variant="outline"
         disabled={isPending}

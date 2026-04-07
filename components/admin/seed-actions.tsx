@@ -9,6 +9,7 @@ import {
   Mail,
   MoreHorizontal,
   Pencil,
+  QrCode,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,16 @@ export function SeedActions({
             <Pencil className="mr-2 size-4" />
             Edit
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a
+            href={`/seeds/${seedId}/qr`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <QrCode className="mr-2 size-4" />
+            QR Code
+          </a>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a

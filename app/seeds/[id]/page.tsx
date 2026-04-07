@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Pencil, Sun } from "lucide-react";
+import { Mail, Pencil, QrCode, Sun } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
@@ -387,6 +387,20 @@ export default async function SeedPage(props: {
           )}
         </div>
       )}
+
+      {/* QR Code — always visible */}
+      <div className="mt-8">
+        <Button variant="outline" size="sm" asChild>
+          <a
+            href={`/seeds/${seed.id}/qr`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <QrCode className="mr-1.5 size-3.5" />
+            QR Code
+          </a>
+        </Button>
+      </div>
 
       {/* AI illustration — shown at bottom when a user photo is the cover */}
       {seed.coverPhotoUrl && seed.imageUrl && (
