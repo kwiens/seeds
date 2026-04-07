@@ -125,10 +125,15 @@ export async function exportSeedsCsv(): Promise<string> {
     "Creator Email",
   ]);
 
+  const joinArray = (val: unknown): string =>
+    Array.isArray(val) ? val.join("; ") : "";
+
   const lines = rows.map((r) => {
-    const rootsList = (r.roots as { name: string; committed: boolean }[])
-      .map((root) => `${root.name}${root.committed ? " (committed)" : ""}`)
-      .join("; ");
+    const roots = Array.isArray(r.roots)
+      ? (r.roots as { name: string; committed: boolean }[])
+          .map((root) => `${root.name}${root.committed ? " (committed)" : ""}`)
+          .join("; ")
+      : "";
 
     return toCsvRow([
       r.id,
@@ -136,13 +141,13 @@ export async function exportSeedsCsv(): Promise<string> {
       categories[r.category as CategoryKey]?.label ?? r.category,
       r.status,
       r.summary,
-      (r.gardeners as string[]).join("; "),
+      joinArray(r.gardeners),
       r.locationAddress ?? "",
       r.locationDescription ?? "",
-      rootsList,
-      (r.supportPeople as string[]).join("; "),
-      (r.waterHave as string[]).join("; "),
-      (r.waterNeed as string[]).join("; "),
+      roots,
+      joinArray(r.supportPeople),
+      joinArray(r.waterHave),
+      joinArray(r.waterNeed),
       r.budget ?? "",
       r.obstacles ?? "",
       `https://www.npcseeds.org/seeds/${r.id}`,
