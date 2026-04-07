@@ -369,38 +369,38 @@ export default async function SeedPage(props: {
               ),
             )}
           </div>
-          <div className="mt-3 flex gap-2">
-            {canEdit && (
-              <>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/seeds/${seed.id}`}>
-                    <Sun className="mr-1.5 size-3.5" />
-                    View Supporters
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a
-                    href={`mailto:${supporters.map((s) => s.email).join(",")}`}
-                  >
-                    <Mail className="mr-1.5 size-3.5" />
-                    Email Supporters
-                  </a>
-                </Button>
-              </>
-            )}
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href={`/seeds/${seed.id}/qr`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <QrCode className="mr-1.5 size-3.5" />
-                QR Code
-              </a>
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="mt-3 flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/seeds/${seed.id}`}>
+                  <Sun className="mr-1.5 size-3.5" />
+                  View Supporters
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a href={`mailto:${supporters.map((s) => s.email).join(",")}`}>
+                  <Mail className="mr-1.5 size-3.5" />
+                  Email Supporters
+                </a>
+              </Button>
+            </div>
+          )}
         </div>
       )}
+
+      {/* QR Code — always visible */}
+      <div className="mt-8">
+        <Button variant="outline" size="sm" asChild>
+          <a
+            href={`/seeds/${seed.id}/qr`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <QrCode className="mr-1.5 size-3.5" />
+            QR Code
+          </a>
+        </Button>
+      </div>
 
       {/* AI illustration — shown at bottom when a user photo is the cover */}
       {seed.coverPhotoUrl && seed.imageUrl && (
