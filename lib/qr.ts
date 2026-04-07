@@ -18,14 +18,15 @@ export function generateQrSvg(url: string): string {
   const margin = 4;
   const totalSize = (size + margin * 2) * moduleSize;
 
-  // Build single path for all dark modules
+  // Build single path for all dark modules as rounded dots
+  const r = moduleSize / 2;
   let pathData = "";
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       if (data[y * size + x]) {
-        const px = (x + margin) * moduleSize;
-        const py = (y + margin) * moduleSize;
-        pathData += `M${px},${py}h${moduleSize}v${moduleSize}h-${moduleSize}z`;
+        const cx = (x + margin) * moduleSize + r;
+        const cy = (y + margin) * moduleSize + r;
+        pathData += `M${cx - r},${cy}a${r},${r},0,1,0,${moduleSize},0a${r},${r},0,1,0,-${moduleSize},0`;
       }
     }
   }
