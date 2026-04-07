@@ -145,7 +145,7 @@ export async function exportSeedsCsv(): Promise<string> {
       (r.waterNeed as string[]).join("; "),
       r.budget ?? "",
       r.obstacles ?? "",
-      `https://seeds.chattanoogakids.org/seeds/${r.id}`,
+      `https://www.npcseeds.org/seeds/${r.id}`,
       r.createdAt.toISOString(),
       String(r.supportCount),
       r.creatorName,
