@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Pencil, QrCode, Sun } from "lucide-react";
+import { FileText, Mail, Pencil, QrCode, Sun } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
@@ -14,8 +14,10 @@ import { CommentsSection } from "@/components/seeds/comments-section";
 import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
 import { ExpandableText } from "@/components/seeds/expandable-text";
+import { SeedDetailTabs } from "@/components/seeds/seed-detail-tabs";
 import { SeedDetailMap } from "./seed-detail-map";
 import { getCommentsBySeed } from "@/lib/db/queries/comments";
+import { getUpdatesBySeed } from "@/lib/db/queries/updates";
 import {
   getSeedById,
   getSeedSupportCount,
@@ -137,12 +139,13 @@ export default async function SeedPage(props: {
     notFound();
   }
 
-  const [supportCount, supporters, userHasSupported, comments] =
+  const [supportCount, supporters, userHasSupported, comments, updates] =
     await Promise.all([
       getSeedSupportCount(seed.id),
       getSeedSupporters(seed.id, { includeEmail: canEdit }),
       session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
       getCommentsBySeed(seed.id),
+      getUpdatesBySeed(seed.id),
     ]);
 
   const hasLocation = seed.locationLat && seed.locationLng;
@@ -171,6 +174,14 @@ export default async function SeedPage(props: {
               <Link href={`/seeds/${seed.id}/edit`}>
                 <Pencil className="mr-1.5 size-3.5" />
                 Edit
+              </Link>
+            </Button>
+          )}
+          {canEdit && (
+            <Button variant="outline" asChild>
+              <Link href={`/seeds/${seed.id}/updates`}>
+                <FileText className="mr-1.5 size-3.5" />
+                {updates.length > 0 ? "Manage Updates" : "Post Update"}
               </Link>
             </Button>
           )}
@@ -279,149 +290,178 @@ export default async function SeedPage(props: {
         );
       })()}
 
-      {/* Map — full width */}
-      {hasLocation && (
-        <div className="mb-8">
-          <SeedDetailMap
-            lat={seed.locationLat!}
-            lng={seed.locationLng!}
-            address={seed.locationAddress}
-          />
-          {seed.locationDescription && (
-            <p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">
-              {seed.locationDescription}
-            </p>
-          )}
-        </div>
-      )}
-
-      <Separator className="mb-8" />
-
-      {/* Details grid */}
-      <div className="grid gap-8 sm:grid-cols-2">
-        <DetailList
-          items={seed.gardeners}
-          seedIcon="gardeners"
-          label="Gardeners"
-        />
-        <RootsDetailList roots={parseRoots(seed.roots)} />
-        <DetailList
-          items={seed.supportPeople}
-          seedIcon="support"
-          label="Guides"
-        />
-        <DetailList
-          items={seed.waterHave}
-          seedIcon="fertilizer"
-          label="Fertilizer"
-        />
-        <DetailList items={seed.waterNeed} seedIcon="water" label="Water" />
-      </div>
-
-      {/* Budget */}
-      {seed.budget && (
-        <div className="mt-8">
-          <h3 className="mb-2 text-sm font-semibold">Budget</h3>
-          <p className="text-muted-foreground text-sm">{seed.budget}</p>
-        </div>
-      )}
-
-      {/* Obstacles */}
-      {seed.obstacles && (
-        <div className="mt-8">
-          <h3 className="mb-2 text-sm font-semibold">Obstacles</h3>
-          <p className="text-muted-foreground whitespace-pre-wrap text-sm">
-            {seed.obstacles}
-          </p>
-        </div>
-      )}
-
-      {/* Community Insights */}
-      <div className="mt-8">
-        <CommentsSection
-          seedId={seed.id}
-          seedCreatorId={seed.createdBy}
-          comments={comments}
-          canModerate={canEdit}
-        />
-      </div>
-
-      {/* Supporters */}
-      {supporters.length > 0 && (
-        <div className="mt-8">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <SeedIcon name="sunlight" />
-            Sunlight ({supportCount}{" "}
-            {supportCount === 1 ? "supporter" : "supporters"})
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {supporters.map((s) =>
-              canEdit ? (
-                <a key={s.id} href={`mailto:${s.email}`} title={s.name}>
-                  <Badge variant="secondary" className="hover:bg-secondary/80">
-                    {formatDisplayName(s.name)}
-                  </Badge>
-                </a>
-              ) : (
-                <Badge key={s.id} variant="secondary">
-                  {formatDisplayName(s.name)}
-                </Badge>
-              ),
+      {/* Project content — map, details, comments, supporters, etc. */}
+      {(() => {
+        const projectContent = (
+          <>
+            {/* Map — full width */}
+            {hasLocation && (
+              <div className="mb-8">
+                <SeedDetailMap
+                  lat={seed.locationLat!}
+                  lng={seed.locationLng!}
+                  address={seed.locationAddress}
+                />
+                {seed.locationDescription && (
+                  <p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">
+                    {seed.locationDescription}
+                  </p>
+                )}
+              </div>
             )}
-          </div>
-          {canEdit && (
-            <div className="mt-3 flex gap-2">
+
+            <Separator className="mb-8" />
+
+            {/* Details grid */}
+            <div className="grid gap-8 sm:grid-cols-2">
+              <DetailList
+                items={seed.gardeners}
+                seedIcon="gardeners"
+                label="Gardeners"
+              />
+              <RootsDetailList roots={parseRoots(seed.roots)} />
+              <DetailList
+                items={seed.supportPeople}
+                seedIcon="support"
+                label="Guides"
+              />
+              <DetailList
+                items={seed.waterHave}
+                seedIcon="fertilizer"
+                label="Fertilizer"
+              />
+              <DetailList
+                items={seed.waterNeed}
+                seedIcon="water"
+                label="Water"
+              />
+            </div>
+
+            {/* Budget */}
+            {seed.budget && (
+              <div className="mt-8">
+                <h3 className="mb-2 text-sm font-semibold">Budget</h3>
+                <p className="text-muted-foreground text-sm">{seed.budget}</p>
+              </div>
+            )}
+
+            {/* Obstacles */}
+            {seed.obstacles && (
+              <div className="mt-8">
+                <h3 className="mb-2 text-sm font-semibold">Obstacles</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap text-sm">
+                  {seed.obstacles}
+                </p>
+              </div>
+            )}
+
+            {/* Community Insights */}
+            <div className="mt-8">
+              <CommentsSection
+                seedId={seed.id}
+                seedCreatorId={seed.createdBy}
+                comments={comments}
+                canModerate={canEdit}
+              />
+            </div>
+
+            {/* Supporters */}
+            {supporters.length > 0 && (
+              <div className="mt-8">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                  <SeedIcon name="sunlight" />
+                  Sunlight ({supportCount}{" "}
+                  {supportCount === 1 ? "supporter" : "supporters"})
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {supporters.map((s) =>
+                    canEdit ? (
+                      <a key={s.id} href={`mailto:${s.email}`} title={s.name}>
+                        <Badge
+                          variant="secondary"
+                          className="hover:bg-secondary/80"
+                        >
+                          {formatDisplayName(s.name)}
+                        </Badge>
+                      </a>
+                    ) : (
+                      <Badge key={s.id} variant="secondary">
+                        {formatDisplayName(s.name)}
+                      </Badge>
+                    ),
+                  )}
+                </div>
+                {canEdit && (
+                  <div className="mt-3 flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/dashboard/seeds/${seed.id}`}>
+                        <Sun className="mr-1.5 size-3.5" />
+                        View Supporters
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={`mailto:${supporters.map((s) => s.email).join(",")}`}
+                      >
+                        <Mail className="mr-1.5 size-3.5" />
+                        Email Supporters
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* QR Code — always visible */}
+            <div className="mt-8">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/seeds/${seed.id}`}>
-                  <Sun className="mr-1.5 size-3.5" />
-                  View Supporters
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a href={`mailto:${supporters.map((s) => s.email).join(",")}`}>
-                  <Mail className="mr-1.5 size-3.5" />
-                  Email Supporters
+                <a
+                  href={`/seeds/${seed.id}/qr`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <QrCode className="mr-1.5 size-3.5" />
+                  QR Code
                 </a>
               </Button>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* QR Code — always visible */}
-      <div className="mt-8">
-        <Button variant="outline" size="sm" asChild>
-          <a
-            href={`/seeds/${seed.id}/qr`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <QrCode className="mr-1.5 size-3.5" />
-            QR Code
-          </a>
-        </Button>
-      </div>
+            {/* AI illustration — shown at bottom when a user photo is the cover */}
+            {seed.coverPhotoUrl && seed.imageUrl && (
+              <div className="mt-12 flex justify-center">
+                <a
+                  href={seed.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block max-w-xs overflow-hidden rounded-2xl"
+                >
+                  <Image
+                    src={seed.imageUrl}
+                    alt={`${seed.name} illustration`}
+                    width={360}
+                    height={480}
+                    className="h-auto w-full"
+                    sizes="320px"
+                  />
+                </a>
+              </div>
+            )}
+          </>
+        );
 
-      {/* AI illustration — shown at bottom when a user photo is the cover */}
-      {seed.coverPhotoUrl && seed.imageUrl && (
-        <div className="mt-12 flex justify-center">
-          <a
-            href={seed.imageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block max-w-xs overflow-hidden rounded-2xl"
-          >
-            <Image
-              src={seed.imageUrl}
-              alt={`${seed.name} illustration`}
-              width={360}
-              height={480}
-              className="h-auto w-full"
-              sizes="320px"
+        if (updates.length > 0) {
+          return (
+            <SeedDetailTabs
+              projectContent={projectContent}
+              updates={updates}
+              seedId={seed.id}
+              canEdit={canEdit}
             />
-          </a>
-        </div>
-      )}
+          );
+        }
+
+        return projectContent;
+      })()}
     </div>
   );
 }
