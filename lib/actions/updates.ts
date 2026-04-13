@@ -38,6 +38,7 @@ export async function createUpdate(seedId: string, data: unknown) {
       seedId,
       title: parsed.data.title,
       body: parsed.data.body,
+      photos: parsed.data.photos,
       createdBy: session.user.id,
     })
     .returning({ id: seedUpdates.id });
@@ -74,6 +75,7 @@ export async function editUpdate(updateId: string, data: unknown) {
     .set({
       title: parsed.data.title,
       body: parsed.data.body,
+      photos: parsed.data.photos,
       updatedAt: new Date(),
     })
     .where(eq(seedUpdates.id, updateId));

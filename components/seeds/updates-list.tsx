@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PhotoGrid } from "@/components/photo-grid";
 import type { SeedUpdateWithAuthor } from "@/lib/db/queries/updates";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
 import { extractPlainText } from "@/lib/tiptap";
@@ -32,6 +33,11 @@ export function UpdatesList({
               {formatRelativeTime(update.createdAt)}
             </span>
           </div>
+          {update.photos.length > 0 && (
+            <div className="mb-2">
+              <PhotoGrid photos={update.photos} alt={update.title} size="sm" />
+            </div>
+          )}
           <p className="text-muted-foreground line-clamp-3 whitespace-pre-line text-sm">
             {extractPlainText(update.body)}
           </p>

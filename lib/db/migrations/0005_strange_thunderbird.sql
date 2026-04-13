@@ -1,0 +1,1 @@
+ALTER TABLE "seed_updates" ADD COLUMN "photos" jsonb DEFAULT '[]'::jsonb NOT NULL;

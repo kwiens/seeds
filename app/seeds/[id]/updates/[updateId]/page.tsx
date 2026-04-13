@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getUpdateById } from "@/lib/db/queries/updates";
 import { getSeedById } from "@/lib/db/queries/seeds";
 import { formatDisplayName } from "@/lib/format";
+import { PhotoGrid } from "@/components/photo-grid";
 import { renderTiptapHTML, extractPlainText } from "@/lib/tiptap";
 
 export async function generateMetadata(props: {
@@ -81,6 +82,12 @@ export default async function UpdatePage(props: {
             </span>
           </div>
         </div>
+
+        {update.photos.length > 0 && (
+          <div className="mb-8">
+            <PhotoGrid photos={update.photos} alt={update.title} />
+          </div>
+        )}
 
         <div
           className="prose prose-sm max-w-none"

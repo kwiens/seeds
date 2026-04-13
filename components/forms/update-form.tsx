@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { ImageUpload } from "@/components/forms/image-upload";
 import { createUpdate, editUpdate } from "@/lib/actions/updates";
 
 interface UpdateFormProps {
@@ -15,6 +16,7 @@ interface UpdateFormProps {
     id: string;
     title: string;
     body: JSONContent;
+    photos: string[];
   };
 }
 
@@ -24,12 +26,13 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
   const [body, setBody] = useState<JSONContent | undefined>(update?.body);
+  const [photos, setPhotos] = useState<string[]>(update?.photos ?? []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    const formData = { title, body };
+    const formData = { title, body, photos };
 
     startTransition(async () => {
       const result = update
@@ -77,6 +80,13 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
             disabled={isPending}
           />
         </div>
+
+        <ImageUpload
+          images={photos}
+          onChange={setPhotos}
+          maxImages={6}
+          disabled={isPending}
+        />
 
         <div className="flex gap-3">
           <Button type="submit" disabled={isPending}>

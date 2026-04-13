@@ -44,6 +44,7 @@ export default async function EditUpdatePage(props: {
           id: update.id,
           title: update.title,
           body: update.body as import("@tiptap/react").JSONContent,
+          photos: update.photos,
         }}
       />
     </div>

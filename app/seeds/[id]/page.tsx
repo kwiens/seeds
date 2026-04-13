@@ -15,6 +15,7 @@ import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
 import { ExpandableText } from "@/components/seeds/expandable-text";
 import { SeedDetailTabs } from "@/components/seeds/seed-detail-tabs";
+import { PhotoGrid } from "@/components/photo-grid";
 import { SeedDetailMap } from "./seed-detail-map";
 import { getCommentsBySeed } from "@/lib/db/queries/comments";
 import { getUpdatesBySeed } from "@/lib/db/queries/updates";
@@ -267,25 +268,7 @@ export default async function SeedPage(props: {
         return (
           <div className="mb-8">
             <h3 className="mb-3 text-sm font-semibold">Photos</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {displayPhotos.map((url, i) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative block aspect-square overflow-hidden rounded-lg"
-                >
-                  <Image
-                    src={url}
-                    alt={`${seed.name} photo ${i + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 33vw, 280px"
-                  />
-                </a>
-              ))}
-            </div>
+            <PhotoGrid photos={displayPhotos} alt={seed.name} />
           </div>
         );
       })()}
