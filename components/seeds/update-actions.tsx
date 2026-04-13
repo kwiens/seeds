@@ -17,6 +17,7 @@ import { deleteUpdate } from "@/lib/actions/updates";
 export function DeleteUpdateButton({ updateId }: { updateId: string }) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -33,6 +34,7 @@ export function DeleteUpdateButton({ updateId }: { updateId: string }) {
             undone.
           </DialogDescription>
         </DialogHeader>
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
@@ -42,8 +44,13 @@ export function DeleteUpdateButton({ updateId }: { updateId: string }) {
             disabled={isPending}
             onClick={() =>
               startTransition(async () => {
-                await deleteUpdate(updateId);
-                setOpen(false);
+                setError(null);
+                const result = await deleteUpdate(updateId);
+                if (result?.error) {
+                  setError(result.error);
+                } else {
+                  setOpen(false);
+                }
               })
             }
           >

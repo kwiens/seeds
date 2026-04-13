@@ -1,13 +1,14 @@
 import { z } from "zod";
 
-function hasText(node: Record<string, unknown>): boolean {
+function hasText(node: Record<string, unknown>, depth = 0): boolean {
+  if (depth > 20) return false;
   if (typeof node.text === "string" && node.text.trim().length > 0) return true;
   if (Array.isArray(node.content)) {
     return node.content.some(
       (child) =>
         typeof child === "object" &&
         child !== null &&
-        hasText(child as Record<string, unknown>),
+        hasText(child as Record<string, unknown>, depth + 1),
     );
   }
   return false;
