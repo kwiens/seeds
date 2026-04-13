@@ -27,10 +27,31 @@ describe("seedUpdateFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires body content", () => {
+  it("rejects empty content array", () => {
     const result = seedUpdateFormSchema.safeParse({
       ...validData,
       body: { type: "doc", content: [] },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty paragraph (no visible text)", () => {
+    const result = seedUpdateFormSchema.safeParse({
+      ...validData,
+      body: { type: "doc", content: [{ type: "paragraph" }] },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects whitespace-only text", () => {
+    const result = seedUpdateFormSchema.safeParse({
+      ...validData,
+      body: {
+        type: "doc",
+        content: [
+          { type: "paragraph", content: [{ type: "text", text: "   " }] },
+        ],
+      },
     });
     expect(result.success).toBe(false);
   });

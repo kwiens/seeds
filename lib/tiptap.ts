@@ -42,7 +42,8 @@ function renderNode(node: JSONContent): string {
     case "paragraph":
       return `<p>${children || "<br>"}</p>`;
     case "heading": {
-      const level = (node.attrs?.level as number) ?? 1;
+      const raw = Number(node.attrs?.level);
+      const level = [1, 2, 3].includes(raw) ? raw : 1;
       return `<h${level}>${children}</h${level}>`;
     }
     case "bulletList":
@@ -61,7 +62,7 @@ const BLOCK_TYPES = new Set(["paragraph", "heading", "bulletList", "listItem"]);
 function extractText(node: JSONContent): string {
   if (node.text) return node.text;
   if (!node.content) return "";
-  const separator = BLOCK_TYPES.has(node.type ?? "") ? "\n" : " ";
+  const separator = BLOCK_TYPES.has(node.type ?? "") ? "\n" : "";
   return node.content.map(extractText).join(separator).trim();
 }
 
