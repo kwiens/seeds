@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
+import { statuses, type StatusKey } from "@/lib/statuses";
 
-const statusConfig: Record<
+const extraStatusConfig: Record<
   string,
   {
     label: string;
@@ -8,13 +9,16 @@ const statusConfig: Record<
   }
 > = {
   draft: { label: "Draft", variant: "outline" },
-  pending: { label: "Pending Review", variant: "secondary" },
-  approved: { label: "Approved", variant: "default" },
   archived: { label: "Archived", variant: "destructive" },
 };
 
 export function SeedStatusBadge({ status }: { status: string }) {
-  const config = statusConfig[status] ?? {
+  const statusInfo = statuses[status as StatusKey];
+  if (statusInfo) {
+    return <Badge variant={statusInfo.badgeVariant}>{statusInfo.label}</Badge>;
+  }
+
+  const config = extraStatusConfig[status] ?? {
     label: status,
     variant: "outline" as const,
   };

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { eq } from "drizzle-orm";
+import { and, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { seeds } from "@/lib/db/schema";
 
@@ -12,7 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       updatedAt: seeds.updatedAt,
     })
     .from(seeds)
-    .where(eq(seeds.status, "approved"));
+    .where(and(ne(seeds.status, "draft"), ne(seeds.status, "archived")));
 
   const seedEntries: MetadataRoute.Sitemap = approvedSeeds.map((seed) => ({
     url: `${BASE_URL}/seeds/${seed.id}`,

@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
   Archive,
   ArchiveRestore,
+  ArrowDown,
+  ArrowUp,
   CheckCircle,
   Mail,
   MoreHorizontal,
@@ -17,6 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -24,6 +27,10 @@ import {
   archiveSeed,
   unapproveSeed,
   unarchiveSeed,
+  advanceToInProgress,
+  advanceToMaintenance,
+  revertToApproved,
+  revertToInProgress,
 } from "@/lib/actions/admin";
 
 export function SeedActions({
@@ -47,6 +54,7 @@ export function SeedActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {/* Forward transitions */}
         {status === "pending" && (
           <DropdownMenuItem
             onClick={() =>
@@ -59,6 +67,34 @@ export function SeedActions({
             Approve
           </DropdownMenuItem>
         )}
+        {status === "approved" && (
+          <DropdownMenuItem
+            onClick={() =>
+              startTransition(async () => {
+                await advanceToInProgress(seedId);
+              })
+            }
+          >
+            <ArrowUp className="mr-2 size-4 text-green-600" />
+            Advance to Sprout
+          </DropdownMenuItem>
+        )}
+        {status === "in_progress" && (
+          <DropdownMenuItem
+            onClick={() =>
+              startTransition(async () => {
+                await advanceToMaintenance(seedId);
+              })
+            }
+          >
+            <ArrowUp className="mr-2 size-4 text-green-600" />
+            Advance to Tree
+          </DropdownMenuItem>
+        )}
+
+        <DropdownMenuSeparator />
+
+        {/* Standard actions */}
         <DropdownMenuItem asChild>
           <Link href={`/seeds/${seedId}/edit`}>
             <Pencil className="mr-2 size-4" />
@@ -83,6 +119,48 @@ export function SeedActions({
             Email{supporterEmails?.length ? " Team" : " Creator"}
           </a>
         </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        {/* Backward transitions */}
+        {status === "approved" && (
+          <DropdownMenuItem
+            onClick={() =>
+              startTransition(async () => {
+                await unapproveSeed(seedId);
+              })
+            }
+          >
+            <XCircle className="mr-2 size-4 text-amber-600" />
+            Unapprove
+          </DropdownMenuItem>
+        )}
+        {status === "in_progress" && (
+          <DropdownMenuItem
+            onClick={() =>
+              startTransition(async () => {
+                await revertToApproved(seedId);
+              })
+            }
+          >
+            <ArrowDown className="mr-2 size-4 text-amber-600" />
+            Revert to Seed
+          </DropdownMenuItem>
+        )}
+        {status === "in_maintenance" && (
+          <DropdownMenuItem
+            onClick={() =>
+              startTransition(async () => {
+                await revertToInProgress(seedId);
+              })
+            }
+          >
+            <ArrowDown className="mr-2 size-4 text-amber-600" />
+            Revert to Sprout
+          </DropdownMenuItem>
+        )}
+
+        {/* Archive/Unarchive */}
         {status !== "archived" && (
           <DropdownMenuItem
             onClick={() =>
@@ -105,18 +183,6 @@ export function SeedActions({
           >
             <ArchiveRestore className="mr-2 size-4 text-green-600" />
             Unarchive
-          </DropdownMenuItem>
-        )}
-        {status === "approved" && (
-          <DropdownMenuItem
-            onClick={() =>
-              startTransition(async () => {
-                await unapproveSeed(seedId);
-              })
-            }
-          >
-            <XCircle className="mr-2 size-4 text-amber-600" />
-            Unapprove
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

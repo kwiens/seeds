@@ -67,8 +67,10 @@ export function AdminSeedTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="pending">Seed (Pending)</SelectItem>
+            <SelectItem value="approved">Seed (Supported)</SelectItem>
+            <SelectItem value="in_progress">Sprout</SelectItem>
+            <SelectItem value="in_maintenance">Tree</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>

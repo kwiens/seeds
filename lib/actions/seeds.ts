@@ -27,6 +27,7 @@ function seedFormToDbFields(values: SeedFormValues) {
     obstacles: values.obstacles ?? null,
     photos: values.photos,
     coverPhotoUrl: values.coverPhotoUrl ?? null,
+    badges: values.badges,
   };
 }
 

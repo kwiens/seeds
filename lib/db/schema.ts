@@ -23,6 +23,8 @@ export const statusEnum = pgEnum("status", [
   "draft",
   "pending",
   "approved",
+  "in_progress",
+  "in_maintenance",
   "archived",
 ]);
 
@@ -66,6 +68,7 @@ export const seeds = pgTable("seeds", {
   imageUrl: text("image_url"),
   photos: jsonb("photos").$type<string[]>().notNull().default([]),
   coverPhotoUrl: text("cover_photo_url"),
+  badges: jsonb("badges").$type<string[]>().notNull().default([]),
   status: statusEnum("status").notNull().default("pending"),
   createdBy: uuid("created_by")
     .notNull()
@@ -133,6 +136,15 @@ export const adminEmails = pgTable("admin_emails", {
   email: text("email").notNull().unique(),
   addedBy: uuid("added_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Site Settings (key-value config)
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });

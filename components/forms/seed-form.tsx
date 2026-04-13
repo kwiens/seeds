@@ -21,6 +21,7 @@ import {
 import { SortableList } from "@/components/forms/sortable-list";
 import { LocationPicker } from "@/components/forms/location-picker";
 import { SignInButton } from "@/components/auth/sign-in-button";
+import { badges, badgeKeys } from "@/lib/badges";
 import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
 import { createSeed, updateSeed } from "@/lib/actions/seeds";
 import type { Seed } from "@/lib/db/types";
@@ -104,6 +105,9 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(
     seed?.coverPhotoUrl ?? null,
   );
+  const [selectedBadges, setSelectedBadges] = useState<string[]>(
+    seed?.badges ?? [],
+  );
 
   const isSignedIn = !!session?.user;
 
@@ -133,6 +137,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       obstacles: obstacles || undefined,
       photos,
       coverPhotoUrl: coverPhotoUrl ?? null,
+      badges: selectedBadges,
     };
 
     startTransition(async () => {
@@ -335,6 +340,40 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
             placeholder="Known obstacles, challenges or roadblocks"
             rows={4}
           />
+        </div>
+
+        {/* Badges */}
+        <div className="space-y-2">
+          <Label>Badges</Label>
+          <p className="text-muted-foreground text-xs">
+            Select any badges that apply to this seed.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {badgeKeys.map((key) => {
+              const info = badges[key];
+              const Icon = info.icon;
+              const isActive = selectedBadges.includes(key);
+              return (
+                <Button
+                  key={key}
+                  type="button"
+                  variant={isActive ? "secondary" : "outline"}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    setSelectedBadges((prev) =>
+                      prev.includes(key)
+                        ? prev.filter((b) => b !== key)
+                        : [...prev, key],
+                    );
+                  }}
+                >
+                  <Icon className="size-3.5" />
+                  {info.label}
+                </Button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Photos */}

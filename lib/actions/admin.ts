@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { seedApprovals, seeds } from "@/lib/db/schema";
+import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
 
 async function requireAdmin() {
   const session = await auth();
@@ -16,7 +16,12 @@ async function requireAdmin() {
 
 async function updateSeedStatus(
   seedId: string,
-  status: "pending" | "approved" | "archived",
+  status:
+    | "pending"
+    | "approved"
+    | "in_progress"
+    | "in_maintenance"
+    | "archived",
   extraPaths: string[] = [],
 ) {
   await requireAdmin();
@@ -62,4 +67,40 @@ export async function unarchiveSeed(seedId: string) {
 
 export async function unapproveSeed(seedId: string) {
   return updateSeedStatus(seedId, "pending", [`/seeds/${seedId}`]);
+}
+
+export async function advanceToInProgress(seedId: string) {
+  return updateSeedStatus(seedId, "in_progress", [`/seeds/${seedId}`]);
+}
+
+export async function advanceToMaintenance(seedId: string) {
+  return updateSeedStatus(seedId, "in_maintenance", [`/seeds/${seedId}`]);
+}
+
+export async function revertToApproved(seedId: string) {
+  return updateSeedStatus(seedId, "approved", [`/seeds/${seedId}`]);
+}
+
+export async function revertToInProgress(seedId: string) {
+  return updateSeedStatus(seedId, "in_progress", [`/seeds/${seedId}`]);
+}
+
+export async function setHomepagePhase(phase: 1 | 2) {
+  await requireAdmin();
+
+  await db
+    .insert(siteSettings)
+    .values({
+      key: "homepage_phase",
+      value: String(phase),
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: { value: String(phase), updatedAt: new Date() },
+    });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { success: true };
 }
