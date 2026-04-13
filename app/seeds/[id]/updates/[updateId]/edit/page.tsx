@@ -40,7 +40,11 @@ export default async function EditUpdatePage(props: {
       </div>
       <UpdateForm
         seedId={seed.id}
-        update={{ id: update.id, title: update.title, body: update.body }}
+        update={{
+          id: update.id,
+          title: update.title,
+          body: update.body as import("@tiptap/react").JSONContent,
+        }}
       />
     </div>
   );

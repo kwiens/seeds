@@ -26,14 +26,25 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { createUpdate, editUpdate, deleteUpdate } from "@/lib/actions/updates";
 
-const validUpdateData = { title: "Progress Update", body: "Great progress!" };
+const validBody = {
+  type: "doc",
+  content: [
+    { type: "paragraph", content: [{ type: "text", text: "Great progress!" }] },
+  ],
+};
+const validUpdateData = { title: "Progress Update", body: validBody };
 
 function mockUpdate(overrides?: Record<string, unknown>) {
   return {
     id: "update-1",
     seedId: "seed-1",
     title: "Old Title",
-    body: "Old body",
+    body: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Old body" }] },
+      ],
+    },
     createdBy: "user-1",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -102,7 +113,7 @@ describe("createUpdate", () => {
       expect.objectContaining({
         seedId: "seed-1",
         title: "Progress Update",
-        body: "Great progress!",
+        body: validBody,
         createdBy: "user-1",
       }),
     );
@@ -185,14 +196,20 @@ describe("editUpdate", () => {
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
+    const newBody = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "New body" }] },
+      ],
+    };
     const result = await editUpdate("update-1", {
       title: "New Title",
-      body: "New body",
+      body: newBody,
     });
 
     expect(result).toEqual({ success: true });
     expect(chain.set).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "New Title", body: "New body" }),
+      expect.objectContaining({ title: "New Title", body: newBody }),
     );
   });
 

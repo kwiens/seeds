@@ -134,7 +134,7 @@ export const seedUpdates = pgTable("seed_updates", {
     .notNull()
     .references(() => seeds.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
-  body: text("body").notNull(),
+  body: jsonb("body").notNull(),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id),

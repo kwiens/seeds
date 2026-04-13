@@ -29,6 +29,13 @@
       "when": 1776035334712,
       "tag": "0003_short_firelord",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776037658435,
+      "tag": "0004_open_vertigo",
+      "breakpoints": true
     }
   ]
 }

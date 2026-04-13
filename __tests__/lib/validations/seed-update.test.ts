@@ -2,9 +2,19 @@ import { describe, expect, it } from "vitest";
 import { seedUpdateFormSchema } from "@/lib/validations/seed-update";
 
 describe("seedUpdateFormSchema", () => {
+  const validBody = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [{ type: "text", text: "Great progress!" }],
+      },
+    ],
+  };
+
   const validData = {
     title: "Progress Update",
-    body: "We made great progress this week.",
+    body: validBody,
   };
 
   it("accepts valid update data", () => {
@@ -17,8 +27,11 @@ describe("seedUpdateFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires body", () => {
-    const result = seedUpdateFormSchema.safeParse({ ...validData, body: "" });
+  it("requires body content", () => {
+    const result = seedUpdateFormSchema.safeParse({
+      ...validData,
+      body: { type: "doc", content: [] },
+    });
     expect(result.success).toBe(false);
   });
 
@@ -38,25 +51,19 @@ describe("seedUpdateFormSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("enforces body max length", () => {
+  it("rejects plain string body", () => {
     const result = seedUpdateFormSchema.safeParse({
       ...validData,
-      body: "a".repeat(20001),
+      body: "a plain string",
     });
     expect(result.success).toBe(false);
-  });
-
-  it("accepts body at max length", () => {
-    const result = seedUpdateFormSchema.safeParse({
-      ...validData,
-      body: "a".repeat(20000),
-    });
-    expect(result.success).toBe(true);
   });
 
   it("rejects missing fields", () => {
     expect(seedUpdateFormSchema.safeParse({}).success).toBe(false);
     expect(seedUpdateFormSchema.safeParse({ title: "hi" }).success).toBe(false);
-    expect(seedUpdateFormSchema.safeParse({ body: "hi" }).success).toBe(false);
+    expect(seedUpdateFormSchema.safeParse({ body: validBody }).success).toBe(
+      false,
+    );
   });
 });

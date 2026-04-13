@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { SeedUpdateWithAuthor } from "@/lib/db/queries/updates";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
+import { extractPlainText } from "@/lib/tiptap";
 
 export function UpdatesList({
   updates,
@@ -31,8 +32,8 @@ export function UpdatesList({
               {formatRelativeTime(update.createdAt)}
             </span>
           </div>
-          <p className="text-muted-foreground line-clamp-3 text-sm">
-            {update.body}
+          <p className="text-muted-foreground line-clamp-3 whitespace-pre-line text-sm">
+            {extractPlainText(update.body)}
           </p>
         </Link>
       ))}

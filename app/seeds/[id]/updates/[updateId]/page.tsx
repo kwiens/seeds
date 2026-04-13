@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getUpdateById } from "@/lib/db/queries/updates";
 import { getSeedById } from "@/lib/db/queries/seeds";
 import { formatDisplayName } from "@/lib/format";
+import { renderTiptapHTML, extractPlainText } from "@/lib/tiptap";
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string; updateId: string }>;
@@ -18,7 +19,7 @@ export async function generateMetadata(props: {
   if (!update) return { title: "Update Not Found" };
   return {
     title: `${update.title} | Seeds`,
-    description: update.body.slice(0, 160),
+    description: extractPlainText(update.body).slice(0, 160),
   };
 }
 
@@ -81,9 +82,10 @@ export default async function UpdatePage(props: {
           </div>
         </div>
 
-        <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-          {update.body}
-        </div>
+        <div
+          className="prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: renderTiptapHTML(update.body) }}
+        />
       </article>
     </div>
   );

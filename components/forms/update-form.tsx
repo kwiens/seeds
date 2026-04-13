@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { JSONContent } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { createUpdate, editUpdate } from "@/lib/actions/updates";
 
 interface UpdateFormProps {
@@ -13,7 +14,7 @@ interface UpdateFormProps {
   update?: {
     id: string;
     title: string;
-    body: string;
+    body: JSONContent;
   };
 }
 
@@ -22,7 +23,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
-  const [body, setBody] = useState(update?.body ?? "");
+  const [body, setBody] = useState<JSONContent | undefined>(update?.body);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,19 +69,13 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="body">Body</Label>
-          <Textarea
-            id="body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            maxLength={20000}
+          <Label>Body</Label>
+          <RichTextEditor
+            content={body}
+            onChange={setBody}
             placeholder="Share your progress, milestones, or news..."
-            rows={12}
-            required
+            disabled={isPending}
           />
-          <p className="text-muted-foreground text-xs">
-            {body.length.toLocaleString()}/20,000 characters
-          </p>
         </div>
 
         <div className="flex gap-3">
