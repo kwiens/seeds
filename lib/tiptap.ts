@@ -1,19 +1,23 @@
 import type { JSONContent } from "@tiptap/react";
 
+const MAX_DEPTH = 20;
+
 /**
  * Server-safe Tiptap JSON to HTML renderer.
  * Supports our limited schema: paragraphs, headings, bold, italic, code,
  * bullet lists, and list items.
  */
 export function renderTiptapHTML(json: unknown): string {
-  return renderNode(json as JSONContent);
+  return renderNode(json as JSONContent, 0);
 }
 
 export function extractPlainText(json: unknown): string {
-  return extractText(json as JSONContent);
+  return extractText(json as JSONContent, 0);
 }
 
-function renderNode(node: JSONContent): string {
+function renderNode(node: JSONContent, depth: number): string {
+  if (depth > MAX_DEPTH) return "";
+
   if (node.type === "text") {
     let html = escapeHtml(node.text ?? "");
     if (node.marks) {
@@ -34,7 +38,9 @@ function renderNode(node: JSONContent): string {
     return html;
   }
 
-  const children = (node.content ?? []).map(renderNode).join("");
+  const children = (node.content ?? [])
+    .map((c) => renderNode(c, depth + 1))
+    .join("");
 
   switch (node.type) {
     case "doc":
@@ -57,13 +63,18 @@ function renderNode(node: JSONContent): string {
   }
 }
 
-const BLOCK_TYPES = new Set(["paragraph", "heading", "bulletList", "listItem"]);
+/** Nodes whose children are block-level (use "\n" between them in plain text) */
+const BLOCK_CONTAINERS = new Set(["doc", "bulletList", "listItem"]);
 
-function extractText(node: JSONContent): string {
+function extractText(node: JSONContent, depth: number): string {
+  if (depth > MAX_DEPTH) return "";
   if (node.text) return node.text;
   if (!node.content) return "";
-  const separator = BLOCK_TYPES.has(node.type ?? "") ? "\n" : "";
-  return node.content.map(extractText).join(separator).trim();
+  const separator = BLOCK_CONTAINERS.has(node.type ?? "") ? "\n" : "";
+  return node.content
+    .map((c) => extractText(c, depth + 1))
+    .join(separator)
+    .trim();
 }
 
 function escapeHtml(str: string): string {
