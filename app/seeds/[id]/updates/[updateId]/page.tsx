@@ -30,13 +30,19 @@ export default async function UpdatePage(props: {
   const params = await props.params;
   const session = await auth();
 
-  const seed = await getSeedById(params.id);
+  const [seed, update] = await Promise.all([
+    getSeedById(params.id),
+    getUpdateById(params.updateId),
+  ]);
   if (!seed) notFound();
-
-  const update = await getUpdateById(params.updateId);
   if (!update || update.seedId !== seed.id) notFound();
 
   const canEdit = canEditSeed(session, seed);
+
+  // Archived seeds are restricted to owner/admin — apply same guard as seed detail page
+  if (seed.status === "archived" && !canEdit) {
+    notFound();
+  }
   const wasEdited =
     update.updatedAt.getTime() - update.createdAt.getTime() > 1000;
 

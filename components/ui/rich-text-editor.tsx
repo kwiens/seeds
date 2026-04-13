@@ -35,6 +35,7 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        orderedList: false,
         codeBlock: false,
         blockquote: false,
         horizontalRule: false,

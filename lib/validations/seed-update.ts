@@ -1,18 +1,5 @@
 import { z } from "zod";
-
-function hasText(node: Record<string, unknown>, depth = 0): boolean {
-  if (depth > 20) return false;
-  if (typeof node.text === "string" && node.text.trim().length > 0) return true;
-  if (Array.isArray(node.content)) {
-    return node.content.some(
-      (child) =>
-        typeof child === "object" &&
-        child !== null &&
-        hasText(child as Record<string, unknown>, depth + 1),
-    );
-  }
-  return false;
-}
+import { extractPlainText } from "@/lib/tiptap";
 
 const tiptapDocSchema = z
   .object({
@@ -20,7 +7,7 @@ const tiptapDocSchema = z
     content: z.array(z.record(z.string(), z.unknown())),
   })
   .passthrough()
-  .refine((doc) => doc.content.some(hasText), "Body is required");
+  .refine((doc) => extractPlainText(doc).trim().length > 0, "Body is required");
 
 export const seedUpdateFormSchema = z.object({
   title: z

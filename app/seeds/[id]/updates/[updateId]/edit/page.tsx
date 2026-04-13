@@ -20,14 +20,16 @@ export default async function EditUpdatePage(props: {
     redirect("/api/auth/signin");
   }
 
-  const seed = await getSeedById(params.id);
+  const [seed, update] = await Promise.all([
+    getSeedById(params.id),
+    getUpdateById(params.updateId),
+  ]);
   if (!seed) notFound();
 
   if (!canEditSeed(session, seed)) {
     redirect(`/seeds/${seed.id}`);
   }
 
-  const update = await getUpdateById(params.updateId);
   if (!update || update.seedId !== seed.id) notFound();
 
   return (

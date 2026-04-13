@@ -4,14 +4,15 @@ const MAX_DEPTH = 20;
 
 /**
  * Server-safe Tiptap JSON to HTML renderer.
- * Supports our limited schema: paragraphs, headings, bold, italic, code,
- * bullet lists, and list items.
+ * Only produces a known-safe subset of HTML from validated Tiptap JSON.
  */
 export function renderTiptapHTML(json: unknown): string {
+  if (!json || typeof json !== "object") return "";
   return renderNode(json as JSONContent, 0);
 }
 
 export function extractPlainText(json: unknown): string {
+  if (!json || typeof json !== "object") return "";
   return extractText(json as JSONContent, 0);
 }
 
@@ -54,6 +55,8 @@ function renderNode(node: JSONContent, depth: number): string {
     }
     case "bulletList":
       return `<ul>${children}</ul>`;
+    case "orderedList":
+      return `<ol>${children}</ol>`;
     case "listItem":
       return `<li>${children}</li>`;
     case "hardBreak":
@@ -64,7 +67,12 @@ function renderNode(node: JSONContent, depth: number): string {
 }
 
 /** Nodes whose children are block-level (use "\n" between them in plain text) */
-const BLOCK_CONTAINERS = new Set(["doc", "bulletList", "listItem"]);
+const BLOCK_CONTAINERS = new Set([
+  "doc",
+  "bulletList",
+  "orderedList",
+  "listItem",
+]);
 
 function extractText(node: JSONContent, depth: number): string {
   if (depth > MAX_DEPTH) return "";
@@ -82,5 +90,6 @@ function escapeHtml(str: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
