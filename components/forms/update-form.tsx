@@ -25,7 +25,9 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
-  const [body, setBody] = useState<JSONContent | undefined>(update?.body);
+  const [body, setBody] = useState<JSONContent>(
+    update?.body ?? { type: "doc", content: [{ type: "paragraph" }] },
+  );
   const [photos, setPhotos] = useState<string[]>(update?.photos ?? []);
 
   function handleSubmit(e: React.FormEvent) {

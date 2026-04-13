@@ -25,12 +25,11 @@ export default async function EditUpdatePage(props: {
     getUpdateById(params.updateId),
   ]);
   if (!seed) notFound();
+  if (!update || update.seedId !== seed.id) notFound();
 
   if (!canEditSeed(session, seed)) {
     redirect(`/seeds/${seed.id}`);
   }
-
-  if (!update || update.seedId !== seed.id) notFound();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">

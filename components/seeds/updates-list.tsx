@@ -33,7 +33,7 @@ export function UpdatesList({
               {formatRelativeTime(update.createdAt)}
             </span>
           </div>
-          {update.photos.length > 0 && (
+          {(update.photos ?? []).length > 0 && (
             <div className="mb-2">
               <PhotoGrid photos={update.photos} alt={update.title} size="sm" />
             </div>
