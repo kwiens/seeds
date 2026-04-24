@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   doublePrecision,
+  index,
   jsonb,
   pgEnum,
   pgTable,
@@ -23,6 +24,8 @@ export const statusEnum = pgEnum("status", [
   "draft",
   "pending",
   "approved",
+  "in_progress",
+  "in_maintenance",
   "archived",
 ]);
 
@@ -41,42 +44,47 @@ export const users = pgTable("users", {
 });
 
 // Seeds
-export const seeds = pgTable("seeds", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  summary: text("summary").notNull(),
-  gardeners: jsonb("gardeners").$type<string[]>().notNull().default([]),
-  locationAddress: text("location_address"),
-  locationDescription: text("location_description"),
-  locationLat: doublePrecision("location_lat"),
-  locationLng: doublePrecision("location_lng"),
-  category: categoryEnum("category").notNull(),
-  roots: jsonb("roots")
-    .$type<{ name: string; committed: boolean }[]>()
-    .notNull()
-    .default([]),
-  supportPeople: jsonb("support_people")
-    .$type<string[]>()
-    .notNull()
-    .default([]),
-  waterHave: jsonb("water_have").$type<string[]>().notNull().default([]),
-  waterNeed: jsonb("water_need").$type<string[]>().notNull().default([]),
-  budget: text("budget"),
-  obstacles: text("obstacles"),
-  imageUrl: text("image_url"),
-  photos: jsonb("photos").$type<string[]>().notNull().default([]),
-  coverPhotoUrl: text("cover_photo_url"),
-  status: statusEnum("status").notNull().default("pending"),
-  createdBy: uuid("created_by")
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const seeds = pgTable(
+  "seeds",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    summary: text("summary").notNull(),
+    gardeners: jsonb("gardeners").$type<string[]>().notNull().default([]),
+    locationAddress: text("location_address"),
+    locationDescription: text("location_description"),
+    locationLat: doublePrecision("location_lat"),
+    locationLng: doublePrecision("location_lng"),
+    category: categoryEnum("category").notNull(),
+    roots: jsonb("roots")
+      .$type<{ name: string; committed: boolean }[]>()
+      .notNull()
+      .default([]),
+    supportPeople: jsonb("support_people")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    waterHave: jsonb("water_have").$type<string[]>().notNull().default([]),
+    waterNeed: jsonb("water_need").$type<string[]>().notNull().default([]),
+    budget: text("budget"),
+    obstacles: text("obstacles"),
+    imageUrl: text("image_url"),
+    photos: jsonb("photos").$type<string[]>().notNull().default([]),
+    coverPhotoUrl: text("cover_photo_url"),
+    badges: jsonb("badges").$type<string[]>().notNull().default([]),
+    status: statusEnum("status").notNull().default("pending"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("idx_seeds_badges").using("gin", t.badges)],
+);
 
 // Seed Approvals
 export const seedApprovals = pgTable("seed_approvals", {
@@ -133,6 +141,15 @@ export const adminEmails = pgTable("admin_emails", {
   email: text("email").notNull().unique(),
   addedBy: uuid("added_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Site Settings (key-value config)
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });

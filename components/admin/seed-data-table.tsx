@@ -29,6 +29,7 @@ interface AdminSeed {
   name: string;
   category: CategoryKey;
   status: string;
+  badges: string[];
   createdAt: Date;
   creatorName: string;
   creatorEmail: string;
@@ -67,8 +68,10 @@ export function AdminSeedTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="pending">Seed (Pending)</SelectItem>
+            <SelectItem value="approved">Seed (Supported)</SelectItem>
+            <SelectItem value="in_progress">Sprout</SelectItem>
+            <SelectItem value="in_maintenance">Tree</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
@@ -149,6 +152,7 @@ export function AdminSeedTable({
                     <SeedActions
                       seedId={seed.id}
                       status={seed.status}
+                      badges={seed.badges}
                       creatorEmail={seed.creatorEmail}
                       supporterEmails={supporterEmailsMap[seed.id]}
                     />

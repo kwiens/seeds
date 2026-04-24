@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
+import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
@@ -12,6 +13,7 @@ import {
   getAllSeeds,
   getSupporterEmailsMap,
 } from "@/lib/db/queries/admin";
+import { getHomepagePhase } from "@/lib/db/queries/settings";
 
 export const metadata: Metadata = {
   title: "Admin | Seeds",
@@ -28,13 +30,19 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [allSeeds, supporterEmailsMap, adminEmails, allComments] =
-    await Promise.all([
-      getAllSeeds(),
-      getSupporterEmailsMap(),
-      getAdminEmails(),
-      getAllComments(),
-    ]);
+  const [
+    allSeeds,
+    supporterEmailsMap,
+    adminEmails,
+    allComments,
+    homepagePhase,
+  ] = await Promise.all([
+    getAllSeeds(),
+    getSupporterEmailsMap(),
+    getAdminEmails(),
+    getAllComments(),
+    getHomepagePhase(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -85,15 +93,27 @@ export default async function AdminPage() {
         </TabsContent>
 
         <TabsContent value="settings">
-          <div className="mt-4 space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold">Admin Emails</h2>
-              <p className="text-muted-foreground text-sm">
-                Manage who has admin access. Emails added here will auto-promote
-                users on their next sign-in.
-              </p>
+          <div className="mt-4 space-y-8">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Homepage Phase</h2>
+                <p className="text-muted-foreground text-sm">
+                  Switch the homepage between Seed Gathering (Phase 1) and Seed
+                  Nurturing (Phase 2) layouts.
+                </p>
+              </div>
+              <HomepagePhaseToggle currentPhase={homepagePhase} />
             </div>
-            <AdminEmailList dbEmails={adminEmails} envEmails={envEmails} />
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Admin Emails</h2>
+                <p className="text-muted-foreground text-sm">
+                  Manage who has admin access. Emails added here will
+                  auto-promote users on their next sign-in.
+                </p>
+              </div>
+              <AdminEmailList dbEmails={adminEmails} envEmails={envEmails} />
+            </div>
           </div>
         </TabsContent>
       </Tabs>

@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { CategoryBadge } from "@/components/seeds/category-badge";
+import { Badge } from "@/components/ui/badge";
 import { categories, type CategoryKey } from "@/lib/categories";
-import { Sun } from "lucide-react";
+import { Heart, Sun } from "lucide-react";
 
 interface SeedCardProps {
   id: string;
@@ -12,6 +13,8 @@ interface SeedCardProps {
   supportCount: number;
   summary?: string;
   imageUrl?: string | null;
+  coverPhotoUrl?: string | null;
+  status?: string;
 }
 
 export function SeedCard({
@@ -21,17 +24,23 @@ export function SeedCard({
   supportCount,
   summary,
   imageUrl,
+  coverPhotoUrl,
+  status,
 }: SeedCardProps) {
   const info = categories[category];
   const Icon = info.icon;
 
+  // Proposed seeds (pending) use the AI image; all other stages prefer the cover photo
+  const displayImage =
+    status === "pending" ? imageUrl : (coverPhotoUrl ?? imageUrl);
+
   return (
     <Link href={`/seeds/${id}`} className="min-w-0">
       <Card className="group h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
-        {imageUrl ? (
+        {displayImage ? (
           <div className="relative h-52 overflow-hidden rounded-t-lg sm:h-40">
             <Image
-              src={imageUrl}
+              src={displayImage}
               alt={name}
               fill
               className="object-cover scale-110 transition-transform group-hover:scale-115"
@@ -46,7 +55,18 @@ export function SeedCard({
           </div>
         )}
         <CardContent className="p-4">
-          <CategoryBadge category={category} className="mb-2" />
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <CategoryBadge category={category} />
+            {status === "approved" && (
+              <Badge
+                variant="outline"
+                className="gap-1 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              >
+                <Heart className="size-3 fill-current" />
+                Community Supported
+              </Badge>
+            )}
+          </div>
           <h3 className="line-clamp-2 font-semibold leading-tight">{name}</h3>
           {summary && (
             <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">

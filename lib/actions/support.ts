@@ -1,10 +1,12 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { seedSupports } from "@/lib/db/schema";
+import { seeds, seedSupports } from "@/lib/db/schema";
+
+const AUTO_PROMOTE_THRESHOLD = 10;
 
 export async function toggleSupport(seedId: string) {
   const session = await auth();
@@ -19,6 +21,7 @@ export async function toggleSupport(seedId: string) {
     ),
   });
 
+  let promoted = false;
   try {
     if (existing) {
       await db.delete(seedSupports).where(eq(seedSupports.id, existing.id));
@@ -27,6 +30,8 @@ export async function toggleSupport(seedId: string) {
         seedId,
         userId: session.user.id,
       });
+
+      promoted = await autoPromoteIfEligible(seedId);
     }
   } catch {
     // Unique constraint violation from concurrent double-click — treat as no-op
@@ -34,5 +39,27 @@ export async function toggleSupport(seedId: string) {
 
   revalidatePath(`/seeds/${seedId}`);
   revalidatePath("/");
+  if (promoted) {
+    revalidatePath("/admin");
+    revalidatePath("/status/seeds");
+  }
   return { success: true };
+}
+
+// Single conditional UPDATE: atomically promotes iff still pending AND
+// supporter count has reached the threshold. Returns whether a promotion fired.
+async function autoPromoteIfEligible(seedId: string) {
+  const updated = await db
+    .update(seeds)
+    .set({ status: "approved", updatedAt: new Date() })
+    .where(
+      and(
+        eq(seeds.id, seedId),
+        eq(seeds.status, "pending"),
+        sql`(SELECT COUNT(*) FROM ${seedSupports} WHERE ${seedSupports.seedId} = ${seedId}) >= ${AUTO_PROMOTE_THRESHOLD}`,
+      ),
+    )
+    .returning({ id: seeds.id });
+
+  return updated.length > 0;
 }

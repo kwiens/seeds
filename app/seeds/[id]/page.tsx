@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CategoryBadge } from "@/components/seeds/category-badge";
+import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
 import { CommentsSection } from "@/components/seeds/comments-section";
 import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
@@ -154,15 +155,10 @@ export default async function SeedPage(props: {
         <div>
           <CategoryBadge category={seed.category} className="mb-2" />
           <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
-          {seed.status === "pending" && (
-            <Badge variant="outline" className="mt-2">
-              Pending Approval
-            </Badge>
-          )}
-          {seed.status === "archived" && (
-            <Badge variant="outline" className="mt-2">
-              Archived
-            </Badge>
+          {seed.status !== "approved" && (
+            <div className="mt-2">
+              <SeedStatusBadge status={seed.status} />
+            </div>
           )}
         </div>
         <div className="flex flex-wrap gap-2">

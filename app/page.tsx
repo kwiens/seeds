@@ -7,9 +7,12 @@ import type { CategoryKey } from "@/lib/categories";
 import {
   getApprovedSeeds,
   getAllSeedsForMap,
+  getSeedPreviewsByStatus,
   type SortOption,
 } from "@/lib/db/queries/seeds";
+import { getHomepagePhase } from "@/lib/db/queries/settings";
 import { HomeContent } from "./home-content";
+import { HomePhase2 } from "./home-phase2";
 
 export default async function HomePage(props: {
   searchParams: Promise<{
@@ -21,27 +24,7 @@ export default async function HomePage(props: {
 }) {
   const searchParams = await props.searchParams;
   const session = await auth();
-  const category = searchParams.category as CategoryKey | undefined;
-  const page = Number(searchParams.page) || 1;
-  const sortParam = searchParams.sort;
-  const search = searchParams.search || undefined;
-  const sort: SortOption =
-    sortParam === "supported"
-      ? "supported"
-      : sortParam === "mine" && session?.user
-        ? "mine"
-        : "newest";
-
-  const [seedResult, mapSeeds] = await Promise.all([
-    getApprovedSeeds({
-      category,
-      page,
-      sort,
-      userId: session?.user?.id,
-      search,
-    }),
-    getAllSeedsForMap({ category, userId: session?.user?.id, search }),
-  ]);
+  const phase = await getHomepagePhase();
 
   return (
     <div className="mx-auto max-w-6xl overflow-x-hidden px-4 py-8">
@@ -66,16 +49,72 @@ export default async function HomePage(props: {
       </div>
 
       <Suspense fallback={<div className="py-8 text-center">Loading...</div>}>
-        <HomeContent
-          seeds={seedResult.seeds}
-          mapSeeds={mapSeeds}
-          currentPage={seedResult.currentPage}
-          totalPages={seedResult.totalPages}
-          activeCategory={category}
-          activeSort={sort}
-          isSignedIn={!!session?.user}
-        />
+        {phase === 2 ? (
+          <Phase2Content userId={session?.user?.id} />
+        ) : (
+          <Phase1Content
+            searchParams={searchParams}
+            userId={session?.user?.id}
+            isSignedIn={!!session?.user}
+          />
+        )}
       </Suspense>
     </div>
   );
+}
+
+async function Phase1Content({
+  searchParams,
+  userId,
+  isSignedIn,
+}: {
+  searchParams: {
+    category?: string;
+    page?: string;
+    sort?: string;
+    search?: string;
+  };
+  userId?: string;
+  isSignedIn: boolean;
+}) {
+  const category = searchParams.category as CategoryKey | undefined;
+  const page = Number(searchParams.page) || 1;
+  const sortParam = searchParams.sort;
+  const search = searchParams.search || undefined;
+  const sort: SortOption =
+    sortParam === "supported"
+      ? "supported"
+      : sortParam === "mine" && userId
+        ? "mine"
+        : "newest";
+
+  const [seedResult, mapSeeds] = await Promise.all([
+    getApprovedSeeds({
+      category,
+      page,
+      sort,
+      userId,
+      search,
+    }),
+    // Scope Phase 1 map to the Seed bucket (pending+approved) to match the grid.
+    getAllSeedsForMap({ category, status: "approved", userId, search }),
+  ]);
+
+  return (
+    <HomeContent
+      seeds={seedResult.seeds}
+      mapSeeds={mapSeeds}
+      currentPage={seedResult.currentPage}
+      totalPages={seedResult.totalPages}
+      activeCategory={category}
+      activeSort={sort}
+      isSignedIn={isSignedIn}
+    />
+  );
+}
+
+async function Phase2Content({ userId }: { userId?: string }) {
+  const previews = await getSeedPreviewsByStatus({ userId });
+
+  return <HomePhase2 previews={previews} />;
 }
