@@ -2,7 +2,6 @@ import {
   Banknote,
   HardHat,
   HandHelping,
-  Users,
   Building2,
   type LucideIcon,
 } from "lucide-react";
@@ -11,7 +10,6 @@ export type BadgeKey =
   | "funded"
   | "in_construction"
   | "needs_volunteers"
-  | "community_led"
   | "city_partnership";
 
 export interface BadgeInfo {
@@ -43,13 +41,6 @@ export const badges: Record<BadgeKey, BadgeInfo> = {
     color: "violet",
     bgClass: "bg-violet-100 dark:bg-violet-900/30",
     textClass: "text-violet-700 dark:text-violet-300",
-  },
-  community_led: {
-    label: "Community Led",
-    icon: Users,
-    color: "blue",
-    bgClass: "bg-blue-100 dark:bg-blue-900/30",
-    textClass: "text-blue-700 dark:text-blue-300",
   },
   city_partnership: {
     label: "City Partnership",

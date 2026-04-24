@@ -10,6 +10,7 @@ export async function getAllSeeds() {
       name: seeds.name,
       category: seeds.category,
       status: seeds.status,
+      badges: seeds.badges,
       createdAt: seeds.createdAt,
       creatorName: users.name,
       creatorEmail: users.email,

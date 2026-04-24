@@ -29,6 +29,7 @@ interface AdminSeed {
   name: string;
   category: CategoryKey;
   status: string;
+  badges: string[];
   createdAt: Date;
   creatorName: string;
   creatorEmail: string;
@@ -151,6 +152,7 @@ export function AdminSeedTable({
                     <SeedActions
                       seedId={seed.id}
                       status={seed.status}
+                      badges={seed.badges}
                       creatorEmail={seed.creatorEmail}
                       supporterEmails={supporterEmailsMap[seed.id]}
                     />

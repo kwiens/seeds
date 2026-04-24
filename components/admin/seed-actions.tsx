@@ -12,14 +12,19 @@ import {
   MoreHorizontal,
   Pencil,
   QrCode,
+  Tag,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -31,20 +36,38 @@ import {
   advanceToMaintenance,
   revertToApproved,
   revertToInProgress,
+  setSeedBadges,
 } from "@/lib/actions/admin";
+import { badges, badgeKeys, type BadgeKey } from "@/lib/badges";
 
 export function SeedActions({
   seedId,
   status,
+  badges: activeBadges,
   creatorEmail,
   supporterEmails,
 }: {
   seedId: string;
   status: string;
+  badges: string[];
   creatorEmail: string;
   supporterEmails?: string[];
 }) {
   const [isPending, startTransition] = useTransition();
+
+  function toggleBadge(key: BadgeKey) {
+    const next = activeBadges.includes(key)
+      ? activeBadges.filter((b) => b !== key)
+      : [
+          ...activeBadges.filter((b): b is BadgeKey =>
+            (badgeKeys as string[]).includes(b),
+          ),
+          key,
+        ];
+    startTransition(async () => {
+      await setSeedBadges(seedId, next as BadgeKey[]);
+    });
+  }
 
   return (
     <DropdownMenu>
@@ -119,6 +142,34 @@ export function SeedActions({
             Email{supporterEmails?.length ? " Team" : " Creator"}
           </a>
         </DropdownMenuItem>
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Tag className="mr-2 size-4" />
+            Badges
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {badgeKeys.map((key) => {
+              const info = badges[key];
+              const Icon = info.icon;
+              return (
+                <DropdownMenuCheckboxItem
+                  key={key}
+                  checked={activeBadges.includes(key)}
+                  onSelect={(e) => {
+                    // Prevent the parent menu from closing on each toggle
+                    e.preventDefault();
+                    toggleBadge(key);
+                  }}
+                  disabled={isPending}
+                >
+                  <Icon className="mr-2 size-3.5" />
+                  {info.label}
+                </DropdownMenuCheckboxItem>
+              );
+            })}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
 
         <DropdownMenuSeparator />
 

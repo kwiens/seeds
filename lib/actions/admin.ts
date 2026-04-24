@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
+import { badgeKeys, type BadgeKey } from "@/lib/badges";
 
 const STATUS_LISTING_PATHS = [
   "/status/seeds",
@@ -112,6 +113,24 @@ export async function revertToApproved(seedId: string) {
 
 export async function revertToInProgress(seedId: string) {
   return updateSeedStatus(seedId, "in_progress");
+}
+
+export async function setSeedBadges(seedId: string, badges: BadgeKey[]) {
+  await requireAdmin();
+
+  // Defensive re-check against the known keys — the client-side toggle uses
+  // the same source of truth, but we don't trust the wire.
+  const cleaned = badges.filter((b): b is BadgeKey =>
+    (badgeKeys as string[]).includes(b),
+  );
+
+  await db
+    .update(seeds)
+    .set({ badges: cleaned, updatedAt: new Date() })
+    .where(eq(seeds.id, seedId));
+
+  revalidateSeedStatusPaths(seedId);
+  return { success: true };
 }
 
 export async function setHomepagePhase(phase: 1 | 2) {
