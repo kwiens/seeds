@@ -6,6 +6,19 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
 
+const STATUS_LISTING_PATHS = [
+  "/status/seeds",
+  "/status/sprouts",
+  "/status/trees",
+];
+
+function revalidateSeedStatusPaths(seedId: string) {
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath(`/seeds/${seedId}`);
+  for (const p of STATUS_LISTING_PATHS) revalidatePath(p);
+}
+
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user?.id || session.user.role !== "admin") {
@@ -22,7 +35,6 @@ async function updateSeedStatus(
     | "in_progress"
     | "in_maintenance"
     | "archived",
-  extraPaths: string[] = [],
 ) {
   await requireAdmin();
 
@@ -31,9 +43,7 @@ async function updateSeedStatus(
     .set({ status, updatedAt: new Date() })
     .where(eq(seeds.id, seedId));
 
-  revalidatePath("/admin");
-  revalidatePath("/");
-  for (const p of extraPaths) revalidatePath(p);
+  revalidateSeedStatusPaths(seedId);
   return { success: true };
 }
 
@@ -51,9 +61,7 @@ export async function approveSeed(seedId: string) {
     }),
   ]);
 
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidatePath(`/seeds/${seedId}`);
+  revalidateSeedStatusPaths(seedId);
   return { success: true };
 }
 
@@ -66,23 +74,23 @@ export async function unarchiveSeed(seedId: string) {
 }
 
 export async function unapproveSeed(seedId: string) {
-  return updateSeedStatus(seedId, "pending", [`/seeds/${seedId}`]);
+  return updateSeedStatus(seedId, "pending");
 }
 
 export async function advanceToInProgress(seedId: string) {
-  return updateSeedStatus(seedId, "in_progress", [`/seeds/${seedId}`]);
+  return updateSeedStatus(seedId, "in_progress");
 }
 
 export async function advanceToMaintenance(seedId: string) {
-  return updateSeedStatus(seedId, "in_maintenance", [`/seeds/${seedId}`]);
+  return updateSeedStatus(seedId, "in_maintenance");
 }
 
 export async function revertToApproved(seedId: string) {
-  return updateSeedStatus(seedId, "approved", [`/seeds/${seedId}`]);
+  return updateSeedStatus(seedId, "approved");
 }
 
 export async function revertToInProgress(seedId: string) {
-  return updateSeedStatus(seedId, "in_progress", [`/seeds/${seedId}`]);
+  return updateSeedStatus(seedId, "in_progress");
 }
 
 export async function setHomepagePhase(phase: 1 | 2) {

@@ -11,7 +11,7 @@ import {
 const SEEDS_PER_PAGE = 20;
 
 /** Build a status filter that expands "approved" to include "pending" (merged Seeds bucket) */
-function statusFilter(status: StatusKey) {
+export function statusFilter(status: StatusKey) {
   if (seedStatuses.includes(status)) {
     return or(...seedStatuses.map((s) => eq(seeds.status, s)));
   }
@@ -61,8 +61,25 @@ function buildVisibilityFilter(options: {
 
 export type SortOption = "newest" | "supported" | "mine";
 
-export async function getApprovedSeeds(options: {
+const listSelectFields = {
+  id: seeds.id,
+  name: seeds.name,
+  summary: seeds.summary,
+  category: seeds.category,
+  imageUrl: seeds.imageUrl,
+  coverPhotoUrl: seeds.coverPhotoUrl,
+  locationLat: seeds.locationLat,
+  locationLng: seeds.locationLng,
+  status: seeds.status,
+  createdBy: seeds.createdBy,
+  createdAt: seeds.createdAt,
+  supportCount: supportCountSql,
+};
+
+async function queryPagedSeeds(options: {
   category?: CategoryKey;
+  status?: StatusKey;
+  badges?: string[];
   page?: number;
   userId?: string;
   sort?: SortOption;
@@ -71,27 +88,16 @@ export async function getApprovedSeeds(options: {
   const { page = 1, sort = "newest" } = options;
   const offset = (page - 1) * SEEDS_PER_PAGE;
 
-  const where = buildVisibilityFilter(options);
-
-  const orderBy =
-    sort === "supported"
-      ? [desc(supportCountSql), desc(seeds.createdAt)]
-      : [desc(seeds.createdAt)];
-
-  const selectFields = {
-    id: seeds.id,
-    name: seeds.name,
-    summary: seeds.summary,
-    category: seeds.category,
-    imageUrl: seeds.imageUrl,
-    coverPhotoUrl: seeds.coverPhotoUrl,
-    locationLat: seeds.locationLat,
-    locationLng: seeds.locationLng,
-    status: seeds.status,
-    createdBy: seeds.createdBy,
-    createdAt: seeds.createdAt,
-    supportCount: supportCountSql,
-  };
+  const conditions = [];
+  const base = buildVisibilityFilter(options);
+  if (base) conditions.push(base);
+  if (options.status) conditions.push(statusFilter(options.status));
+  if (options.badges?.length) {
+    conditions.push(
+      sql`${seeds.badges} @> ${JSON.stringify(options.badges)}::jsonb`,
+    );
+  }
+  const where = conditions.length > 1 ? and(...conditions) : conditions[0];
 
   // "mine" filter: only seeds the current user has supported
   if (sort === "mine" && options.userId) {
@@ -99,7 +105,7 @@ export async function getApprovedSeeds(options: {
 
     const [seedRows, countResult] = await Promise.all([
       db
-        .select(selectFields)
+        .select(listSelectFields)
         .from(seeds)
         .innerJoin(users, eq(seeds.createdBy, users.id))
         .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
@@ -123,9 +129,14 @@ export async function getApprovedSeeds(options: {
     };
   }
 
+  const orderBy =
+    sort === "supported"
+      ? [desc(supportCountSql), desc(seeds.createdAt)]
+      : [desc(seeds.createdAt)];
+
   const [seedRows, countResult] = await Promise.all([
     db
-      .select(selectFields)
+      .select(listSelectFields)
       .from(seeds)
       .innerJoin(users, eq(seeds.createdBy, users.id))
       .where(where)
@@ -145,6 +156,27 @@ export async function getApprovedSeeds(options: {
     totalPages: Math.ceil((countResult[0]?.count ?? 0) / SEEDS_PER_PAGE),
     currentPage: page,
   };
+}
+
+export async function getApprovedSeeds(options: {
+  category?: CategoryKey;
+  page?: number;
+  userId?: string;
+  sort?: SortOption;
+  search?: string;
+}) {
+  return queryPagedSeeds(options);
+}
+
+export async function getSeedsByStatus(options: {
+  status: StatusKey;
+  badges?: string[];
+  page?: number;
+  sort?: SortOption;
+  userId?: string;
+  search?: string;
+}) {
+  return queryPagedSeeds(options);
 }
 
 export async function getSeedById(id: string) {
@@ -262,104 +294,6 @@ export async function getAllSeedsForMap(options: {
     .from(seeds)
     .innerJoin(users, eq(seeds.createdBy, users.id))
     .where(where);
-}
-
-export async function getSeedsByStatus(options: {
-  status: StatusKey;
-  badges?: string[];
-  page?: number;
-  sort?: SortOption;
-  userId?: string;
-  search?: string;
-}) {
-  const { page = 1, sort = "newest" } = options;
-  const offset = (page - 1) * SEEDS_PER_PAGE;
-
-  const conditions = [];
-  const base = buildVisibilityFilter({
-    userId: options.userId,
-    search: options.search,
-  });
-  if (base) conditions.push(base);
-  conditions.push(statusFilter(options.status));
-  if (options.badges?.length) {
-    conditions.push(
-      sql`${seeds.badges} @> ${JSON.stringify(options.badges)}::jsonb`,
-    );
-  }
-  const where = and(...conditions);
-
-  const orderBy =
-    sort === "supported"
-      ? [desc(supportCountSql), desc(seeds.createdAt)]
-      : [desc(seeds.createdAt)];
-
-  const selectFields = {
-    id: seeds.id,
-    name: seeds.name,
-    summary: seeds.summary,
-    category: seeds.category,
-    imageUrl: seeds.imageUrl,
-    coverPhotoUrl: seeds.coverPhotoUrl,
-    locationLat: seeds.locationLat,
-    locationLng: seeds.locationLng,
-    status: seeds.status,
-    createdBy: seeds.createdBy,
-    createdAt: seeds.createdAt,
-    supportCount: supportCountSql,
-  };
-
-  if (sort === "mine" && options.userId) {
-    const mineWhere = and(where, eq(seedSupports.userId, options.userId));
-
-    const [seedRows, countResult] = await Promise.all([
-      db
-        .select(selectFields)
-        .from(seeds)
-        .innerJoin(users, eq(seeds.createdBy, users.id))
-        .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
-        .where(mineWhere)
-        .orderBy(desc(seedSupports.createdAt))
-        .limit(SEEDS_PER_PAGE)
-        .offset(offset),
-      db
-        .select({ count: count() })
-        .from(seeds)
-        .innerJoin(users, eq(seeds.createdBy, users.id))
-        .innerJoin(seedSupports, eq(seeds.id, seedSupports.seedId))
-        .where(mineWhere),
-    ]);
-
-    return {
-      seeds: seedRows,
-      totalCount: countResult[0]?.count ?? 0,
-      totalPages: Math.ceil((countResult[0]?.count ?? 0) / SEEDS_PER_PAGE),
-      currentPage: page,
-    };
-  }
-
-  const [seedRows, countResult] = await Promise.all([
-    db
-      .select(selectFields)
-      .from(seeds)
-      .innerJoin(users, eq(seeds.createdBy, users.id))
-      .where(where)
-      .orderBy(...orderBy)
-      .limit(SEEDS_PER_PAGE)
-      .offset(offset),
-    db
-      .select({ count: count() })
-      .from(seeds)
-      .innerJoin(users, eq(seeds.createdBy, users.id))
-      .where(where),
-  ]);
-
-  return {
-    seeds: seedRows,
-    totalCount: countResult[0]?.count ?? 0,
-    totalPages: Math.ceil((countResult[0]?.count ?? 0) / SEEDS_PER_PAGE),
-    currentPage: page,
-  };
 }
 
 const PREVIEW_LIMIT = 8;

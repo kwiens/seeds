@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { badgeKeys, type BadgeKey } from "@/lib/badges";
 
 export const seedFormSchema = z
   .object({
@@ -38,7 +39,10 @@ export const seedFormSchema = z
     obstacles: z.string().max(10000).optional(),
     photos: z.array(z.string().url()).max(5).default([]),
     coverPhotoUrl: z.string().url().nullable().optional(),
-    badges: z.array(z.string().max(50)).max(20).default([]),
+    badges: z
+      .array(z.enum(badgeKeys as [BadgeKey, ...BadgeKey[]]))
+      .max(20)
+      .default([]),
   })
   .refine(
     (data) => !data.coverPhotoUrl || data.photos.includes(data.coverPhotoUrl),

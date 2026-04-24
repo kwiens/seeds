@@ -103,7 +103,7 @@ describe("archiveSeed", () => {
     );
   });
 
-  it("revalidates correct paths", async () => {
+  it("revalidates correct paths including status listings", async () => {
     setAuthMock(auth, mockAdminSession());
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
@@ -112,6 +112,10 @@ describe("archiveSeed", () => {
 
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
     expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/status/seeds");
+    expect(revalidatePath).toHaveBeenCalledWith("/status/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/status/trees");
   });
 });
 
@@ -154,6 +158,7 @@ describe("unarchiveSeed", () => {
 
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
     expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePath).toHaveBeenCalledWith("/status/seeds");
   });
 });
 
