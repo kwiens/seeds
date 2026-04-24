@@ -160,8 +160,9 @@ export function SeedActions({
           </DropdownMenuItem>
         )}
 
-        {/* Archive/Unarchive */}
-        {status !== "archived" && (
+        {/* Archive/Unarchive — archive only from seed stage to keep unarchive
+            lossless. Revert sprouts/trees back to Seed first if needed. */}
+        {(status === "pending" || status === "approved") && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {

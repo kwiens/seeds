@@ -96,7 +96,8 @@ async function Phase1Content({
       userId,
       search,
     }),
-    getAllSeedsForMap({ category, userId, search }),
+    // Scope Phase 1 map to the Seed bucket (pending+approved) to match the grid.
+    getAllSeedsForMap({ category, status: "approved", userId, search }),
   ]);
 
   return (

@@ -165,7 +165,9 @@ export async function getApprovedSeeds(options: {
   sort?: SortOption;
   search?: string;
 }) {
-  return queryPagedSeeds(options);
+  // Scope Phase 1 home to the Seed bucket (pending+approved) so the grid
+  // doesn't mix in sprouts/trees once mature projects exist.
+  return queryPagedSeeds({ ...options, status: "approved" });
 }
 
 export async function getSeedsByStatus(options: {

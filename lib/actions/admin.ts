@@ -66,7 +66,28 @@ export async function approveSeed(seedId: string) {
 }
 
 export async function archiveSeed(seedId: string) {
-  return updateSeedStatus(seedId, "archived");
+  await requireAdmin();
+
+  // Archive only from the seed stage (pending/approved). Otherwise unarchiving
+  // would silently demote a sprout/tree back to pending — admin must revert
+  // through the lifecycle first.
+  const current = await db.query.seeds.findFirst({
+    where: eq(seeds.id, seedId),
+    columns: { status: true },
+  });
+  if (current?.status !== "pending" && current?.status !== "approved") {
+    throw new Error(
+      "Seeds in progress or maintenance must be reverted to Seed before archiving",
+    );
+  }
+
+  await db
+    .update(seeds)
+    .set({ status: "archived", updatedAt: new Date() })
+    .where(eq(seeds.id, seedId));
+
+  revalidateSeedStatusPaths(seedId);
+  return { success: true };
 }
 
 export async function unarchiveSeed(seedId: string) {

@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
     update: vi.fn(),
     insert: vi.fn(),
     batch: vi.fn(),
+    query: { seeds: { findFirst: vi.fn() } },
   },
 }));
 
@@ -90,8 +91,11 @@ describe("archiveSeed", () => {
     await expect(archiveSeed("seed-1")).rejects.toThrow("Unauthorized");
   });
 
-  it("archives seed by setting status", async () => {
+  it("archives a pending seed by setting status", async () => {
     setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+      status: "pending",
+    } as any);
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -103,8 +107,48 @@ describe("archiveSeed", () => {
     );
   });
 
+  it("archives an approved seed", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+      status: "approved",
+    } as any);
+    const chain = mockDbUpdateChain();
+    vi.mocked(db.update).mockReturnValue(chain as any);
+
+    const result = await archiveSeed("seed-1");
+
+    expect(result).toEqual({ success: true });
+  });
+
+  it("refuses to archive a sprout (in_progress) to avoid lossy unarchive", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+      status: "in_progress",
+    } as any);
+
+    await expect(archiveSeed("seed-1")).rejects.toThrow(
+      /reverted to Seed before archiving/,
+    );
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to archive a tree (in_maintenance)", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+      status: "in_maintenance",
+    } as any);
+
+    await expect(archiveSeed("seed-1")).rejects.toThrow(
+      /reverted to Seed before archiving/,
+    );
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
   it("revalidates correct paths including status listings", async () => {
     setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+      status: "approved",
+    } as any);
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
