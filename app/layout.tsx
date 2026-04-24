@@ -4,6 +4,7 @@ import { Archivo } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/header";
+import { EventBanner } from "@/components/layout/event-banner";
 import { Footer } from "@/components/layout/footer";
 import "./globals.css";
 
@@ -65,6 +66,7 @@ export default function RootLayout({
       <body className={`${archivo.variable} antialiased`}>
         <Providers>
           <div className="flex min-h-svh flex-col">
+            <EventBanner />
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
