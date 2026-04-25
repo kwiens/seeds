@@ -5,6 +5,7 @@ import {
   mockAdminSession,
   mockDbUpdateChain,
   mockDbInsertSimpleChain,
+  mockDbInsertOnConflictChain,
   setAuthMock,
 } from "../../test-utils";
 
@@ -23,6 +24,7 @@ import { db } from "@/lib/db";
 import {
   approveSeed,
   archiveSeed,
+  setBannerConfig,
   unapproveSeed,
   unarchiveSeed,
 } from "@/lib/actions/admin";
@@ -246,5 +248,127 @@ describe("unapproveSeed", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
     expect(revalidatePath).toHaveBeenCalledWith("/");
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+  });
+});
+
+describe("setBannerConfig", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects unauthenticated users", async () => {
+    setAuthMock(auth, null);
+
+    await expect(
+      setBannerConfig({ enabled: true, message: "Hi", href: "" }),
+    ).rejects.toThrow("Unauthorized");
+  });
+
+  it("rejects non-admin users", async () => {
+    setAuthMock(auth, mockSession({ role: "user" }));
+
+    await expect(
+      setBannerConfig({ enabled: true, message: "Hi", href: "" }),
+    ).rejects.toThrow("Unauthorized");
+  });
+
+  it("accepts a valid config", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.insert).mockReturnValue(mockDbInsertOnConflictChain() as any);
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "Join us tonight",
+      href: "https://example.com",
+    });
+
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects non-https hrefs", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "Hi",
+      href: "javascript:alert(1)",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects http:// hrefs", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "Hi",
+      href: "http://example.com",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+  });
+
+  it("rejects malformed URLs", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "Hi",
+      href: "https://",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+  });
+
+  it("rejects over-length messages", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "x".repeat(201),
+      href: "",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+  });
+
+  it("accepts an empty href", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.insert).mockReturnValue(mockDbInsertOnConflictChain() as any);
+
+    const result = await setBannerConfig({
+      enabled: false,
+      message: "",
+      href: "",
+    });
+
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects enabled=true with an empty message", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "",
+      href: "",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects enabled=true with a whitespace-only message", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "   ",
+      href: "",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
   });
 });

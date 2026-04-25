@@ -1,11 +1,42 @@
 "use server";
 
-import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { eq, sql } from "drizzle-orm";
+import { revalidatePath, updateTag } from "next/cache";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
+import {
+  BANNER_CACHE_TAG,
+  BANNER_SETTING_KEYS,
+} from "@/lib/db/queries/settings";
+
+const bannerConfigSchema = z
+  .object({
+    enabled: z.boolean(),
+    message: z.string().max(200, "Message must be 200 characters or fewer"),
+    href: z
+      .string()
+      .max(2000)
+      .refine(
+        (v) => v === "" || /^https:\/\//i.test(v),
+        "Link must start with https://",
+      )
+      .refine((v) => {
+        if (v === "") return true;
+        try {
+          new URL(v);
+          return true;
+        } catch {
+          return false;
+        }
+      }, "Invalid URL"),
+  })
+  .refine((data) => !data.enabled || data.message.length > 0, {
+    message: "Enabled banner must have a message",
+    path: ["message"],
+  });
 
 const STATUS_LISTING_PATHS = [
   "/status/seeds",
@@ -131,6 +162,53 @@ export async function setSeedBadges(seedId: string, badges: BadgeKey[]) {
 
   revalidateSeedStatusPaths(seedId);
   return { success: true };
+}
+
+export async function setBannerConfig(input: {
+  enabled: boolean;
+  message: string;
+  href: string;
+}) {
+  await requireAdmin();
+
+  const parsed = bannerConfigSchema.safeParse({
+    enabled: input.enabled,
+    message: input.message.trim(),
+    href: input.href.trim(),
+  });
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      error: parsed.error.issues[0]?.message ?? "Invalid banner config",
+    };
+  }
+
+  const { enabled, message, href } = parsed.data;
+  const now = new Date();
+
+  // Single multi-row upsert — all three keys land together or not at all,
+  // avoiding a partial state like "enabled flipped but message unchanged".
+  await db
+    .insert(siteSettings)
+    .values([
+      {
+        key: BANNER_SETTING_KEYS.enabled,
+        value: enabled ? "true" : "false",
+        updatedAt: now,
+      },
+      { key: BANNER_SETTING_KEYS.message, value: message, updatedAt: now },
+      { key: BANNER_SETTING_KEYS.href, value: href, updatedAt: now },
+    ])
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: {
+        value: sql`excluded.value`,
+        updatedAt: sql`excluded.updated_at`,
+      },
+    });
+
+  updateTag(BANNER_CACHE_TAG);
+  return { success: true as const };
 }
 
 export async function setHomepagePhase(phase: 1 | 2) {
