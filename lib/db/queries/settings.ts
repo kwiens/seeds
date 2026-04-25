@@ -1,7 +1,9 @@
-import { inArray } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { siteSettings } from "@/lib/db/schema";
+
+export const BANNER_CACHE_TAG = "banner";
 
 export async function getSiteSetting(key: string): Promise<string | null> {
   try {
@@ -42,15 +44,21 @@ export interface BannerConfig {
   href: string;
 }
 
-export async function getBannerConfig(): Promise<BannerConfig> {
-  const rows = await getSiteSettings([
-    "banner_enabled",
-    "banner_message",
-    "banner_href",
-  ]);
-  return {
-    enabled: rows.banner_enabled === "true",
-    message: rows.banner_message ?? "",
-    href: rows.banner_href ?? "",
-  };
-}
+// Cached because the banner renders in the root layout — a naive read would
+// hit the DB on every request site-wide. Tag-invalidated by setBannerConfig.
+export const getBannerConfig = unstable_cache(
+  async (): Promise<BannerConfig> => {
+    const rows = await getSiteSettings([
+      "banner_enabled",
+      "banner_message",
+      "banner_href",
+    ]);
+    return {
+      enabled: rows.banner_enabled === "true",
+      message: rows.banner_message ?? "",
+      href: rows.banner_href ?? "",
+    };
+  },
+  ["banner-config"],
+  { tags: [BANNER_CACHE_TAG] },
+);

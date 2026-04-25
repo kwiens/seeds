@@ -1,11 +1,34 @@
 "use server";
 
-import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { eq, sql } from "drizzle-orm";
+import { revalidatePath, updateTag } from "next/cache";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
+import { BANNER_CACHE_TAG } from "@/lib/db/queries/settings";
+
+const bannerConfigSchema = z.object({
+  enabled: z.boolean(),
+  message: z.string().max(200, "Message must be 200 characters or fewer"),
+  href: z
+    .string()
+    .max(2000)
+    .refine(
+      (v) => v === "" || /^https:\/\//i.test(v),
+      "Link must start with https://",
+    )
+    .refine((v) => {
+      if (v === "") return true;
+      try {
+        new URL(v);
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Invalid URL"),
+});
 
 const STATUS_LISTING_PATHS = [
   "/status/seeds",
@@ -140,39 +163,44 @@ export async function setBannerConfig(input: {
 }) {
   await requireAdmin();
 
-  const entries = [
-    { key: "banner_enabled", value: input.enabled ? "true" : "false" },
-    { key: "banner_message", value: input.message.trim() },
-    { key: "banner_href", value: input.href.trim() },
-  ];
+  const parsed = bannerConfigSchema.safeParse({
+    enabled: input.enabled,
+    message: input.message.trim(),
+    href: input.href.trim(),
+  });
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      error: parsed.error.issues[0]?.message ?? "Invalid banner config",
+    };
+  }
 
-  await db.batch([
-    db
-      .insert(siteSettings)
-      .values({ ...entries[0], updatedAt: new Date() })
-      .onConflictDoUpdate({
-        target: siteSettings.key,
-        set: { value: entries[0].value, updatedAt: new Date() },
-      }),
-    db
-      .insert(siteSettings)
-      .values({ ...entries[1], updatedAt: new Date() })
-      .onConflictDoUpdate({
-        target: siteSettings.key,
-        set: { value: entries[1].value, updatedAt: new Date() },
-      }),
-    db
-      .insert(siteSettings)
-      .values({ ...entries[2], updatedAt: new Date() })
-      .onConflictDoUpdate({
-        target: siteSettings.key,
-        set: { value: entries[2].value, updatedAt: new Date() },
-      }),
-  ]);
+  const { enabled, message, href } = parsed.data;
+  const now = new Date();
 
-  // Banner renders site-wide, so bust every cached route.
-  revalidatePath("/", "layout");
-  return { success: true };
+  // Single multi-row upsert — all three keys land together or not at all,
+  // avoiding a partial state like "enabled flipped but message unchanged".
+  await db
+    .insert(siteSettings)
+    .values([
+      {
+        key: "banner_enabled",
+        value: enabled ? "true" : "false",
+        updatedAt: now,
+      },
+      { key: "banner_message", value: message, updatedAt: now },
+      { key: "banner_href", value: href, updatedAt: now },
+    ])
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: {
+        value: sql`excluded.value`,
+        updatedAt: sql`excluded.updated_at`,
+      },
+    });
+
+  updateTag(BANNER_CACHE_TAG);
+  return { success: true as const };
 }
 
 export async function setHomepagePhase(phase: 1 | 2) {
