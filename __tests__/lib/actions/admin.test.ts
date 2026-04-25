@@ -346,4 +346,29 @@ describe("setBannerConfig", () => {
 
     expect(result).toEqual({ success: true });
   });
+
+  it("rejects enabled=true with an empty message", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "",
+      href: "",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects enabled=true with a whitespace-only message", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    const result = await setBannerConfig({
+      enabled: true,
+      message: "   ",
+      href: "",
+    });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+  });
 });

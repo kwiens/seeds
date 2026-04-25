@@ -85,7 +85,16 @@ export function BannerSettings({ initial }: { initial: BannerConfig }) {
         </p>
       </div>
 
-      <Button onClick={save} disabled={!dirty || isPending}>
+      {enabled && !message.trim() && (
+        <p className="text-destructive text-sm">
+          Add a message or disable the banner before saving.
+        </p>
+      )}
+
+      <Button
+        onClick={save}
+        disabled={!dirty || isPending || (enabled && !message.trim())}
+      >
         {isPending ? "Saving..." : "Save"}
       </Button>
     </div>
