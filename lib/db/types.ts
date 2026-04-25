@@ -3,6 +3,7 @@ import type {
   seedApprovals,
   seeds,
   seedSupports,
+  seedUpdates,
   users,
 } from "./schema";
 
@@ -17,6 +18,9 @@ export type NewSeedSupport = typeof seedSupports.$inferInsert;
 
 export type SeedApproval = typeof seedApprovals.$inferSelect;
 export type NewSeedApproval = typeof seedApprovals.$inferInsert;
+
+export type SeedUpdate = typeof seedUpdates.$inferSelect;
+export type NewSeedUpdate = typeof seedUpdates.$inferInsert;
 
 export type AdminEmail = typeof adminEmails.$inferSelect;
 export type NewAdminEmail = typeof adminEmails.$inferInsert;

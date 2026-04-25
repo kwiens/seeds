@@ -135,6 +135,26 @@ export const seedComments = pgTable("seed_comments", {
   archivedAt: timestamp("archived_at", { withTimezone: true }),
 });
 
+// Seed Updates
+export const seedUpdates = pgTable("seed_updates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  seedId: uuid("seed_id")
+    .notNull()
+    .references(() => seeds.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  body: jsonb("body").notNull(),
+  photos: jsonb("photos").$type<string[]>().notNull().default([]),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -160,6 +180,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   supports: many(seedSupports),
   approvals: many(seedApprovals),
   comments: many(seedComments),
+  updates: many(seedUpdates),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
@@ -167,6 +188,7 @@ export const seedsRelations = relations(seeds, ({ one, many }) => ({
   supports: many(seedSupports),
   approvals: many(seedApprovals),
   comments: many(seedComments),
+  updates: many(seedUpdates),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -204,6 +226,14 @@ export const seedCommentsRelations = relations(
     replies: many(seedComments, { relationName: "commentReplies" }),
   }),
 );
+
+export const seedUpdatesRelations = relations(seedUpdates, ({ one }) => ({
+  seed: one(seeds, { fields: [seedUpdates.seedId], references: [seeds.id] }),
+  author: one(users, {
+    fields: [seedUpdates.createdBy],
+    references: [users.id],
+  }),
+}));
 
 export const adminEmailsRelations = relations(adminEmails, ({ one }) => ({
   addedByUser: one(users, {
