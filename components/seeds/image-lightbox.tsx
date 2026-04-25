@@ -72,23 +72,22 @@ export function ImageLightbox({
       </DialogTrigger>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[95vw] border-0 bg-transparent p-0 shadow-none sm:max-w-[95vw]"
+        className="w-fit max-w-[95vw] border-0 bg-transparent p-0 shadow-none sm:max-w-[95vw]"
       >
         <DialogTitle className="sr-only">{alt}</DialogTitle>
-        <DialogClose
-          className="absolute top-3 right-3 z-10 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/80 focus:ring-2 focus:ring-white focus:outline-none"
-          aria-label="Close"
-        >
-          <X className="size-5" />
-        </DialogClose>
-        <div className="relative h-[90vh] w-full">
-          <Image
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={src}
             alt={alt}
-            fill
-            sizes="95vw"
-            className="object-contain"
+            className="block max-h-[90vh] max-w-[95vw] rounded"
           />
+          <DialogClose
+            className="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/80 focus:ring-2 focus:ring-white focus:outline-none"
+            aria-label="Close"
+          >
+            <X className="size-5" />
+          </DialogClose>
         </div>
       </DialogContent>
     </Dialog>
