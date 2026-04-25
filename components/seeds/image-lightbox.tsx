@@ -42,7 +42,7 @@ export function ImageLightbox({
         <button
           type="button"
           className={cn(
-            "group block cursor-zoom-in overflow-hidden",
+            "block cursor-zoom-in overflow-hidden",
             !fill && "rounded-2xl",
             triggerClassName,
           )}
@@ -79,7 +79,7 @@ export function ImageLightbox({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
-            alt={alt}
+            alt=""
             className="block max-h-[90vh] max-w-[95vw] rounded"
           />
           <DialogClose

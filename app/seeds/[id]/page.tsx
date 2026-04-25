@@ -203,21 +203,22 @@ export default async function SeedPage(props: {
 
         {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
-          {seed.coverPhotoUrl ? (
-            <ImageLightbox
-              src={seed.coverPhotoUrl}
-              alt={seed.name}
-              sizes="(max-width: 768px) 100vw, 360px"
-              priority
-            />
-          ) : seed.imageUrl ? (
-            <ImageLightbox
-              src={seed.imageUrl}
-              alt={buildImagePrompt(seed)}
-              sizes="(max-width: 768px) 100vw, 360px"
-              priority
-            />
-          ) : null}
+          {(() => {
+            const hero = seed.coverPhotoUrl
+              ? { src: seed.coverPhotoUrl, alt: seed.name }
+              : seed.imageUrl
+                ? { src: seed.imageUrl, alt: buildImagePrompt(seed) }
+                : null;
+            if (!hero) return null;
+            return (
+              <ImageLightbox
+                src={hero.src}
+                alt={hero.alt}
+                sizes="(max-width: 768px) 100vw, 360px"
+                priority
+              />
+            );
+          })()}
           {/* Always generate AI illustration if missing, even when cover photo is set */}
           {!seed.imageUrl && canEdit && <SeedImageGenerator seedId={seed.id} />}
         </div>
