@@ -70,9 +70,11 @@ export function RichTextEditor({
   );
 }
 
-function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
-  if (!editor) return null;
-
+function Toolbar({
+  editor,
+}: {
+  editor: NonNullable<ReturnType<typeof useEditor>>;
+}) {
   return (
     <div className="border-input flex flex-wrap gap-0.5 border-b px-1.5 py-1.5">
       <Toggle

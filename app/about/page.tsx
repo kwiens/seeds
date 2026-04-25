@@ -60,7 +60,13 @@ const seedTraits: {
   },
 ];
 
-const timeline = [
+const timeline: {
+  phase: string;
+  when: string;
+  location?: string;
+  detail: string;
+  cancelled?: string;
+}[] = [
   {
     phase: "Seed Drive Kickoff",
     when: "March 5",
@@ -92,6 +98,7 @@ const timeline = [
     when: "April 25",
     location: "Greenway Farm, 4960 Gann Store Rd.",
     detail: "Gear sale, seed pitch, music + more",
+    cancelled: "Cancelled due to weather",
   },
   {
     phase: "Harvest",
@@ -265,20 +272,29 @@ export default function AboutPage() {
                   )}
                 </div>
                 <div className="pb-4">
-                  <p className="font-semibold">{step.phase}</p>
-                  <p className="text-muted-foreground text-sm">
-                    <Calendar className="mr-1 inline size-3.5 align-text-bottom" />
-                    {step.when}
-                  </p>
-                  {"location" in step && step.location && (
-                    <p className="text-muted-foreground text-sm">
-                      <MapPin className="mr-1 inline size-3.5 align-text-bottom" />
-                      {step.location}
+                  {step.cancelled && (
+                    <p className="text-sm font-semibold text-destructive">
+                      {step.cancelled}
                     </p>
                   )}
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {step.detail}
-                  </p>
+                  <div
+                    className={cn(step.cancelled && "line-through opacity-60")}
+                  >
+                    <p className="font-semibold">{step.phase}</p>
+                    <p className="text-muted-foreground text-sm">
+                      <Calendar className="mr-1 inline size-3.5 align-text-bottom" />
+                      {step.when}
+                    </p>
+                    {step.location && (
+                      <p className="text-muted-foreground text-sm">
+                        <MapPin className="mr-1 inline size-3.5 align-text-bottom" />
+                        {step.location}
+                      </p>
+                    )}
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      {step.detail}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}

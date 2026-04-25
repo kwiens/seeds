@@ -2,7 +2,8 @@ CREATE TABLE "seed_updates" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"seed_id" uuid NOT NULL,
 	"title" text NOT NULL,
-	"body" text NOT NULL,
+	"body" jsonb NOT NULL,
+	"photos" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"created_by" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL

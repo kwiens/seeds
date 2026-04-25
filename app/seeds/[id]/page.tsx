@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { FileText, Mail, Pencil, QrCode, Sun } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
@@ -10,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CategoryBadge } from "@/components/seeds/category-badge";
+import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
 import { CommentsSection } from "@/components/seeds/comments-section";
+import { ImageLightbox } from "@/components/seeds/image-lightbox";
 import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
 import { SupportButton } from "@/components/seeds/support-button";
 import { ExpandableText } from "@/components/seeds/expandable-text";
@@ -158,15 +159,10 @@ export default async function SeedPage(props: {
         <div>
           <CategoryBadge category={seed.category} className="mb-2" />
           <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
-          {seed.status === "pending" && (
-            <Badge variant="outline" className="mt-2">
-              Pending Approval
-            </Badge>
-          )}
-          {seed.status === "archived" && (
-            <Badge variant="outline" className="mt-2">
-              Archived
-            </Badge>
+          {seed.status !== "approved" && (
+            <div className="mt-2">
+              <SeedStatusBadge status={seed.status} />
+            </div>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -219,41 +215,22 @@ export default async function SeedPage(props: {
 
         {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
-          {seed.coverPhotoUrl ? (
-            <a
-              href={seed.coverPhotoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-2xl"
-            >
-              <Image
-                src={seed.coverPhotoUrl}
-                alt={seed.name}
-                width={720}
-                height={720}
-                className="h-auto w-full"
+          {(() => {
+            const hero = seed.coverPhotoUrl
+              ? { src: seed.coverPhotoUrl, alt: seed.name }
+              : seed.imageUrl
+                ? { src: seed.imageUrl, alt: buildImagePrompt(seed) }
+                : null;
+            if (!hero) return null;
+            return (
+              <ImageLightbox
+                src={hero.src}
+                alt={hero.alt}
                 sizes="(max-width: 768px) 100vw, 360px"
                 priority
               />
-            </a>
-          ) : seed.imageUrl ? (
-            <a
-              href={seed.imageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-2xl"
-            >
-              <Image
-                src={seed.imageUrl}
-                alt={buildImagePrompt(seed)}
-                width={720}
-                height={720}
-                className="h-auto w-full"
-                sizes="(max-width: 768px) 100vw, 360px"
-                priority
-              />
-            </a>
-          ) : null}
+            );
+          })()}
           {/* Always generate AI illustration if missing, even when cover photo is set */}
           {!seed.imageUrl && canEdit && <SeedImageGenerator seedId={seed.id} />}
         </div>
@@ -412,21 +389,14 @@ export default async function SeedPage(props: {
             {/* AI illustration — shown at bottom when a user photo is the cover */}
             {seed.coverPhotoUrl && seed.imageUrl && (
               <div className="mt-12 flex justify-center">
-                <a
-                  href={seed.imageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block max-w-xs overflow-hidden rounded-2xl"
-                >
-                  <Image
-                    src={seed.imageUrl}
-                    alt={`${seed.name} illustration`}
-                    width={360}
-                    height={480}
-                    className="h-auto w-full"
-                    sizes="320px"
-                  />
-                </a>
+                <ImageLightbox
+                  src={seed.imageUrl}
+                  alt={`${seed.name} illustration`}
+                  thumbWidth={360}
+                  thumbHeight={480}
+                  sizes="320px"
+                  triggerClassName="max-w-xs"
+                />
               </div>
             )}
           </>

@@ -1,9 +1,10 @@
 import Image from "next/image";
+import { ImageLightbox } from "@/components/seeds/image-lightbox";
 
 interface PhotoGridProps {
   photos: string[];
   alt: string;
-  /** "default" = standard grid with links, "sm" = compact inline thumbnails (no links) */
+  /** "default" = grid with lightbox, "sm" = compact inline thumbnails (no lightbox) */
   size?: "default" | "sm";
 }
 
@@ -34,21 +35,18 @@ export function PhotoGrid({ photos, alt, size = "default" }: PhotoGridProps) {
   return (
     <div className="grid grid-cols-3 gap-3">
       {photos.map((url, i) => (
-        <a
+        <div
           key={url}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative block aspect-square overflow-hidden rounded-lg"
+          className="relative aspect-square overflow-hidden rounded-lg"
         >
-          <Image
+          <ImageLightbox
             src={url}
             alt={`${alt} photo ${i + 1}`}
             fill
-            className="object-cover"
             sizes="(max-width: 768px) 33vw, 280px"
+            triggerClassName="absolute inset-0"
           />
-        </a>
+        </div>
       ))}
     </div>
   );

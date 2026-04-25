@@ -89,7 +89,7 @@ export default async function UpdatePage(props: {
           </div>
         </div>
 
-        {(update.photos ?? []).length > 0 && (
+        {update.photos.length > 0 && (
           <div className="mb-8">
             <PhotoGrid photos={update.photos} alt={update.title} />
           </div>

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { ImageUpload } from "@/components/forms/image-upload";
 import { createUpdate, editUpdate } from "@/lib/actions/updates";
+import { EMPTY_TIPTAP_DOC } from "@/lib/tiptap";
 
 interface UpdateFormProps {
   seedId: string;
@@ -26,7 +27,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
   const [body, setBody] = useState<JSONContent>(
-    update?.body ?? { type: "doc", content: [{ type: "paragraph" }] },
+    update?.body ?? EMPTY_TIPTAP_DOC,
   );
   const [photos, setPhotos] = useState<string[]>(update?.photos ?? []);
 

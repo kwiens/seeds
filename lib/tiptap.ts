@@ -16,6 +16,18 @@ export function extractPlainText(json: unknown): string {
   return extractText(json as JSONContent, 0);
 }
 
+export const EMPTY_TIPTAP_DOC: JSONContent = {
+  type: "doc",
+  content: [{ type: "paragraph" }],
+};
+
+export function parseTiptapDoc(json: unknown): JSONContent | null {
+  if (!json || typeof json !== "object") return null;
+  const doc = json as JSONContent;
+  if (doc.type !== "doc" || !Array.isArray(doc.content)) return null;
+  return doc;
+}
+
 function renderNode(node: JSONContent, depth: number): string {
   if (depth > MAX_DEPTH) return "";
 

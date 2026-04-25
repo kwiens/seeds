@@ -1,5 +1,5 @@
 {
-  "id": "65f68d8b-2597-413e-af8c-d0b66ffc199b",
+  "id": "7e7ad531-ed9c-4d7c-8818-5bfe1b1da4f5",
   "prevId": "5efadb6e-d9e3-4a49-ab3c-f4ef8e744a39",
   "version": "7",
   "dialect": "postgresql",
@@ -273,83 +273,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.seed_updates": {
-      "name": "seed_updates",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "seed_id": {
-          "name": "seed_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "seed_updates_seed_id_seeds_id_fk": {
-          "name": "seed_updates_seed_id_seeds_id_fk",
-          "tableFrom": "seed_updates",
-          "tableTo": "seeds",
-          "columnsFrom": ["seed_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "seed_updates_created_by_users_id_fk": {
-          "name": "seed_updates_created_by_users_id_fk",
-          "tableFrom": "seed_updates",
-          "tableTo": "users",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.seeds": {
       "name": "seeds",
       "schema": "",
@@ -470,6 +393,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "badges": {
+          "name": "badges",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
         "status": {
           "name": "status",
           "type": "status",
@@ -499,7 +429,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_seeds_badges": {
+          "name": "idx_seeds_badges",
+          "columns": [
+            {
+              "expression": "badges",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "seeds_created_by_users_id_fk": {
           "name": "seeds_created_by_users_id_fk",
@@ -511,6 +457,38 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.site_settings": {
+      "name": "site_settings",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -597,7 +575,14 @@
     "public.status": {
       "name": "status",
       "schema": "public",
-      "values": ["draft", "pending", "approved", "archived"]
+      "values": [
+        "draft",
+        "pending",
+        "approved",
+        "in_progress",
+        "in_maintenance",
+        "archived"
+      ]
     }
   },
   "schemas": {},

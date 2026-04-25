@@ -1,6 +1,6 @@
 {
-  "id": "d5fd9011-7796-4fe6-af80-aa06bd191e3f",
-  "prevId": "65f68d8b-2597-413e-af8c-d0b66ffc199b",
+  "id": "61380e2e-2724-40d0-a795-3d997c2b1ee0",
+  "prevId": "7e7ad531-ed9c-4d7c-8818-5bfe1b1da4f5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -302,6 +302,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "photos": {
+          "name": "photos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
         "created_by": {
           "name": "created_by",
           "type": "uuid",
@@ -470,6 +477,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "badges": {
+          "name": "badges",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
         "status": {
           "name": "status",
           "type": "status",
@@ -499,7 +513,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_seeds_badges": {
+          "name": "idx_seeds_badges",
+          "columns": [
+            {
+              "expression": "badges",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "seeds_created_by_users_id_fk": {
           "name": "seeds_created_by_users_id_fk",
@@ -511,6 +541,38 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.site_settings": {
+      "name": "site_settings",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -597,7 +659,14 @@
     "public.status": {
       "name": "status",
       "schema": "public",
-      "values": ["draft", "pending", "approved", "archived"]
+      "values": [
+        "draft",
+        "pending",
+        "approved",
+        "in_progress",
+        "in_maintenance",
+        "archived"
+      ]
     }
   },
   "schemas": {},

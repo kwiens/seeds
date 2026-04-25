@@ -5,6 +5,7 @@ import { canEditSeed } from "@/lib/auth-utils";
 import { UpdateForm } from "@/components/forms/update-form";
 import { getUpdateById } from "@/lib/db/queries/updates";
 import { getSeedById } from "@/lib/db/queries/seeds";
+import { EMPTY_TIPTAP_DOC, parseTiptapDoc } from "@/lib/tiptap";
 
 export const metadata: Metadata = {
   title: "Edit Update | Seeds",
@@ -44,7 +45,7 @@ export default async function EditUpdatePage(props: {
         update={{
           id: update.id,
           title: update.title,
-          body: update.body as import("@tiptap/react").JSONContent,
+          body: parseTiptapDoc(update.body) ?? EMPTY_TIPTAP_DOC,
           photos: update.photos,
         }}
       />

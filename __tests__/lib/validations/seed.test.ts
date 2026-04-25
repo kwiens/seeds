@@ -180,6 +180,38 @@ describe("seedFormSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  describe("badges", () => {
+    it("accepts known badge keys", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        badges: ["funded", "needs_volunteers"],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects unknown badge keys", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        badges: ["not_a_real_badge"],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects arbitrary strings", () => {
+      const result = seedFormSchema.safeParse({
+        ...validData,
+        badges: ["<script>alert(1)</script>"],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("defaults to empty array", () => {
+      const result = seedFormSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.badges).toEqual([]);
+    });
+  });
+
   describe("array field limits", () => {
     const stringArrayFields = [
       "gardeners",

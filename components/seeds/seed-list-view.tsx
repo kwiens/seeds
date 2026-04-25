@@ -8,6 +8,8 @@ interface SeedData {
   category: CategoryKey;
   supportCount: number;
   imageUrl?: string | null;
+  coverPhotoUrl?: string | null;
+  status?: string;
 }
 
 export function SeedListView({ seeds }: { seeds: SeedData[] }) {
@@ -32,6 +34,8 @@ export function SeedListView({ seeds }: { seeds: SeedData[] }) {
           category={seed.category}
           supportCount={seed.supportCount}
           imageUrl={seed.imageUrl}
+          coverPhotoUrl={seed.coverPhotoUrl}
+          status={seed.status}
         />
       ))}
     </div>
