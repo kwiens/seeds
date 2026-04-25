@@ -133,6 +133,48 @@ export async function setSeedBadges(seedId: string, badges: BadgeKey[]) {
   return { success: true };
 }
 
+export async function setBannerConfig(input: {
+  enabled: boolean;
+  message: string;
+  href: string;
+}) {
+  await requireAdmin();
+
+  const entries = [
+    { key: "banner_enabled", value: input.enabled ? "true" : "false" },
+    { key: "banner_message", value: input.message.trim() },
+    { key: "banner_href", value: input.href.trim() },
+  ];
+
+  await db.batch([
+    db
+      .insert(siteSettings)
+      .values({ ...entries[0], updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value: entries[0].value, updatedAt: new Date() },
+      }),
+    db
+      .insert(siteSettings)
+      .values({ ...entries[1], updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value: entries[1].value, updatedAt: new Date() },
+      }),
+    db
+      .insert(siteSettings)
+      .values({ ...entries[2], updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value: entries[2].value, updatedAt: new Date() },
+      }),
+  ]);
+
+  // Banner renders site-wide, so bust every cached route.
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
 export async function setHomepagePhase(phase: 1 | 2) {
   await requireAdmin();
 

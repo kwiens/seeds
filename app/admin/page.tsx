@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
+import { BannerSettings } from "@/components/admin/banner-settings";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
@@ -13,7 +14,7 @@ import {
   getAllSeeds,
   getSupporterEmailsMap,
 } from "@/lib/db/queries/admin";
-import { getHomepagePhase } from "@/lib/db/queries/settings";
+import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
 
 export const metadata: Metadata = {
   title: "Admin | Seeds",
@@ -36,12 +37,14 @@ export default async function AdminPage() {
     adminEmails,
     allComments,
     homepagePhase,
+    bannerConfig,
   ] = await Promise.all([
     getAllSeeds(),
     getSupporterEmailsMap(),
     getAdminEmails(),
     getAllComments(),
     getHomepagePhase(),
+    getBannerConfig(),
   ]);
 
   return (
@@ -94,6 +97,16 @@ export default async function AdminPage() {
 
         <TabsContent value="settings">
           <div className="mt-4 space-y-8">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Site Banner</h2>
+                <p className="text-muted-foreground text-sm">
+                  Shown at the top of every page. Use it to promote an event or
+                  announcement, then disable when it&apos;s over.
+                </p>
+              </div>
+              <BannerSettings initial={bannerConfig} />
+            </div>
             <div className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold">Homepage Phase</h2>
