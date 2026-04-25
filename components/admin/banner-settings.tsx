@@ -23,7 +23,11 @@ export function BannerSettings({ initial }: { initial: BannerConfig }) {
   function save() {
     startTransition(async () => {
       const result = await setBannerConfig({ enabled, message, href });
-      if (result.success) toast.success("Banner updated");
+      if (result.success) {
+        toast.success("Banner updated");
+      } else {
+        toast.error(result.error);
+      }
     });
   }
 
@@ -70,7 +74,8 @@ export function BannerSettings({ initial }: { initial: BannerConfig }) {
         <Label htmlFor="banner-href">Link URL (optional)</Label>
         <Input
           id="banner-href"
-          type="url"
+          type="text"
+          inputMode="url"
           value={href}
           onChange={(e) => setHref(e.target.value)}
           placeholder="https://example.com/event"
