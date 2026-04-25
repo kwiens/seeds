@@ -5,6 +5,12 @@ import { siteSettings } from "@/lib/db/schema";
 
 export const BANNER_CACHE_TAG = "banner";
 
+export const BANNER_SETTING_KEYS = {
+  enabled: "banner_enabled",
+  message: "banner_message",
+  href: "banner_href",
+} as const;
+
 export async function getSiteSetting(key: string): Promise<string | null> {
   try {
     const result = await db
@@ -48,15 +54,11 @@ export interface BannerConfig {
 // hit the DB on every request site-wide. Tag-invalidated by setBannerConfig.
 export const getBannerConfig = unstable_cache(
   async (): Promise<BannerConfig> => {
-    const rows = await getSiteSettings([
-      "banner_enabled",
-      "banner_message",
-      "banner_href",
-    ]);
+    const rows = await getSiteSettings(Object.values(BANNER_SETTING_KEYS));
     return {
-      enabled: rows.banner_enabled === "true",
-      message: rows.banner_message ?? "",
-      href: rows.banner_href ?? "",
+      enabled: rows[BANNER_SETTING_KEYS.enabled] === "true",
+      message: rows[BANNER_SETTING_KEYS.message] ?? "",
+      href: rows[BANNER_SETTING_KEYS.href] ?? "",
     };
   },
   ["banner-config"],

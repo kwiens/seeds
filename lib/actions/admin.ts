@@ -7,7 +7,10 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
-import { BANNER_CACHE_TAG } from "@/lib/db/queries/settings";
+import {
+  BANNER_CACHE_TAG,
+  BANNER_SETTING_KEYS,
+} from "@/lib/db/queries/settings";
 
 const bannerConfigSchema = z.object({
   enabled: z.boolean(),
@@ -184,12 +187,12 @@ export async function setBannerConfig(input: {
     .insert(siteSettings)
     .values([
       {
-        key: "banner_enabled",
+        key: BANNER_SETTING_KEYS.enabled,
         value: enabled ? "true" : "false",
         updatedAt: now,
       },
-      { key: "banner_message", value: message, updatedAt: now },
-      { key: "banner_href", value: href, updatedAt: now },
+      { key: BANNER_SETTING_KEYS.message, value: message, updatedAt: now },
+      { key: BANNER_SETTING_KEYS.href, value: href, updatedAt: now },
     ])
     .onConflictDoUpdate({
       target: siteSettings.key,

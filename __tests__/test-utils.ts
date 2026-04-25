@@ -124,3 +124,14 @@ export function mockDbDeleteChain() {
   const mockWhere = vi.fn().mockResolvedValue(undefined);
   return { where: mockWhere };
 }
+
+/**
+ * Mock a db.insert(table).values({}).onConflictDoUpdate({}) chain.
+ */
+export function mockDbInsertOnConflictChain() {
+  const mockOnConflict = vi.fn().mockResolvedValue(undefined);
+  const mockValues = vi
+    .fn()
+    .mockReturnValue({ onConflictDoUpdate: mockOnConflict });
+  return { values: mockValues, _onConflictDoUpdate: mockOnConflict };
+}

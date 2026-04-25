@@ -5,6 +5,7 @@ import {
   mockAdminSession,
   mockDbUpdateChain,
   mockDbInsertSimpleChain,
+  mockDbInsertOnConflictChain,
   setAuthMock,
 } from "../../test-utils";
 
@@ -273,11 +274,7 @@ describe("setBannerConfig", () => {
 
   it("accepts a valid config", async () => {
     setAuthMock(auth, mockAdminSession());
-    vi.mocked(db.insert).mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        onConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
-      }),
-    } as any);
+    vi.mocked(db.insert).mockReturnValue(mockDbInsertOnConflictChain() as any);
 
     const result = await setBannerConfig({
       enabled: true,
@@ -339,11 +336,7 @@ describe("setBannerConfig", () => {
 
   it("accepts an empty href", async () => {
     setAuthMock(auth, mockAdminSession());
-    vi.mocked(db.insert).mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        onConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
-      }),
-    } as any);
+    vi.mocked(db.insert).mockReturnValue(mockDbInsertOnConflictChain() as any);
 
     const result = await setBannerConfig({
       enabled: false,
