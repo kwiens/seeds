@@ -155,6 +155,23 @@ export const seedUpdates = pgTable("seed_updates", {
     .defaultNow(),
 });
 
+// Seed Team Updates (private, Sprout-only communication)
+export const seedTeamUpdates = pgTable("seed_team_updates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  seedId: uuid("seed_id")
+    .notNull()
+    .references(() => seeds.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  title: text("title"),
+  body: text("body").notNull(),
+  parentId: uuid("parent_id"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -181,6 +198,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   approvals: many(seedApprovals),
   comments: many(seedComments),
   updates: many(seedUpdates),
+  teamUpdates: many(seedTeamUpdates),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
@@ -189,6 +207,7 @@ export const seedsRelations = relations(seeds, ({ one, many }) => ({
   approvals: many(seedApprovals),
   comments: many(seedComments),
   updates: many(seedUpdates),
+  teamUpdates: many(seedTeamUpdates),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -234,6 +253,26 @@ export const seedUpdatesRelations = relations(seedUpdates, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const seedTeamUpdatesRelations = relations(
+  seedTeamUpdates,
+  ({ one, many }) => ({
+    seed: one(seeds, {
+      fields: [seedTeamUpdates.seedId],
+      references: [seeds.id],
+    }),
+    user: one(users, {
+      fields: [seedTeamUpdates.userId],
+      references: [users.id],
+    }),
+    parent: one(seedTeamUpdates, {
+      fields: [seedTeamUpdates.parentId],
+      references: [seedTeamUpdates.id],
+      relationName: "teamUpdateReplies",
+    }),
+    replies: many(seedTeamUpdates, { relationName: "teamUpdateReplies" }),
+  }),
+);
 
 export const adminEmailsRelations = relations(adminEmails, ({ one }) => ({
   addedByUser: one(users, {

@@ -1,1 +1,2 @@
 export const COMMENT_MAX_LENGTH = 1000;
+export const TEAM_UPDATE_MAX_LENGTH = 2000;
