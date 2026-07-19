@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { canEditSeed } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -13,7 +14,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SupporterExport } from "@/components/dashboard/supporter-list";
+import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { getSeedById, getSeedSupporters } from "@/lib/db/queries/seeds";
+import { getTeamUpdatesBySeed } from "@/lib/db/queries/team-updates";
 
 export default async function DashboardSeedDetailPage(props: {
   params: Promise<{ id: string }>;
@@ -33,19 +36,14 @@ export default async function DashboardSeedDetailPage(props: {
   }
 
   const supporters = await getSeedSupporters(seed.id, { includeEmail: true });
+  const isSprout = seed.status === "in_progress";
+  const teamUpdates = isSprout ? await getTeamUpdatesBySeed(seed.id) : [];
 
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <Button variant="ghost" size="sm" asChild className="mb-4">
-        <Link href="/dashboard">
-          <ArrowLeft className="mr-1.5 size-3.5" />
-          Back to My Seeds
-        </Link>
-      </Button>
-
+  const supportersContent = (
+    <>
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{seed.name}</h1>
+          {!isSprout && <h1 className="text-2xl font-bold">{seed.name}</h1>}
           <p className="text-muted-foreground text-sm">
             {supporters.length}{" "}
             {supporters.length === 1 ? "supporter" : "supporters"}
@@ -85,6 +83,40 @@ export default async function DashboardSeedDetailPage(props: {
             </TableBody>
           </Table>
         </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <Button variant="ghost" size="sm" asChild className="mb-4">
+        <Link href="/dashboard">
+          <ArrowLeft className="mr-1.5 size-3.5" />
+          Back to My Seeds
+        </Link>
+      </Button>
+
+      {isSprout && <h1 className="mb-6 text-2xl font-bold">{seed.name}</h1>}
+
+      {isSprout ? (
+        <Tabs defaultValue="team-updates">
+          <TabsList variant="line">
+            <TabsTrigger value="team-updates">
+              Team Updates ({teamUpdates.length})
+            </TabsTrigger>
+            <TabsTrigger value="supporters">Supporters</TabsTrigger>
+          </TabsList>
+          <TabsContent value="team-updates">
+            <div className="py-4">
+              <TeamUpdatesSection seedId={seed.id} updates={teamUpdates} />
+            </div>
+          </TabsContent>
+          <TabsContent value="supporters">
+            <div className="py-4">{supportersContent}</div>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        supportersContent
       )}
     </div>
   );
