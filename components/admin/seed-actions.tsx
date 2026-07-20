@@ -9,7 +9,6 @@ import {
   ArrowUp,
   CheckCircle,
   Mail,
-  MessageSquare,
   MoreHorizontal,
   Pencil,
   QrCode,
@@ -143,14 +142,6 @@ export function SeedActions({
             Email{supporterEmails?.length ? " Team" : " Creator"}
           </a>
         </DropdownMenuItem>
-        {status === "in_progress" && (
-          <DropdownMenuItem asChild>
-            <Link href={`/dashboard/seeds/${seedId}`}>
-              <MessageSquare className="mr-2 size-4" />
-              Team Updates
-            </Link>
-          </DropdownMenuItem>
-        )}
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
