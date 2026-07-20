@@ -4,9 +4,14 @@ import { auth } from "@/auth";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { getMySprouts } from "@/lib/db/queries/sprouts";
 
 export async function Header() {
   const session = await auth();
+  const isAdmin = session?.user?.role === "admin";
+  const hasSproutAccess = session?.user?.id
+    ? isAdmin || (await getMySprouts(session.user.id, false)).length > 0
+    : false;
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -54,11 +59,19 @@ export async function Header() {
               My Seeds
             </Link>
           )}
+          {hasSproutAccess && (
+            <Link
+              href="/dashboard/sprouts"
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              My Sprouts
+            </Link>
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
           {session ? <UserMenu /> : <SignInButton />}
-          <MobileNav isLoggedIn={!!session} />
+          <MobileNav isLoggedIn={!!session} hasSproutAccess={hasSproutAccess} />
         </div>
       </div>
     </header>

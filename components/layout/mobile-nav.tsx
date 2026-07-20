@@ -13,7 +13,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-export function MobileNav({ isLoggedIn }: { isLoggedIn: boolean }) {
+export function MobileNav({
+  isLoggedIn,
+  hasSproutAccess,
+}: {
+  isLoggedIn: boolean;
+  hasSproutAccess: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -71,6 +77,15 @@ export function MobileNav({ isLoggedIn }: { isLoggedIn: boolean }) {
               className="text-muted-foreground hover:text-foreground text-sm transition-colors"
             >
               My Seeds
+            </Link>
+          )}
+          {hasSproutAccess && (
+            <Link
+              href="/dashboard/sprouts"
+              onClick={() => setOpen(false)}
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              My Sprouts
             </Link>
           )}
         </nav>
