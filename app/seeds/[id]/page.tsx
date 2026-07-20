@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FileText, Mail, Pencil, QrCode, Sun } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -134,6 +134,8 @@ export default async function SeedPage(props: {
   if (!seed) notFound();
 
   const canEdit = canEditSeed(session, seed);
+  const showTeamTab =
+    seed.status === "in_progress" && canAccessTeamUpdates(session, seed);
 
   // Pending seeds are intentionally public so creators can share links
   // before approval. Only archived seeds are restricted to owner/admin.
@@ -402,13 +404,14 @@ export default async function SeedPage(props: {
           </>
         );
 
-        if (updates.length > 0) {
+        if (updates.length > 0 || showTeamTab) {
           return (
             <SeedDetailTabs
               projectContent={projectContent}
               updates={updates}
               seedId={seed.id}
               canEdit={canEdit}
+              teamHref={showTeamTab ? `/seeds/${seed.id}/team` : undefined}
             />
           );
         }
