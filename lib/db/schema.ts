@@ -29,7 +29,15 @@ export const statusEnum = pgEnum("status", [
   "archived",
 ]);
 
-export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const roleEnum = pgEnum("role", ["user", "admin", "council"]);
+
+export const teamRoleEnum = pgEnum("team_role", [
+  "steward",
+  "co_gardener",
+  "guide",
+  "roots",
+  "cultivator",
+]);
 
 // Users
 export const users = pgTable("users", {
@@ -172,6 +180,28 @@ export const seedTeamUpdates = pgTable("seed_team_updates", {
     .defaultNow(),
 });
 
+// Seed Team Members (Sprout roster: Steward, co-Gardener, Guide, Roots, Cultivator)
+export const seedTeamMembers = pgTable(
+  "seed_team_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seedId: uuid("seed_id")
+      .notNull()
+      .references(() => seeds.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    role: teamRoleEnum("role").notNull(),
+    addedBy: uuid("added_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("seed_team_members_unique").on(t.seedId, t.userId)],
+);
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -199,6 +229,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(seedComments),
   updates: many(seedUpdates),
   teamUpdates: many(seedTeamUpdates),
+  teamMemberships: many(seedTeamMembers, { relationName: "teamMemberUser" }),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
@@ -208,6 +239,7 @@ export const seedsRelations = relations(seeds, ({ one, many }) => ({
   comments: many(seedComments),
   updates: many(seedUpdates),
   teamUpdates: many(seedTeamUpdates),
+  teamMembers: many(seedTeamMembers),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -271,6 +303,26 @@ export const seedTeamUpdatesRelations = relations(
       relationName: "teamUpdateReplies",
     }),
     replies: many(seedTeamUpdates, { relationName: "teamUpdateReplies" }),
+  }),
+);
+
+export const seedTeamMembersRelations = relations(
+  seedTeamMembers,
+  ({ one }) => ({
+    seed: one(seeds, {
+      fields: [seedTeamMembers.seedId],
+      references: [seeds.id],
+    }),
+    user: one(users, {
+      fields: [seedTeamMembers.userId],
+      references: [users.id],
+      relationName: "teamMemberUser",
+    }),
+    addedByUser: one(users, {
+      fields: [seedTeamMembers.addedBy],
+      references: [users.id],
+      relationName: "teamMemberAddedBy",
+    }),
   }),
 );
 
