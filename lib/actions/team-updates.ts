@@ -90,3 +90,30 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
   revalidatePath("/dashboard/sprouts");
   return { success: true };
 }
+
+export async function deleteTeamUpdate(updateId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "admin") {
+    return { error: "Only admins can delete Team Updates." };
+  }
+
+  const update = await db.query.seedTeamUpdates.findFirst({
+    where: eq(seedTeamUpdates.id, updateId),
+    columns: { id: true, seedId: true, parentId: true },
+  });
+  if (!update) return { error: "Update not found." };
+
+  // Deleting a top-level update takes its replies with it — an orphaned
+  // reply with no visible parent would be confusing to leave behind.
+  if (update.parentId === null) {
+    await db
+      .delete(seedTeamUpdates)
+      .where(eq(seedTeamUpdates.parentId, updateId));
+  }
+
+  await db.delete(seedTeamUpdates).where(eq(seedTeamUpdates.id, updateId));
+
+  revalidatePath(`/seeds/${update.seedId}/team`);
+  revalidatePath("/dashboard/sprouts");
+  return { success: true };
+}

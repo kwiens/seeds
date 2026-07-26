@@ -52,7 +52,11 @@ export default async function SproutTeamPage(props: {
         Visible only to this Sprout&apos;s team — not part of the public page.
       </p>
 
-      <TeamUpdatesSection seedId={seed.id} updates={teamUpdates} />
+      <TeamUpdatesSection
+        seedId={seed.id}
+        updates={teamUpdates}
+        isAdmin={session.user.role === "admin"}
+      />
     </div>
   );
 }

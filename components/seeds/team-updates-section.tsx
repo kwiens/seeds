@@ -1,13 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MessageSquare, Reply } from "lucide-react";
+import { MessageSquare, Reply, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createTeamUpdate,
+  deleteTeamUpdate,
   replyToTeamUpdate,
 } from "@/lib/actions/team-updates";
 import { TEAM_UPDATE_MAX_LENGTH } from "@/lib/constants";
@@ -31,9 +42,11 @@ interface TeamUpdateWithReplies extends TeamUpdateRow {
 export function TeamUpdatesSection({
   seedId,
   updates,
+  isAdmin,
 }: {
   seedId: string;
   updates: TeamUpdateWithReplies[];
+  isAdmin: boolean;
 }) {
   return (
     <div>
@@ -55,7 +68,12 @@ export function TeamUpdatesSection({
       ) : (
         <div className="mt-6 space-y-6">
           {updates.map((update) => (
-            <UpdateThread key={update.id} update={update} seedId={seedId} />
+            <UpdateThread
+              key={update.id}
+              update={update}
+              seedId={seedId}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       )}
@@ -128,20 +146,26 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
 function UpdateThread({
   update,
   seedId,
+  isAdmin,
 }: {
   update: TeamUpdateWithReplies;
   seedId: string;
+  isAdmin: boolean;
 }) {
   const [showReply, setShowReply] = useState(false);
 
   return (
     <div>
-      <UpdateCard update={update} onReply={() => setShowReply(!showReply)} />
+      <UpdateCard
+        update={update}
+        isAdmin={isAdmin}
+        onReply={() => setShowReply(!showReply)}
+      />
 
       {update.replies.length > 0 && (
         <div className="mt-3 ml-8 space-y-3 border-l-2 pl-4">
           {update.replies.map((reply) => (
-            <UpdateCard key={reply.id} update={reply} />
+            <UpdateCard key={reply.id} update={reply} isAdmin={isAdmin} />
           ))}
         </div>
       )}
@@ -220,11 +244,21 @@ function ReplyForm({
 
 function UpdateCard({
   update,
+  isAdmin,
   onReply,
 }: {
   update: TeamUpdateRow;
+  isAdmin: boolean;
   onReply?: () => void;
 }) {
+  const [isPending, startTransition] = useTransition();
+
+  function handleDelete() {
+    startTransition(async () => {
+      await deleteTeamUpdate(update.id);
+    });
+  }
+
   return (
     <div className="group">
       <div className="flex items-start gap-3">
@@ -242,17 +276,57 @@ function UpdateCard({
             <span className="text-muted-foreground text-xs">
               {formatRelativeTime(update.createdAt)}
             </span>
-            {onReply && (
-              <div className="ml-auto sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
-                  onClick={onReply}
-                >
-                  <Reply className="size-3 sm:mr-1" />
-                  <span className="hidden sm:inline">Reply</span>
-                </Button>
+            {(onReply || isAdmin) && (
+              <div className="ml-auto flex gap-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                {onReply && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
+                    onClick={onReply}
+                  >
+                    <Reply className="size-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Reply</span>
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
+                      >
+                        <Trash2 className="size-3 sm:mr-1" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete this update?</DialogTitle>
+                        <DialogDescription>
+                          This permanently removes it{" "}
+                          {update.parentId === null
+                            ? "and any replies to it "
+                            : ""}
+                          from the record. This can&apos;t be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          variant="destructive"
+                          onClick={handleDelete}
+                          disabled={isPending}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             )}
           </div>

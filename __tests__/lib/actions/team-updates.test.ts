@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import {
   mockSession,
   mockAdminSession,
+  mockDbDeleteChain,
   mockDbInsertSimpleChain,
   setAuthMock,
 } from "../../test-utils";
@@ -15,6 +16,7 @@ vi.mock("@/lib/db", () => ({
       seedTeamUpdates: { findFirst: vi.fn() },
     },
     insert: vi.fn(),
+    delete: vi.fn(),
   },
 }));
 
@@ -22,6 +24,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
   createTeamUpdate,
+  deleteTeamUpdate,
   replyToTeamUpdate,
 } from "@/lib/actions/team-updates";
 
@@ -268,6 +271,81 @@ describe("replyToTeamUpdate", () => {
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
     await replyToTeamUpdate("update-1", { body: "On it." });
+
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+  });
+});
+
+describe("deleteTeamUpdate", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("requires authentication", async () => {
+    setAuthMock(auth, null);
+    const result = await deleteTeamUpdate("update-1");
+    expect(result).toEqual({ error: "Only admins can delete Team Updates." });
+  });
+
+  it("rejects a non-admin", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    const result = await deleteTeamUpdate("update-1");
+    expect(result).toEqual({ error: "Only admins can delete Team Updates." });
+    expect(db.query.seedTeamUpdates.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns error when the update is not found", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(undefined);
+
+    const result = await deleteTeamUpdate("nonexistent");
+    expect(result).toEqual({ error: "Update not found." });
+  });
+
+  it("deletes a reply without touching other rows", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
+      id: "reply-1",
+      seedId: "seed-1",
+      parentId: "update-1",
+    } as any);
+    const chain = mockDbDeleteChain();
+    vi.mocked(db.delete).mockReturnValue(chain as any);
+
+    const result = await deleteTeamUpdate("reply-1");
+
+    expect(result).toEqual({ success: true });
+    expect(db.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("deletes a top-level update's replies along with it", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
+      id: "update-1",
+      seedId: "seed-1",
+      parentId: null,
+    } as any);
+    const chain = mockDbDeleteChain();
+    vi.mocked(db.delete).mockReturnValue(chain as any);
+
+    const result = await deleteTeamUpdate("update-1");
+
+    expect(result).toEqual({ success: true });
+    expect(db.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it("revalidates the Team page and My Sprouts hub", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
+      id: "update-1",
+      seedId: "seed-1",
+      parentId: null,
+    } as any);
+    const chain = mockDbDeleteChain();
+    vi.mocked(db.delete).mockReturnValue(chain as any);
+
+    await deleteTeamUpdate("update-1");
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
