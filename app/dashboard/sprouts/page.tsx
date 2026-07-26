@@ -52,7 +52,7 @@ export default async function MySproutsPage() {
                 </div>
               </div>
               <p className="text-muted-foreground shrink-0 text-xs">
-                Updated {formatRelativeTime(sprout.updatedAt)}
+                Updated {formatRelativeTime(sprout.lastActivityAt)}
               </p>
             </Link>
           ))}

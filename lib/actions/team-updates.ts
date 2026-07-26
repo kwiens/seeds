@@ -45,8 +45,8 @@ export async function createTeamUpdate(seedId: string, data: unknown) {
     body: parsed.data.body,
   });
 
-  revalidatePath(`/dashboard/seeds/${seedId}`);
   revalidatePath(`/seeds/${seedId}/team`);
+  revalidatePath("/dashboard/sprouts");
   return { success: true };
 }
 
@@ -86,7 +86,7 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
     parentId,
   });
 
-  revalidatePath(`/dashboard/seeds/${parent.seed.id}`);
   revalidatePath(`/seeds/${parent.seed.id}/team`);
+  revalidatePath("/dashboard/sprouts");
   return { success: true };
 }

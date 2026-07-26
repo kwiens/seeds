@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { CategoryKey } from "@/lib/categories";
 import { db } from "@/lib/db";
 import { seeds } from "@/lib/db/schema";
@@ -7,9 +7,20 @@ export interface MySprout {
   id: string;
   name: string;
   category: CategoryKey;
-  updatedAt: Date;
+  lastActivityAt: Date;
   role: "Gardener" | "Admin";
 }
+
+// The most recent of: the seed's own last edit, or its latest Team Update.
+// Posting a Team Update never touches seeds.updated_at, so without this a
+// Sprout with a very active conversation would still look stale in the list.
+const lastActivitySql = sql<string>`greatest(
+  ${seeds.updatedAt},
+  coalesce(
+    (select max(created_at) from seed_team_updates where seed_team_updates.seed_id = seeds.id),
+    ${seeds.updatedAt}
+  )
+)`.as("last_activity");
 
 /**
  * Sprouts (status = "in_progress") the given user has team access to.
@@ -26,8 +37,8 @@ export async function getMySprouts(
       id: seeds.id,
       name: seeds.name,
       category: seeds.category,
-      updatedAt: seeds.updatedAt,
       createdBy: seeds.createdBy,
+      lastActivityAt: lastActivitySql,
     })
     .from(seeds)
     .where(
@@ -35,13 +46,13 @@ export async function getMySprouts(
         ? eq(seeds.status, "in_progress")
         : and(eq(seeds.status, "in_progress"), eq(seeds.createdBy, userId)),
     )
-    .orderBy(desc(seeds.updatedAt));
+    .orderBy(desc(lastActivitySql));
 
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
     category: row.category,
-    updatedAt: row.updatedAt,
+    lastActivityAt: new Date(row.lastActivityAt),
     role: row.createdBy === userId ? "Gardener" : "Admin",
   }));
 }

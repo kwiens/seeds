@@ -140,7 +140,7 @@ describe("createTeamUpdate", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("revalidates the dashboard and team pages", async () => {
+  it("revalidates the Team page and My Sprouts hub", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSproutSeed() as any,
@@ -150,8 +150,8 @@ describe("createTeamUpdate", () => {
 
     await createTeamUpdate("seed-1", { body: "Status check" });
 
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/seeds/seed-1");
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
   });
 });
 
@@ -259,7 +259,7 @@ describe("replyToTeamUpdate", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("revalidates the dashboard and team pages", async () => {
+  it("revalidates the Team page and My Sprouts hub", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(
       mockTeamUpdate() as any,
@@ -269,7 +269,7 @@ describe("replyToTeamUpdate", () => {
 
     await replyToTeamUpdate("update-1", { body: "On it." });
 
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/seeds/seed-1");
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
   });
 });

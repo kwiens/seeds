@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { FileText, Mail, Pencil, QrCode, Sun } from "lucide-react";
+import { FileText, Mail, Pencil, QrCode, Sun, Users } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
 import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
@@ -134,7 +134,7 @@ export default async function SeedPage(props: {
   if (!seed) notFound();
 
   const canEdit = canEditSeed(session, seed);
-  const showTeamTab =
+  const hasTeamAccess =
     seed.status === "in_progress" && canAccessTeamUpdates(session, seed);
 
   // Pending seeds are intentionally public so creators can share links
@@ -181,6 +181,14 @@ export default async function SeedPage(props: {
               <Link href={`/seeds/${seed.id}/updates`}>
                 <FileText className="mr-1.5 size-3.5" />
                 {updates.length > 0 ? "Manage Updates" : "Post Update"}
+              </Link>
+            </Button>
+          )}
+          {hasTeamAccess && (
+            <Button variant="outline" asChild>
+              <Link href={`/seeds/${seed.id}/team`}>
+                <Users className="mr-1.5 size-3.5" />
+                Team
               </Link>
             </Button>
           )}
@@ -404,14 +412,13 @@ export default async function SeedPage(props: {
           </>
         );
 
-        if (updates.length > 0 || showTeamTab) {
+        if (updates.length > 0) {
           return (
             <SeedDetailTabs
               projectContent={projectContent}
               updates={updates}
               seedId={seed.id}
               canEdit={canEdit}
-              teamHref={showTeamTab ? `/seeds/${seed.id}/team` : undefined}
             />
           );
         }
