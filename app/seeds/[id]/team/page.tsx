@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "@/components/seeds/category-badge";
+import { MarkSproutRead } from "@/components/seeds/mark-sprout-read";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { getSeedById } from "@/lib/db/queries/seeds";
@@ -44,6 +45,7 @@ export default async function SproutTeamPage(props: {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      <MarkSproutRead seedId={seed.id} />
       <Button variant="ghost" size="sm" asChild className="mb-4">
         <Link href={`/seeds/${seed.id}`}>
           <ArrowLeft className="mr-1.5 size-3.5" />

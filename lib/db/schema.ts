@@ -202,6 +202,27 @@ export const seedTeamMembers = pgTable(
   (t) => [uniqueIndex("seed_team_members_unique").on(t.seedId, t.userId)],
 );
 
+// Seed Team Activity Reads (per-user "last checked" marker, powers the
+// new-activity badge on My Sprouts / nav)
+export const seedTeamActivityReads = pgTable(
+  "seed_team_activity_reads",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seedId: uuid("seed_id")
+      .notNull()
+      .references(() => seeds.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("seed_team_activity_reads_unique").on(t.seedId, t.userId),
+  ],
+);
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -233,6 +254,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   addedTeamMemberships: many(seedTeamMembers, {
     relationName: "teamMemberAddedBy",
   }),
+  teamActivityReads: many(seedTeamActivityReads),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
@@ -243,6 +265,7 @@ export const seedsRelations = relations(seeds, ({ one, many }) => ({
   updates: many(seedUpdates),
   teamUpdates: many(seedTeamUpdates),
   teamMembers: many(seedTeamMembers),
+  teamActivityReads: many(seedTeamActivityReads),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -325,6 +348,20 @@ export const seedTeamMembersRelations = relations(
       fields: [seedTeamMembers.addedBy],
       references: [users.id],
       relationName: "teamMemberAddedBy",
+    }),
+  }),
+);
+
+export const seedTeamActivityReadsRelations = relations(
+  seedTeamActivityReads,
+  ({ one }) => ({
+    seed: one(seeds, {
+      fields: [seedTeamActivityReads.seedId],
+      references: [seeds.id],
+    }),
+    user: one(users, {
+      fields: [seedTeamActivityReads.userId],
+      references: [users.id],
     }),
   }),
 );

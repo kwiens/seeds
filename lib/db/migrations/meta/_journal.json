@@ -50,6 +50,13 @@
       "when": 1785088705625,
       "tag": "0006_dry_james_howlett",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785099439891,
+      "tag": "0007_redundant_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

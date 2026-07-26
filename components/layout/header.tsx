@@ -9,9 +9,11 @@ import { getMySprouts } from "@/lib/db/queries/sprouts";
 export async function Header() {
   const session = await auth();
   const isAdmin = session?.user?.role === "admin";
-  const hasSproutAccess = session?.user?.id
-    ? isAdmin || (await getMySprouts(session.user.id, false)).length > 0
-    : false;
+  const sprouts = session?.user?.id
+    ? await getMySprouts(session.user.id, isAdmin)
+    : [];
+  const hasSproutAccess = isAdmin || sprouts.length > 0;
+  const unreadSproutCount = sprouts.filter((s) => s.unreadCount > 0).length;
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -62,16 +64,25 @@ export async function Header() {
           {hasSproutAccess && (
             <Link
               href="/dashboard/sprouts"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             >
               My Sprouts
+              {unreadSproutCount > 0 && (
+                <span className="bg-primary text-primary-foreground inline-flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
+                  {unreadSproutCount}
+                </span>
+              )}
             </Link>
           )}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
           {session ? <UserMenu /> : <SignInButton />}
-          <MobileNav isLoggedIn={!!session} hasSproutAccess={hasSproutAccess} />
+          <MobileNav
+            isLoggedIn={!!session}
+            hasSproutAccess={hasSproutAccess}
+            unreadSproutCount={unreadSproutCount}
+          />
         </div>
       </div>
     </header>

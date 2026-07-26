@@ -1,7 +1,7 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import type { CategoryKey } from "@/lib/categories";
 import { db } from "@/lib/db";
-import { seeds, seedTeamMembers } from "@/lib/db/schema";
+import { seeds, seedTeamActivityReads, seedTeamMembers } from "@/lib/db/schema";
 import type { TeamRole } from "@/lib/team-roles";
 import { teamRoleLabels } from "@/lib/team-roles";
 
@@ -10,6 +10,7 @@ export interface MySprout {
   name: string;
   category: CategoryKey;
   lastActivityAt: Date;
+  unreadCount: number;
   role: string;
 }
 
@@ -23,6 +24,15 @@ const lastActivitySql = sql<string>`greatest(
     ${seeds.updatedAt}
   )
 )`.as("last_activity");
+
+// Team Updates posted since this viewer's own last visit to this Sprout's
+// Team page. Deliberately scoped to Team Updates only (not seeds.updated_at)
+// -- editing the seed's photo shouldn't flag "new activity" for the team.
+const unreadCountSql = sql<number>`(
+  select count(*)::int from seed_team_updates
+  where seed_team_updates.seed_id = seeds.id
+  and seed_team_updates.created_at > coalesce(${seedTeamActivityReads.lastReadAt}, to_timestamp(0))
+)`.as("unread_count");
 
 /**
  * Sprouts (status = "in_progress") the given user has team access to:
@@ -41,6 +51,7 @@ export async function getMySprouts(
       createdBy: seeds.createdBy,
       teamRole: seedTeamMembers.role,
       lastActivityAt: lastActivitySql,
+      unreadCount: unreadCountSql,
     })
     .from(seeds)
     .leftJoin(
@@ -48,6 +59,13 @@ export async function getMySprouts(
       and(
         eq(seedTeamMembers.seedId, seeds.id),
         eq(seedTeamMembers.userId, userId),
+      ),
+    )
+    .leftJoin(
+      seedTeamActivityReads,
+      and(
+        eq(seedTeamActivityReads.seedId, seeds.id),
+        eq(seedTeamActivityReads.userId, userId),
       ),
     )
     .where(
@@ -68,6 +86,7 @@ export async function getMySprouts(
     name: row.name,
     category: row.category,
     lastActivityAt: new Date(row.lastActivityAt),
+    unreadCount: row.unreadCount,
     role:
       row.createdBy === userId
         ? "Gardener"

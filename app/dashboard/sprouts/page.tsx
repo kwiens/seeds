@@ -45,15 +45,25 @@ export default async function MySproutsPage() {
               href={`/seeds/${sprout.id}/team`}
               className="hover:border-primary flex items-center gap-4 rounded-lg border p-4 transition-colors"
             >
+              {sprout.unreadCount > 0 && (
+                <span className="bg-primary size-2 shrink-0 rounded-full" />
+              )}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{sprout.name}</p>
                 <div className="mt-1">
                   <CategoryBadge category={sprout.category} />
                 </div>
               </div>
-              <p className="text-muted-foreground shrink-0 text-xs">
-                Updated {formatRelativeTime(sprout.lastActivityAt)}
-              </p>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {sprout.unreadCount > 0 && (
+                  <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-semibold">
+                    {sprout.unreadCount} new
+                  </span>
+                )}
+                <p className="text-muted-foreground text-xs">
+                  Updated {formatRelativeTime(sprout.lastActivityAt)}
+                </p>
+              </div>
             </Link>
           ))}
         </div>
