@@ -5,8 +5,10 @@ import { auth } from "@/auth";
 import { canAccessTeamUpdates } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "@/components/seeds/category-badge";
+import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { getSeedById } from "@/lib/db/queries/seeds";
+import { getTeamMembers } from "@/lib/db/queries/team-roster";
 import { getTeamUpdatesBySeed } from "@/lib/db/queries/team-updates";
 
 export default async function SproutTeamPage(props: {
@@ -28,10 +30,17 @@ export default async function SproutTeamPage(props: {
     redirect(`/seeds/${seed.id}`);
   }
 
-  const teamUpdates = await getTeamUpdatesBySeed(seed.id);
+  const [teamUpdates, members] = await Promise.all([
+    getTeamUpdatesBySeed(seed.id),
+    getTeamMembers(seed.id),
+  ]);
+
+  const rolesByUserId = Object.fromEntries(
+    members.map((m) => [m.userId, m.roleLabel]),
+  );
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <Button variant="ghost" size="sm" asChild className="mb-4">
         <Link href={`/seeds/${seed.id}`}>
           <ArrowLeft className="mr-1.5 size-3.5" />
@@ -52,11 +61,15 @@ export default async function SproutTeamPage(props: {
         Visible only to this Sprout&apos;s team — not part of the public page.
       </p>
 
-      <TeamUpdatesSection
-        seedId={seed.id}
-        updates={teamUpdates}
-        isAdmin={session.user.role === "admin"}
-      />
+      <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">
+        <TeamUpdatesSection
+          seedId={seed.id}
+          updates={teamUpdates}
+          isAdmin={session.user.role === "admin"}
+          rolesByUserId={rolesByUserId}
+        />
+        <TeamRoster members={members} />
+      </div>
     </div>
   );
 }

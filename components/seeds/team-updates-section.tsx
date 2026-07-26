@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { MessageSquare, Reply, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,10 +44,12 @@ export function TeamUpdatesSection({
   seedId,
   updates,
   isAdmin,
+  rolesByUserId = {},
 }: {
   seedId: string;
   updates: TeamUpdateWithReplies[];
   isAdmin: boolean;
+  rolesByUserId?: Record<string, string>;
 }) {
   return (
     <div>
@@ -73,6 +76,7 @@ export function TeamUpdatesSection({
               update={update}
               seedId={seedId}
               isAdmin={isAdmin}
+              rolesByUserId={rolesByUserId}
             />
           ))}
         </div>
@@ -147,10 +151,12 @@ function UpdateThread({
   update,
   seedId,
   isAdmin,
+  rolesByUserId,
 }: {
   update: TeamUpdateWithReplies;
   seedId: string;
   isAdmin: boolean;
+  rolesByUserId: Record<string, string>;
 }) {
   const [showReply, setShowReply] = useState(false);
 
@@ -159,13 +165,19 @@ function UpdateThread({
       <UpdateCard
         update={update}
         isAdmin={isAdmin}
+        roleLabel={rolesByUserId[update.userId]}
         onReply={() => setShowReply(!showReply)}
       />
 
       {update.replies.length > 0 && (
         <div className="mt-3 ml-8 space-y-3 border-l-2 pl-4">
           {update.replies.map((reply) => (
-            <UpdateCard key={reply.id} update={reply} isAdmin={isAdmin} />
+            <UpdateCard
+              key={reply.id}
+              update={reply}
+              isAdmin={isAdmin}
+              roleLabel={rolesByUserId[reply.userId]}
+            />
           ))}
         </div>
       )}
@@ -245,10 +257,12 @@ function ReplyForm({
 function UpdateCard({
   update,
   isAdmin,
+  roleLabel,
   onReply,
 }: {
   update: TeamUpdateRow;
   isAdmin: boolean;
+  roleLabel?: string;
   onReply?: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -278,6 +292,11 @@ function UpdateCard({
             <span className="text-sm font-medium">
               {formatDisplayName(update.userName)}
             </span>
+            {roleLabel && (
+              <Badge variant="secondary" className="text-xs">
+                {roleLabel}
+              </Badge>
+            )}
             <span className="text-muted-foreground text-xs">
               {formatRelativeTime(update.createdAt)}
             </span>
