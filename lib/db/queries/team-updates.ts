@@ -9,6 +9,7 @@ export async function getTeamUpdatesBySeed(seedId: string) {
       title: seedTeamUpdates.title,
       body: seedTeamUpdates.body,
       parentId: seedTeamUpdates.parentId,
+      attachments: seedTeamUpdates.attachments,
       createdAt: seedTeamUpdates.createdAt,
       userId: users.id,
       userName: users.name,

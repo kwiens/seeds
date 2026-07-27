@@ -178,6 +178,10 @@ export const seedTeamUpdates = pgTable("seed_team_updates", {
   title: text("title"),
   body: text("body").notNull(),
   parentId: uuid("parent_id"),
+  attachments: jsonb("attachments")
+    .$type<{ name: string; url: string; size: number }[]>()
+    .notNull()
+    .default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -43,6 +43,7 @@ export async function createTeamUpdate(seedId: string, data: unknown) {
     userId: session.user.id,
     title: parsed.data.title || null,
     body: parsed.data.body,
+    attachments: parsed.data.attachments,
   });
 
   revalidatePath(`/seeds/${seedId}/team`);
@@ -84,6 +85,7 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
     userId: session.user.id,
     body: parsed.data.body,
     parentId,
+    attachments: parsed.data.attachments,
   });
 
   revalidatePath(`/seeds/${parent.seed.id}/team`);

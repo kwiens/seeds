@@ -126,8 +126,55 @@ describe("createTeamUpdate", () => {
         userId: "user-1",
         title: "Site visit complete",
         body: "We got approval from Parks.",
+        attachments: [],
       }),
     );
+  });
+
+  it("stores attached files with an update", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+    const chain = mockDbInsertSimpleChain();
+    vi.mocked(db.insert).mockReturnValue(chain as any);
+
+    const attachments = [
+      {
+        name: "design-plan.pdf",
+        url: "https://blob.example/x.pdf",
+        size: 204800,
+      },
+    ];
+    const result = await createTeamUpdate("seed-1", {
+      body: "New design plan attached, thoughts?",
+      attachments,
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(chain.values).toHaveBeenCalledWith(
+      expect.objectContaining({ attachments }),
+    );
+  });
+
+  it("rejects more than 5 attachments", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+
+    const attachments = Array.from({ length: 6 }, (_, i) => ({
+      name: `file-${i}.pdf`,
+      url: `https://blob.example/${i}.pdf`,
+      size: 1000,
+    }));
+    const result = await createTeamUpdate("seed-1", {
+      body: "Too many files",
+      attachments,
+    });
+
+    expect(result).toHaveProperty("error");
+    expect(db.insert).not.toHaveBeenCalled();
   });
 
   it("allows an admin to post on any Sprout", async () => {
@@ -245,7 +292,34 @@ describe("replyToTeamUpdate", () => {
         userId: "user-1",
         parentId: "update-1",
         body: "Thanks, hoping to move this forward next week.",
+        attachments: [],
       }),
+    );
+  });
+
+  it("stores attached files with a reply", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(
+      mockTeamUpdate() as any,
+    );
+    const chain = mockDbInsertSimpleChain();
+    vi.mocked(db.insert).mockReturnValue(chain as any);
+
+    const attachments = [
+      {
+        name: "revised-plan-v2.pdf",
+        url: "https://blob.example/v2.pdf",
+        size: 51200,
+      },
+    ];
+    const result = await replyToTeamUpdate("update-1", {
+      body: "Updated version attached.",
+      attachments,
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(chain.values).toHaveBeenCalledWith(
+      expect.objectContaining({ attachments }),
     );
   });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MessageSquare, Reply, Trash2 } from "lucide-react";
+import { FileText, MessageSquare, Reply, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  type Attachment,
+  AttachmentPicker,
+} from "@/components/seeds/attachment-picker";
+import {
   createTeamUpdate,
   deleteTeamUpdate,
   replyToTeamUpdate,
@@ -30,6 +34,7 @@ interface TeamUpdateRow {
   title: string | null;
   body: string;
   parentId: string | null;
+  attachments: Attachment[];
   createdAt: Date;
   userId: string;
   userName: string;
@@ -88,6 +93,7 @@ export function TeamUpdatesSection({
 function NewUpdateForm({ seedId }: { seedId: string }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const remaining = TEAM_UPDATE_MAX_LENGTH - body.length;
@@ -99,6 +105,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
       const result = await createTeamUpdate(seedId, {
         title: title.trim() || undefined,
         body,
+        attachments,
       });
       if (result.error) {
         setError(result.error);
@@ -106,6 +113,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
       }
       setTitle("");
       setBody("");
+      setAttachments([]);
     });
   }
 
@@ -129,6 +137,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
         placeholder="Progress, next steps, questions, needs, or blockers…"
         className="min-h-24"
       />
+      <AttachmentPicker attachments={attachments} onChange={setAttachments} />
       <div className="flex items-center justify-between">
         <span
           className={`text-xs ${remaining < 100 ? "text-destructive font-medium" : "text-muted-foreground"}`}
@@ -204,6 +213,7 @@ function ReplyForm({
   onDone: () => void;
 }) {
   const [body, setBody] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const remaining = TEAM_UPDATE_MAX_LENGTH - body.length;
@@ -212,12 +222,13 @@ function ReplyForm({
     if (!body.trim()) return;
     setError(null);
     startTransition(async () => {
-      const result = await replyToTeamUpdate(parentId, { body });
+      const result = await replyToTeamUpdate(parentId, { body, attachments });
       if (result.error) {
         setError(result.error);
         return;
       }
       setBody("");
+      setAttachments([]);
       onDone();
     });
   }
@@ -236,6 +247,9 @@ function ReplyForm({
         placeholder="Write a reply…"
         className="min-h-20"
       />
+      <div className="mt-2">
+        <AttachmentPicker attachments={attachments} onChange={setAttachments} />
+      </div>
       <div className="mt-2 flex items-center justify-between">
         <span
           className={`text-xs ${remaining < 100 ? "text-destructive font-medium" : "text-muted-foreground"}`}
@@ -279,7 +293,10 @@ function UpdateCard({
   }
 
   return (
-    <div className="group">
+    <div
+      id={`update-${update.id}`}
+      className="group scroll-mt-20 rounded-md target:bg-accent -m-2 p-2 transition-colors"
+    >
       <div className="flex items-start gap-3">
         <Avatar className="size-7 shrink-0">
           <AvatarImage src={update.userImage ?? undefined} />
@@ -365,6 +382,22 @@ function UpdateCard({
           <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-sm">
             {update.body}
           </p>
+          {update.attachments.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {update.attachments.map((file) => (
+                <a
+                  key={file.url}
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-accent hover:bg-accent/70 inline-flex max-w-[220px] items-center gap-1.5 rounded-full py-1 pr-2.5 pl-2 text-xs"
+                >
+                  <FileText className="text-muted-foreground size-3 shrink-0" />
+                  <span className="truncate">{file.name}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
