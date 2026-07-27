@@ -1,6 +1,7 @@
 import type {
   adminEmails,
   seedApprovals,
+  seedBudgets,
   seeds,
   seedSupports,
   seedTeamActivityReads,
@@ -36,3 +37,6 @@ export type NewTeamMember = typeof seedTeamMembers.$inferInsert;
 
 export type TeamActivityRead = typeof seedTeamActivityReads.$inferSelect;
 export type NewTeamActivityRead = typeof seedTeamActivityReads.$inferInsert;
+
+export type Budget = typeof seedBudgets.$inferSelect;
+export type NewBudget = typeof seedBudgets.$inferInsert;

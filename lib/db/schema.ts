@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   doublePrecision,
   index,
   jsonb,
@@ -38,6 +39,8 @@ export const teamRoleEnum = pgEnum("team_role", [
   "roots",
   "cultivator",
 ]);
+
+export const budgetStatusEnum = pgEnum("budget_status", ["proposed", "final"]);
 
 // Users
 export const users = pgTable("users", {
@@ -223,6 +226,32 @@ export const seedTeamActivityReads = pgTable(
   ],
 );
 
+// Seed Budgets (Proposed and Final, tracked separately per Sprout)
+export const seedBudgets = pgTable(
+  "seed_budgets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seedId: uuid("seed_id")
+      .notNull()
+      .references(() => seeds.id, { onDelete: "cascade" }),
+    status: budgetStatusEnum("status").notNull(),
+    lineItems: jsonb("line_items")
+      .$type<{ label: string; amount: number }[]>()
+      .notNull()
+      .default([]),
+    notes: text("notes"),
+    isPublic: boolean("is_public").notNull().default(false),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("seed_budgets_unique").on(t.seedId, t.status)],
+);
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -255,6 +284,7 @@ export const usersRelations = relations(users, ({ many }) => ({
     relationName: "teamMemberAddedBy",
   }),
   teamActivityReads: many(seedTeamActivityReads),
+  budgetUpdates: many(seedBudgets),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
@@ -266,6 +296,7 @@ export const seedsRelations = relations(seeds, ({ one, many }) => ({
   teamUpdates: many(seedTeamUpdates),
   teamMembers: many(seedTeamMembers),
   teamActivityReads: many(seedTeamActivityReads),
+  budgets: many(seedBudgets),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -365,6 +396,14 @@ export const seedTeamActivityReadsRelations = relations(
     }),
   }),
 );
+
+export const seedBudgetsRelations = relations(seedBudgets, ({ one }) => ({
+  seed: one(seeds, { fields: [seedBudgets.seedId], references: [seeds.id] }),
+  updatedByUser: one(users, {
+    fields: [seedBudgets.updatedBy],
+    references: [users.id],
+  }),
+}));
 
 export const adminEmailsRelations = relations(adminEmails, ({ one }) => ({
   addedByUser: one(users, {

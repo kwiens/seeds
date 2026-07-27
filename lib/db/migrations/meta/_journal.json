@@ -57,6 +57,13 @@
       "when": 1785099439891,
       "tag": "0007_redundant_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785109190626,
+      "tag": "0008_nosy_stryfe",
+      "breakpoints": true
     }
   ]
 }

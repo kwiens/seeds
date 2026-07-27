@@ -4,11 +4,13 @@ import { ArrowLeft, Lock } from "lucide-react";
 import { auth } from "@/auth";
 import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
+import { BudgetEditor } from "@/components/seeds/budget-editor";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { MarkSproutRead } from "@/components/seeds/mark-sprout-read";
 import { TeamRolesExplainer } from "@/components/seeds/team-roles-explainer";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
+import { getBudgets } from "@/lib/db/queries/budgets";
 import { getSeedById } from "@/lib/db/queries/seeds";
 import { getTeamMembers } from "@/lib/db/queries/team-roster";
 import { getTeamUpdatesBySeed } from "@/lib/db/queries/team-updates";
@@ -35,9 +37,10 @@ export default async function SproutTeamPage(props: {
   // Mark only activity that existed when this render began. Using the time the
   // client effect eventually runs could hide an update that was never rendered.
   const readThrough = new Date().toISOString();
-  const [teamUpdates, members] = await Promise.all([
+  const [teamUpdates, members, budgets] = await Promise.all([
     getTeamUpdatesBySeed(seed.id),
     getTeamMembers(seed.id),
+    getBudgets(seed.id),
   ]);
 
   const rolesByUserId: Record<string, string> = Object.fromEntries(
@@ -95,6 +98,13 @@ export default async function SproutTeamPage(props: {
             members={members}
             canManage={canManage}
             isAdmin={isAdmin}
+          />
+          <BudgetEditor
+            seedId={seed.id}
+            seedName={seed.name}
+            proposed={budgets.proposed}
+            final={budgets.final}
+            canManage={canManage}
           />
           <TeamRolesExplainer />
         </div>
