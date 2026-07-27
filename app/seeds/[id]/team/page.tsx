@@ -8,7 +8,6 @@ import { BudgetEditor } from "@/components/seeds/budget-editor";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { MarkSproutRead } from "@/components/seeds/mark-sprout-read";
 import { SeedDocuments } from "@/components/seeds/seed-documents";
-import { TeamRolesExplainer } from "@/components/seeds/team-roles-explainer";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { getBudgets } from "@/lib/db/queries/budgets";
@@ -110,7 +109,6 @@ export default async function SproutTeamPage(props: {
             canManage={canManage}
           />
           <SeedDocuments seedId={seed.id} documents={documents} />
-          <TeamRolesExplainer />
         </div>
       </div>
     </div>

@@ -16,6 +16,40 @@ import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
 import { teamRoleKeys, teamRoleLabels, type TeamRole } from "@/lib/team-roles";
 
+const ROLE_DESCRIPTIONS: { label: string; description: string }[] = [
+  {
+    label: "Gardener",
+    description: "Leads the Sprout and manages its public page.",
+  },
+  {
+    label: teamRoleLabels.co_gardener,
+    description: "Shares responsibility for leading the Sprout.",
+  },
+  {
+    label: teamRoleLabels.guide,
+    description: "Provides mentorship, expertise, and advice.",
+  },
+  {
+    label: teamRoleLabels.roots,
+    description:
+      "Represents a partner organization actively supporting this Sprout.",
+  },
+  {
+    label: teamRoleLabels.steward,
+    description: "Helps navigate city or county processes and approvals.",
+  },
+  {
+    label: teamRoleLabels.cultivator,
+    description:
+      "Actively volunteers time and skills to help the Sprout succeed.",
+  },
+  {
+    label: "Council (badge only)",
+    description:
+      "A trusted platform-wide advisor who can view and comment on any Sprout, even if they're not part of its team.",
+  },
+];
+
 export function TeamRoster({
   seedId,
   members,
@@ -28,10 +62,20 @@ export function TeamRoster({
   isAdmin: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showExplainer, setShowExplainer] = useState(false);
 
   return (
     <div className="rounded-lg border p-4">
-      <h4 className="mb-3 text-sm font-semibold">Team ({members.length})</h4>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold">Team ({members.length})</h4>
+        <button
+          type="button"
+          onClick={() => setShowExplainer(!showExplainer)}
+          className="text-muted-foreground hover:text-foreground text-xs font-medium"
+        >
+          What do these roles mean?
+        </button>
+      </div>
       <div className="space-y-3">
         {members.map((member) => (
           <RosterRow
@@ -60,6 +104,26 @@ export function TeamRoster({
             + Add to team
           </button>
         ))}
+
+      {showExplainer && (
+        <div className="mt-4 space-y-3 border-t pt-3">
+          <p className="text-sm font-semibold">Team Roles</p>
+          <p className="text-muted-foreground text-xs">
+            Add someone here once they&apos;re actively helping this Sprout
+            grow.
+          </p>
+          <dl className="space-y-2">
+            {ROLE_DESCRIPTIONS.map((role) => (
+              <div key={role.label}>
+                <dt className="text-xs font-semibold">{role.label}</dt>
+                <dd className="text-muted-foreground text-xs">
+                  {role.description}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
     </div>
   );
 }
