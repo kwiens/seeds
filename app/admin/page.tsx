@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
 import { BannerSettings } from "@/components/admin/banner-settings";
+import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
@@ -12,6 +13,7 @@ import { getAllComments } from "@/lib/db/queries/comments";
 import {
   getAdminEmails,
   getAllSeeds,
+  getCouncilMembers,
   getSupporterEmailsMap,
 } from "@/lib/db/queries/admin";
 import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
@@ -35,6 +37,7 @@ export default async function AdminPage() {
     allSeeds,
     supporterEmailsMap,
     adminEmails,
+    councilMembers,
     allComments,
     homepagePhase,
     bannerConfig,
@@ -42,6 +45,7 @@ export default async function AdminPage() {
     getAllSeeds(),
     getSupporterEmailsMap(),
     getAdminEmails(),
+    getCouncilMembers(),
     getAllComments(),
     getHomepagePhase(),
     getBannerConfig(),
@@ -126,6 +130,20 @@ export default async function AdminPage() {
                 </p>
               </div>
               <AdminEmailList dbEmails={adminEmails} envEmails={envEmails} />
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Council</h2>
+                <p className="text-muted-foreground text-sm">
+                  Council members are eligible to be assigned as a Steward on a
+                  Sprout — this doesn&apos;t grant any site-wide admin powers.
+                  You don&apos;t need to promote anyone here first: assigning
+                  someone as Steward from a Sprout&apos;s Team page promotes
+                  them to Council automatically. This list is just for managing
+                  Council membership directly.
+                </p>
+              </div>
+              <CouncilList members={councilMembers} />
             </div>
           </div>
         </TabsContent>

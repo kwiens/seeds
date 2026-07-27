@@ -23,7 +23,7 @@ export async function createTeamUpdate(seedId: string, data: unknown) {
   });
   if (!seed) return { error: "Seed not found." };
 
-  if (!canAccessTeamUpdates(session, seed)) {
+  if (!(await canAccessTeamUpdates(session, seed))) {
     return {
       error: "You do not have permission to post updates for this Sprout.",
     };
@@ -66,7 +66,7 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
     return { error: "Replies to replies are not supported." };
   }
 
-  if (!canAccessTeamUpdates(session, parent.seed)) {
+  if (!(await canAccessTeamUpdates(session, parent.seed))) {
     return { error: "You do not have permission to reply to this update." };
   }
 

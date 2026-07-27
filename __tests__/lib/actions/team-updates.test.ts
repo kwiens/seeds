@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
     query: {
       seeds: { findFirst: vi.fn() },
       seedTeamUpdates: { findFirst: vi.fn() },
+      seedTeamMembers: { findFirst: vi.fn() },
     },
     insert: vi.fn(),
     delete: vi.fn(),

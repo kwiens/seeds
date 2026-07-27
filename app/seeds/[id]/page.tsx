@@ -135,7 +135,9 @@ export default async function SeedPage(props: {
 
   const canEdit = canEditSeed(session, seed);
   const hasTeamAccess =
-    seed.status === "in_progress" && canAccessTeamUpdates(session, seed);
+    seed.status === "in_progress"
+      ? await canAccessTeamUpdates(session, seed)
+      : false;
 
   // Pending seeds are intentionally public so creators can share links
   // before approval. Only archived seeds are restricted to owner/admin.

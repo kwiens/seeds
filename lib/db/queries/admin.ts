@@ -62,3 +62,15 @@ export async function isDbAdminEmail(email: string): Promise<boolean> {
   });
   return !!row;
 }
+
+export async function getCouncilMembers() {
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+    })
+    .from(users)
+    .where(eq(users.role, "council"))
+    .orderBy(desc(users.createdAt));
+}

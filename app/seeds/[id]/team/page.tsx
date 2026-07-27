@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 import { auth } from "@/auth";
-import { canAccessTeamUpdates } from "@/lib/auth-utils";
+import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { TeamRoster } from "@/components/seeds/team-roster";
@@ -26,7 +26,7 @@ export default async function SproutTeamPage(props: {
 
   if (seed.status !== "in_progress") notFound();
 
-  if (!canAccessTeamUpdates(session, seed)) {
+  if (!(await canAccessTeamUpdates(session, seed))) {
     redirect(`/seeds/${seed.id}`);
   }
 
@@ -38,6 +38,9 @@ export default async function SproutTeamPage(props: {
   const rolesByUserId = Object.fromEntries(
     members.map((m) => [m.userId, m.roleLabel]),
   );
+
+  const isAdmin = session.user.role === "admin";
+  const canManage = canEditSeed(session, seed);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -65,10 +68,15 @@ export default async function SproutTeamPage(props: {
         <TeamUpdatesSection
           seedId={seed.id}
           updates={teamUpdates}
-          isAdmin={session.user.role === "admin"}
+          isAdmin={isAdmin}
           rolesByUserId={rolesByUserId}
         />
-        <TeamRoster members={members} />
+        <TeamRoster
+          seedId={seed.id}
+          members={members}
+          canManage={canManage}
+          isAdmin={isAdmin}
+        />
       </div>
     </div>
   );
