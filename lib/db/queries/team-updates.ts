@@ -13,6 +13,7 @@ export async function getTeamUpdatesBySeed(seedId: string) {
       userId: users.id,
       userName: users.name,
       userImage: users.image,
+      userRole: users.role,
     })
     .from(seedTeamUpdates)
     .innerJoin(users, eq(seedTeamUpdates.userId, users.id))

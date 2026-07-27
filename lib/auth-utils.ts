@@ -11,7 +11,8 @@ export function canEditSeed(
 }
 
 // Who can view/post in a Sprout's private Team Updates thread: the owner,
-// an Admin, or anyone with a seed_team_members row for this Sprout (Steward,
+// an Admin, a Council member (site-wide, on every Sprout -- not a roster
+// row), or anyone with a seed_team_members row for this Sprout (Steward,
 // co-Gardener, Guide, Roots, Cultivator).
 export async function canAccessTeamUpdates(
   session: { user: { id: string; role: string } } | null | undefined,
@@ -19,6 +20,7 @@ export async function canAccessTeamUpdates(
 ): Promise<boolean> {
   if (canEditSeed(session, seed)) return true;
   if (!session?.user?.id) return false;
+  if (session.user.role === "council") return true;
 
   const membership = await db.query.seedTeamMembers.findFirst({
     where: and(

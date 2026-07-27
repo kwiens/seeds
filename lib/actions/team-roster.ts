@@ -7,7 +7,7 @@ import { canEditSeed } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { seeds, seedTeamMembers } from "@/lib/db/schema";
 import { findUserByEmail } from "@/lib/db/queries/users";
-import { teamRoleKeys, type TeamRole } from "@/lib/team-roles";
+import { teamRoleKeys, teamRoleLabels, type TeamRole } from "@/lib/team-roles";
 
 export async function addTeamMember(
   seedId: string,
@@ -32,7 +32,9 @@ export async function addTeamMember(
 
   if (teamRole === "steward") {
     if (session.user.role !== "admin") {
-      return { error: "Only Admins can assign a Steward." };
+      return {
+        error: `Only Admins can assign a ${teamRoleLabels.steward}.`,
+      };
     }
   } else {
     if (!canEditSeed(session, seed)) {
@@ -97,7 +99,9 @@ export async function removeTeamMember(seedId: string, userId: string) {
 
   if (membership.role === "steward") {
     if (session.user.role !== "admin") {
-      return { error: "Only Admins can remove a Steward." };
+      return {
+        error: `Only Admins can remove a ${teamRoleLabels.steward}.`,
+      };
     }
   } else if (!canEditSeed(session, seed)) {
     return {

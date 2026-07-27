@@ -126,7 +126,9 @@ describe("addTeamMember", () => {
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
 
     const result = await addTeamMember("seed-1", "gail@example.com", "steward");
-    expect(result).toEqual({ error: "Only Admins can assign a Steward." });
+    expect(result).toEqual({
+      error: "Only Admins can assign a City/County Steward.",
+    });
     expect(db.query.users.findFirst).not.toHaveBeenCalled();
     expect(db.insert).not.toHaveBeenCalled();
   });
@@ -228,7 +230,9 @@ describe("removeTeamMember", () => {
     } as any);
 
     const result = await removeTeamMember("seed-1", "target-1");
-    expect(result).toEqual({ error: "Only Admins can remove a Steward." });
+    expect(result).toEqual({
+      error: "Only Admins can remove a City/County Steward.",
+    });
     expect(db.delete).not.toHaveBeenCalled();
   });
 

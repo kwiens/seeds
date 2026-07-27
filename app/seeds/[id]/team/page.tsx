@@ -6,6 +6,7 @@ import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { MarkSproutRead } from "@/components/seeds/mark-sprout-read";
+import { TeamRolesExplainer } from "@/components/seeds/team-roles-explainer";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { getSeedById } from "@/lib/db/queries/seeds";
@@ -39,9 +40,21 @@ export default async function SproutTeamPage(props: {
     getTeamMembers(seed.id),
   ]);
 
-  const rolesByUserId = Object.fromEntries(
+  const rolesByUserId: Record<string, string> = Object.fromEntries(
     members.map((m) => [m.userId, m.roleLabel]),
   );
+  // Council members can post here without being on the roster -- label them
+  // by their site-wide role instead of leaving their name unbadged.
+  for (const update of teamUpdates) {
+    if (!rolesByUserId[update.userId] && update.userRole === "council") {
+      rolesByUserId[update.userId] = "Council";
+    }
+    for (const reply of update.replies) {
+      if (!rolesByUserId[reply.userId] && reply.userRole === "council") {
+        rolesByUserId[reply.userId] = "Council";
+      }
+    }
+  }
 
   const isAdmin = session.user.role === "admin";
   const canManage = canEditSeed(session, seed);
@@ -76,12 +89,15 @@ export default async function SproutTeamPage(props: {
           isAdmin={isAdmin}
           rolesByUserId={rolesByUserId}
         />
-        <TeamRoster
-          seedId={seed.id}
-          members={members}
-          canManage={canManage}
-          isAdmin={isAdmin}
-        />
+        <div className="space-y-4">
+          <TeamRoster
+            seedId={seed.id}
+            members={members}
+            canManage={canManage}
+            isAdmin={isAdmin}
+          />
+          <TeamRolesExplainer />
+        </div>
       </div>
     </div>
   );

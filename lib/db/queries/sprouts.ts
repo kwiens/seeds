@@ -40,13 +40,15 @@ function unreadCountSql(userId: string) {
 /**
  * Sprouts (status = "in_progress") the given user has team access to:
  * they created it, they hold a roster row on it (Steward/co-Gardener/
- * Guide/Roots/Cultivator), or they're an Admin (sees every Sprout).
+ * Guide/Roots/Cultivator), or their role sees every Sprout (Admin,
+ * Council -- Council isn't a roster row, it's site-wide by design).
  */
 export async function getMySprouts(
   userId: string,
-  isAdmin: boolean,
+  viewerRole: string,
 ): Promise<MySprout[]> {
   const unreadCount = unreadCountSql(userId);
+  const seesAllSprouts = viewerRole === "admin" || viewerRole === "council";
   const rows = await db
     .select({
       id: seeds.id,
@@ -73,7 +75,7 @@ export async function getMySprouts(
       ),
     )
     .where(
-      isAdmin
+      seesAllSprouts
         ? eq(seeds.status, "in_progress")
         : and(
             eq(seeds.status, "in_progress"),
@@ -96,6 +98,8 @@ export async function getMySprouts(
         ? "Gardener"
         : row.teamRole
           ? teamRoleLabels[row.teamRole as TeamRole]
-          : "Admin",
+          : viewerRole === "admin"
+            ? "Admin"
+            : "Council",
   }));
 }

@@ -70,6 +70,13 @@ describe("canAccessTeamUpdates", () => {
     expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
   });
 
+  it("returns true for a Council member on any Sprout, without querying the roster", async () => {
+    const session = { user: { id: "council-1", role: "council" } };
+    const result = await canAccessTeamUpdates(session, seed);
+    expect(result).toBe(true);
+    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
+  });
+
   it("returns true for a user with a roster row on this Sprout", async () => {
     vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue({
       id: "membership-1",

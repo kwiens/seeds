@@ -78,7 +78,8 @@ function RosterRow({
   const [isPending, startTransition] = useTransition();
   const isGardener = member.roleLabel === "Gardener";
   const canRemove =
-    !isGardener && (member.roleLabel === "Steward" ? isAdmin : canManage);
+    !isGardener &&
+    (member.roleLabel === teamRoleLabels.steward ? isAdmin : canManage);
 
   function handleRemove() {
     startTransition(async () => {

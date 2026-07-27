@@ -16,15 +16,16 @@ export default async function MySproutsPage() {
     redirect("/api/auth/signin");
   }
 
-  const isAdmin = session.user.role === "admin";
-  const sprouts = await getMySprouts(session.user.id, isAdmin);
+  const seesAllSprouts =
+    session.user.role === "admin" || session.user.role === "council";
+  const sprouts = await getMySprouts(session.user.id, session.user.role);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">My Sprouts</h1>
         <p className="text-muted-foreground mt-1">
-          {isAdmin
+          {seesAllSprouts
             ? "Every active Sprout across the platform."
             : "Sprouts you're growing."}
         </p>

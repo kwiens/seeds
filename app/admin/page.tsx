@@ -135,11 +135,14 @@ export default async function AdminPage() {
               <div>
                 <h2 className="text-lg font-semibold">Council</h2>
                 <p className="text-muted-foreground text-sm">
-                  Council members are eligible to be assigned as a Steward on a
-                  Sprout — this doesn&apos;t grant any site-wide admin powers.
-                  Steward and Council are independent: assigning someone as
-                  Steward from a Sprout&apos;s Team page does not add them to
-                  Council, so promote them here first if they need it.
+                  Council members can view every Sprout&apos;s team page and
+                  post updates there, even on Sprouts they&apos;re not
+                  personally part of — a trusted, cross-project role, not
+                  site-wide admin powers. This is separate from being a
+                  City/County Steward on a specific Sprout: granting Council
+                  here doesn&apos;t make someone a Steward anywhere, and being a
+                  Steward doesn&apos;t make someone Council. Grant this
+                  deliberately.
                 </p>
               </div>
               <CouncilList members={councilMembers} />

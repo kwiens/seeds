@@ -9,15 +9,16 @@ import { getMySprouts } from "@/lib/db/queries/sprouts";
 export async function Header() {
   const session = await auth();
   const isAdmin = session?.user?.role === "admin";
-  // Admins always have access -- skip the unscoped, platform-wide query
-  // (isAdmin=true drops the createdBy/team-membership filter) since it's
-  // only needed here to compute the unread badge for a Sprout the viewer
-  // actually has team access to.
+  const seesAllSprouts =
+    isAdmin || session?.user?.role === "council";
+  // Admins always have access and don't need an unread badge, so avoid the
+  // platform-wide query. Council members do use it for cross-Sprout unread
+  // counts because their site-wide access is part of their working view.
   const sprouts =
     session?.user?.id && !isAdmin
-      ? await getMySprouts(session.user.id, false)
+      ? await getMySprouts(session.user.id, session.user.role)
       : [];
-  const hasSproutAccess = isAdmin || sprouts.length > 0;
+  const hasSproutAccess = seesAllSprouts || sprouts.length > 0;
   const unreadSproutCount = sprouts.filter((s) => s.unreadCount > 0).length;
 
   return (
