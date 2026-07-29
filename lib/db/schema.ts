@@ -256,6 +256,26 @@ export const seedBudgets = pgTable(
   (t) => [uniqueIndex("seed_budgets_unique").on(t.seedId, t.status)],
 );
 
+// Seed Team Events (internal upcoming events/meetings for a Sprout's team)
+export const seedTeamEvents = pgTable("seed_team_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  seedId: uuid("seed_id")
+    .notNull()
+    .references(() => seeds.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  title: text("title").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  location: text("location"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -289,6 +309,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   teamActivityReads: many(seedTeamActivityReads),
   budgetUpdates: many(seedBudgets),
+  teamEvents: many(seedTeamEvents),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
@@ -301,6 +322,7 @@ export const seedsRelations = relations(seeds, ({ one, many }) => ({
   teamMembers: many(seedTeamMembers),
   teamActivityReads: many(seedTeamActivityReads),
   budgets: many(seedBudgets),
+  teamEvents: many(seedTeamEvents),
 }));
 
 export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
@@ -405,6 +427,17 @@ export const seedBudgetsRelations = relations(seedBudgets, ({ one }) => ({
   seed: one(seeds, { fields: [seedBudgets.seedId], references: [seeds.id] }),
   updatedByUser: one(users, {
     fields: [seedBudgets.updatedBy],
+    references: [users.id],
+  }),
+}));
+
+export const seedTeamEventsRelations = relations(seedTeamEvents, ({ one }) => ({
+  seed: one(seeds, {
+    fields: [seedTeamEvents.seedId],
+    references: [seeds.id],
+  }),
+  creator: one(users, {
+    fields: [seedTeamEvents.createdBy],
     references: [users.id],
   }),
 }));

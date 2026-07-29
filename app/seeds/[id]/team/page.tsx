@@ -10,10 +10,12 @@ import { MarkSproutRead } from "@/components/seeds/mark-sprout-read";
 import { SeedDocuments } from "@/components/seeds/seed-documents";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
+import { UpcomingEvents } from "@/components/seeds/upcoming-events";
 import { getBudgets } from "@/lib/db/queries/budgets";
 import { getSeedDocuments } from "@/lib/db/queries/documents";
 import { getSeedById } from "@/lib/db/queries/seeds";
 import { getTeamMembers } from "@/lib/db/queries/team-roster";
+import { getUpcomingEvents } from "@/lib/db/queries/team-events";
 import { getTeamUpdatesBySeed } from "@/lib/db/queries/team-updates";
 
 export default async function SproutTeamPage(props: {
@@ -38,12 +40,14 @@ export default async function SproutTeamPage(props: {
   // Mark only activity that existed when this render began. Using the time the
   // client effect eventually runs could hide an update that was never rendered.
   const readThrough = new Date().toISOString();
-  const [teamUpdates, members, budgets, documents] = await Promise.all([
-    getTeamUpdatesBySeed(seed.id),
-    getTeamMembers(seed.id),
-    getBudgets(seed.id),
-    getSeedDocuments(seed.id),
-  ]);
+  const [teamUpdates, members, budgets, documents, upcomingEvents] =
+    await Promise.all([
+      getTeamUpdatesBySeed(seed.id),
+      getTeamMembers(seed.id),
+      getBudgets(seed.id),
+      getSeedDocuments(seed.id),
+      getUpcomingEvents(seed.id),
+    ]);
 
   const rolesByUserId: Record<string, string> = Object.fromEntries(
     members.map((m) => [m.userId, m.roleLabel]),
@@ -95,6 +99,11 @@ export default async function SproutTeamPage(props: {
           rolesByUserId={rolesByUserId}
         />
         <div className="space-y-4">
+          <UpcomingEvents
+            seedId={seed.id}
+            events={upcomingEvents}
+            canManage={canManage}
+          />
           <TeamRoster
             seedId={seed.id}
             members={members}
