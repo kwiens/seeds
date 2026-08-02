@@ -41,6 +41,17 @@ export async function promoteToCouncil(email: string) {
 export async function demoteFromCouncil(userId: string) {
   await requireAdmin();
 
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { role: true },
+  });
+  if (!user) {
+    return { error: "User not found." };
+  }
+  if (user.role !== "council") {
+    return { error: "This person is not on the Council." };
+  }
+
   await db.update(users).set({ role: "user" }).where(eq(users.id, userId));
 
   revalidatePath("/admin");

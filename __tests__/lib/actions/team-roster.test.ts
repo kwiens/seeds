@@ -83,9 +83,6 @@ describe("addTeamMember", () => {
   it("rejects a non-owner non-admin adding a co-Gardener", async () => {
     setAuthMock(auth, mockSession({ id: "other-user" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser() as any,
-    );
 
     const result = await addTeamMember(
       "seed-1",
@@ -95,6 +92,7 @@ describe("addTeamMember", () => {
     expect(result).toEqual({
       error: "You do not have permission to manage this Sprout's team.",
     });
+    expect(db.query.users.findFirst).not.toHaveBeenCalled();
     expect(db.insert).not.toHaveBeenCalled();
   });
 
@@ -126,12 +124,10 @@ describe("addTeamMember", () => {
   it("rejects assigning a Steward when the session isn't Admin", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" })); // the Gardener, not an admin
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser({ role: "council" }) as any,
-    );
 
     const result = await addTeamMember("seed-1", "gail@example.com", "steward");
     expect(result).toEqual({ error: "Only Admins can assign a Steward." });
+    expect(db.query.users.findFirst).not.toHaveBeenCalled();
     expect(db.insert).not.toHaveBeenCalled();
   });
 

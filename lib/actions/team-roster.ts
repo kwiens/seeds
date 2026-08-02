@@ -30,14 +30,6 @@ export async function addTeamMember(
   });
   if (!seed) return { error: "Seed not found." };
 
-  const target = await findUserByEmail(email);
-  if (!target) {
-    return {
-      error:
-        "No account found with that email — they need to sign in once first.",
-    };
-  }
-
   if (teamRole === "steward") {
     if (session.user.role !== "admin") {
       return { error: "Only Admins can assign a Steward." };
@@ -48,6 +40,17 @@ export async function addTeamMember(
         error: "You do not have permission to manage this Sprout's team.",
       };
     }
+  }
+
+  // Check authorization before looking up the target. Otherwise a signed-in
+  // user without team-management access can use this action to enumerate
+  // which email addresses have accounts.
+  const target = await findUserByEmail(email);
+  if (!target) {
+    return {
+      error:
+        "No account found with that email — they need to sign in once first.",
+    };
   }
 
   const existing = await db.query.seedTeamMembers.findFirst({

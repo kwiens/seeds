@@ -114,6 +114,9 @@ describe("demoteFromCouncil", () => {
 
   it("demotes the user back to a regular role", async () => {
     setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({
+      role: "council",
+    } as any);
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
@@ -122,5 +125,17 @@ describe("demoteFromCouncil", () => {
     expect(result).toEqual({ success: true });
     expect(chain.set).toHaveBeenCalledWith({ role: "user" });
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
+  });
+
+  it("does not demote an Admin when given a forged user id", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({
+      role: "admin",
+    } as any);
+
+    const result = await demoteFromCouncil("admin-2");
+
+    expect(result).toEqual({ error: "This person is not on the Council." });
+    expect(db.update).not.toHaveBeenCalled();
   });
 });
