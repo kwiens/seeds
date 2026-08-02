@@ -27,7 +27,12 @@ import { db } from "@/lib/db";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
 
 function mockSeedRow(overrides?: Record<string, unknown>) {
-  return { id: "seed-1", createdBy: "user-1", ...overrides };
+  return {
+    id: "seed-1",
+    createdBy: "user-1",
+    status: "in_progress",
+    ...overrides,
+  };
 }
 
 function mockTargetUser(overrides?: Record<string, unknown>) {
@@ -78,6 +83,20 @@ describe("addTeamMember", () => {
       error:
         "No account found with that email — they need to sign in once first.",
     });
+  });
+
+  it("does not add team members before a Seed becomes a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSeedRow({ status: "approved" }) as any,
+    );
+
+    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
+
+    expect(result).toEqual({
+      error: "Team members can only be managed for Sprouts.",
+    });
+    expect(db.query.users.findFirst).not.toHaveBeenCalled();
   });
 
   it("rejects a non-owner non-admin adding a co-Gardener", async () => {
@@ -167,6 +186,23 @@ describe("addTeamMember", () => {
     expect(db.insert).not.toHaveBeenCalled();
   });
 
+  it("maps a concurrent duplicate insert to the existing-member error", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
+    vi.mocked(db.query.users.findFirst).mockResolvedValue(
+      mockTargetUser() as any,
+    );
+    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
+    const chain = mockDbInsertSimpleChain();
+    chain.values.mockRejectedValueOnce({ code: "23505" });
+    vi.mocked(db.insert).mockReturnValue(chain as any);
+
+    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
+
+    expect(result).toEqual({ error: "This person is already on the team." });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
   it("does not add the Gardener as a duplicate roster member", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
@@ -218,7 +254,22 @@ describe("removeTeamMember", () => {
     expect(result).toEqual({
       error: "You do not have permission to manage this Sprout's team.",
     });
+    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
     expect(db.delete).not.toHaveBeenCalled();
+  });
+
+  it("does not remove team members before a Seed becomes a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSeedRow({ status: "approved" }) as any,
+    );
+
+    const result = await removeTeamMember("seed-1", "target-1");
+
+    expect(result).toEqual({
+      error: "Team members can only be managed for Sprouts.",
+    });
+    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
   });
 
   it("rejects a non-admin removing a Steward", async () => {

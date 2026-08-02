@@ -23,6 +23,8 @@ const attachmentSchema = z.object({
   size: z.number().int().min(0).max(TEAM_ATTACHMENT_MAX_SIZE),
 });
 
+export const teamAttachmentSchema = attachmentSchema;
+
 export const teamUpdateFormSchema = z.object({
   title: z
     .string()

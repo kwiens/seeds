@@ -1,13 +1,15 @@
 "use server";
 
-import { eq, or } from "drizzle-orm";
+import { del } from "@vercel/blob";
+import { eq, inArray, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canAccessTeamUpdates } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { seedTeamUpdates } from "@/lib/db/schema";
+import { seedTeamFileDeletions, seedTeamUpdates } from "@/lib/db/schema";
 import {
   attachmentsBelongToSeed,
+  teamAttachmentSchema,
   teamUpdateFormSchema,
   teamUpdateReplyFormSchema,
 } from "@/lib/validations/team-update";
@@ -122,8 +124,74 @@ export async function deleteTeamUpdate(updateId: string) {
         )
       : eq(seedTeamUpdates.id, updateId);
   await db.delete(seedTeamUpdates).where(deleteWhere);
+  // A DB trigger queues every removed row's files, including replies deleted
+  // by the self-FK cascade. Cleanup failures remain queued for a later retry.
+  await processTeamFileDeletionQueue();
 
   revalidatePath(`/seeds/${update.seedId}/team`);
   revalidatePath("/dashboard/sprouts");
   return { success: true };
+}
+
+export async function discardTeamAttachment(seedId: string, data: unknown) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "You must be signed in." };
+
+  const seed = await db.query.seeds.findFirst({
+    where: (seeds, { eq }) => eq(seeds.id, seedId),
+    columns: { id: true, createdBy: true, status: true },
+  });
+  if (
+    !seed ||
+    seed.status !== "in_progress" ||
+    !(await canAccessTeamUpdates(session, seed))
+  ) {
+    return { error: "You do not have access to this Sprout's files." };
+  }
+
+  const attachment = teamAttachmentSchema.safeParse(data);
+  if (
+    !attachment.success ||
+    !attachmentsBelongToSeed([attachment.data], seedId)
+  ) {
+    return { error: "Invalid attachment." };
+  }
+
+  const updates = await db.query.seedTeamUpdates.findMany({
+    where: eq(seedTeamUpdates.seedId, seedId),
+    columns: { attachments: true },
+  });
+  const isReferenced = updates.some((update) =>
+    update.attachments.some((file) => file.url === attachment.data.url),
+  );
+  if (isReferenced) return { error: "This attachment is already in use." };
+
+  await db
+    .insert(seedTeamFileDeletions)
+    .values({ seedId, url: attachment.data.url })
+    .onConflictDoNothing({ target: seedTeamFileDeletions.url });
+  const error = await processTeamFileDeletionQueue();
+  return error ? { error } : { success: true };
+}
+
+async function processTeamFileDeletionQueue() {
+  const token = process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN;
+  const queued =
+    (await db.query.seedTeamFileDeletions.findMany({
+      columns: { url: true },
+    })) ?? [];
+  const urls = queued.map((item) => item.url);
+  if (urls.length === 0) return null;
+  if (!token) return "Private team file storage is not configured.";
+
+  try {
+    await del(urls, { token });
+    await db
+      .delete(seedTeamFileDeletions)
+      .where(inArray(seedTeamFileDeletions.url, urls));
+    return null;
+  } catch (error) {
+    console.error("Failed to delete private Team files", error);
+    return "The attachment could not be deleted. Please try again.";
+  }
 }

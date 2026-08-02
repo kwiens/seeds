@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { revalidatePath } from "next/cache";
 import {
   mockSession,
@@ -9,11 +9,13 @@ import {
 } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@vercel/blob", () => ({ del: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
       seeds: { findFirst: vi.fn() },
-      seedTeamUpdates: { findFirst: vi.fn() },
+      seedTeamUpdates: { findFirst: vi.fn(), findMany: vi.fn() },
+      seedTeamFileDeletions: { findMany: vi.fn() },
       seedTeamMembers: { findFirst: vi.fn() },
     },
     insert: vi.fn(),
@@ -22,10 +24,12 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { auth } from "@/auth";
+import { del } from "@vercel/blob";
 import { db } from "@/lib/db";
 import {
   createTeamUpdate,
   deleteTeamUpdate,
+  discardTeamAttachment,
   replyToTeamUpdate,
 } from "@/lib/actions/team-updates";
 
@@ -383,6 +387,10 @@ describe("deleteTeamUpdate", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    delete process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN;
+  });
+
   it("requires authentication", async () => {
     setAuthMock(auth, null);
     const result = await deleteTeamUpdate("update-1");
@@ -438,6 +446,32 @@ describe("deleteTeamUpdate", () => {
     expect(chain.where).toHaveBeenCalledTimes(1);
   });
 
+  it("deletes private files attached to a removed thread", async () => {
+    process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN = "private-token";
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
+      id: "update-1",
+      seedId: "seed-1",
+      parentId: null,
+    } as any);
+    const first = mockAttachment("plan.pdf");
+    const second = mockAttachment("notes.pdf");
+    vi.mocked(db.query.seedTeamFileDeletions.findMany).mockResolvedValue([
+      { url: first.url },
+      { url: second.url },
+    ] as any);
+    const chain = mockDbDeleteChain();
+    vi.mocked(db.delete).mockReturnValue(chain as any);
+
+    const result = await deleteTeamUpdate("update-1");
+
+    expect(result).toEqual({ success: true });
+    expect(db.delete).toHaveBeenCalledTimes(2);
+    expect(del).toHaveBeenCalledWith([first.url, second.url], {
+      token: "private-token",
+    });
+  });
+
   it("revalidates the Team page and My Sprouts hub", async () => {
     setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
@@ -452,5 +486,76 @@ describe("deleteTeamUpdate", () => {
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+  });
+});
+
+describe("discardTeamAttachment", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN = "private-token";
+  });
+
+  afterEach(() => {
+    delete process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN;
+  });
+
+  it("deletes an unreferenced private attachment for a team member", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+    vi.mocked(db.query.seedTeamUpdates.findMany).mockResolvedValue([]);
+    const attachment = mockAttachment("draft.pdf");
+    const onConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(db.insert).mockReturnValue({
+      values: vi.fn().mockReturnValue({ onConflictDoNothing }),
+    } as any);
+    vi.mocked(db.query.seedTeamFileDeletions.findMany).mockResolvedValue([
+      { url: attachment.url },
+    ] as any);
+    vi.mocked(db.delete).mockReturnValue(mockDbDeleteChain() as any);
+
+    const result = await discardTeamAttachment("seed-1", attachment);
+
+    expect(result).toEqual({ success: true });
+    expect(del).toHaveBeenCalledWith([attachment.url], {
+      token: "private-token",
+    });
+    expect(onConflictDoNothing).toHaveBeenCalled();
+  });
+
+  it("does not delete an attachment already referenced by an update", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+    const attachment = mockAttachment("plan.pdf");
+    vi.mocked(db.query.seedTeamUpdates.findMany).mockResolvedValue([
+      { attachments: [attachment] },
+    ] as any);
+
+    const result = await discardTeamAttachment("seed-1", attachment);
+
+    expect(result).toEqual({ error: "This attachment is already in use." });
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  it("does not reveal or delete files for someone without Team access", async () => {
+    setAuthMock(auth, mockSession({ id: "other-user" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
+
+    const result = await discardTeamAttachment(
+      "seed-1",
+      mockAttachment("private.pdf"),
+    );
+
+    expect(result).toEqual({
+      error: "You do not have access to this Sprout's files.",
+    });
+    expect(db.query.seedTeamUpdates.findMany).not.toHaveBeenCalled();
+    expect(del).not.toHaveBeenCalled();
   });
 });

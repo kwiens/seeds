@@ -16,9 +16,14 @@ export async function markSproutActivityRead(
 
   const seed = await db.query.seeds.findFirst({
     where: eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true },
+    columns: { id: true, createdBy: true, status: true },
   });
-  if (!seed || !(await canAccessTeamUpdates(session, seed))) return;
+  if (
+    !seed ||
+    seed.status !== "in_progress" ||
+    !(await canAccessTeamUpdates(session, seed))
+  )
+    return;
 
   const requestedReadThrough = new Date(readThrough);
   if (Number.isNaN(requestedReadThrough.getTime())) return;

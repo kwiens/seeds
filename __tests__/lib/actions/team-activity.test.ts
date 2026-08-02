@@ -25,6 +25,7 @@ function mockSproutSeed(overrides?: Record<string, unknown>) {
   return {
     id: "seed-1",
     createdBy: "user-1",
+    status: "in_progress",
     ...overrides,
   };
 }
@@ -94,6 +95,7 @@ describe("markSproutActivityRead", () => {
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
       id: "seed-1",
       createdBy: "user-1",
+      status: "in_progress",
     } as any);
     vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
 
@@ -101,5 +103,18 @@ describe("markSproutActivityRead", () => {
 
     expect(db.insert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("does not write a marker before a Seed becomes a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+      id: "seed-1",
+      createdBy: "user-1",
+      status: "approved",
+    } as any);
+
+    await markSproutActivityRead("seed-1", new Date().toISOString());
+
+    expect(db.insert).not.toHaveBeenCalled();
   });
 });

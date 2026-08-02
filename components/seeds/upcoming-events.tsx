@@ -336,14 +336,17 @@ function EventRow({
   onEdit: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const start = new Date(event.startsAt);
   const location = event.location ?? "";
   const remote = isRemoteLocation(location);
 
   function handleDelete() {
     if (!window.confirm(`Delete "${event.title}"?`)) return;
+    setError(null);
     startTransition(async () => {
-      await deleteEvent(event.id);
+      const result = await deleteEvent(event.id);
+      if (result.error) setError(result.error);
     });
   }
 
@@ -411,6 +414,7 @@ function EventRow({
           <CalendarIcon className="size-2.5" />
           Add to Google Calendar
         </a>
+        {error && <p className="text-destructive mt-1 text-xs">{error}</p>}
       </div>
     </div>
   );
@@ -461,6 +465,7 @@ export function UpcomingEvents({
           </button>
         ) : (
           <EventForm
+            key={formState === "add" ? "add" : formState.id}
             seedId={seedId}
             editingEvent={formState === "add" ? null : formState}
             onDone={() => setFormState("closed")}

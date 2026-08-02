@@ -26,9 +26,12 @@ export async function addTeamMember(
 
   const seed = await db.query.seeds.findFirst({
     where: eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true },
+    columns: { id: true, createdBy: true, status: true },
   });
   if (!seed) return { error: "Seed not found." };
+  if (seed.status !== "in_progress") {
+    return { error: "Team members can only be managed for Sprouts." };
+  }
 
   if (teamRole === "steward") {
     if (session.user.role !== "admin") {
@@ -67,16 +70,32 @@ export async function addTeamMember(
     return { error: "This person is already on the team." };
   }
 
-  await db.insert(seedTeamMembers).values({
-    seedId,
-    userId: target.id,
-    role: teamRole,
-    addedBy: session.user.id,
-  });
+  try {
+    await db.insert(seedTeamMembers).values({
+      seedId,
+      userId: target.id,
+      role: teamRole,
+      addedBy: session.user.id,
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return { error: "This person is already on the team." };
+    }
+    throw error;
+  }
 
   revalidatePath(`/seeds/${seedId}/team`);
   revalidatePath("/dashboard/sprouts");
   return { success: true };
+}
+
+function isUniqueViolation(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  );
 }
 
 export async function removeTeamMember(seedId: string, userId: string) {
@@ -87,9 +106,20 @@ export async function removeTeamMember(seedId: string, userId: string) {
 
   const seed = await db.query.seeds.findFirst({
     where: eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true },
+    columns: { id: true, createdBy: true, status: true },
   });
   if (!seed) return { error: "Seed not found." };
+  if (seed.status !== "in_progress") {
+    return { error: "Team members can only be managed for Sprouts." };
+  }
+
+  // Authorize before checking the membership so outsiders cannot use this
+  // action to discover who belongs to a private Sprout team.
+  if (!canEditSeed(session, seed)) {
+    return {
+      error: "You do not have permission to manage this Sprout's team.",
+    };
+  }
 
   const membership = await db.query.seedTeamMembers.findFirst({
     where: (t, { and, eq }) => and(eq(t.seedId, seedId), eq(t.userId, userId)),
@@ -103,10 +133,6 @@ export async function removeTeamMember(seedId: string, userId: string) {
         error: `Only Admins can remove a ${teamRoleLabels.steward}.`,
       };
     }
-  } else if (!canEditSeed(session, seed)) {
-    return {
-      error: "You do not have permission to manage this Sprout's team.",
-    };
   }
 
   await db.delete(seedTeamMembers).where(eq(seedTeamMembers.id, membership.id));

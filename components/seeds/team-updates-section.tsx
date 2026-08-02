@@ -94,6 +94,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const remaining = TEAM_UPDATE_MAX_LENGTH - body.length;
@@ -141,6 +142,8 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
         seedId={seedId}
         attachments={attachments}
         onChange={setAttachments}
+        onBusyChange={setIsUploading}
+        disabled={isPending}
       />
       <div className="flex items-center justify-between">
         <span
@@ -151,7 +154,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={isPending || !body.trim()}
+          disabled={isPending || isUploading || !body.trim()}
         >
           Post Update
         </Button>
@@ -219,6 +222,7 @@ function ReplyForm({
 }) {
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const remaining = TEAM_UPDATE_MAX_LENGTH - body.length;
@@ -257,6 +261,8 @@ function ReplyForm({
           seedId={seedId}
           attachments={attachments}
           onChange={setAttachments}
+          onBusyChange={setIsUploading}
+          disabled={isPending}
         />
       </div>
       <div className="mt-2 flex items-center justify-between">
@@ -268,7 +274,7 @@ function ReplyForm({
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={isPending || !body.trim()}
+          disabled={isPending || isUploading || !body.trim()}
         >
           Reply
         </Button>

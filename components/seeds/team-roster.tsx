@@ -140,19 +140,22 @@ function RosterRow({
   isAdmin: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const isGardener = member.roleLabel === "Gardener";
   const canRemove =
     !isGardener &&
     (member.roleLabel === teamRoleLabels.steward ? isAdmin : canManage);
 
   function handleRemove() {
+    setError(null);
     startTransition(async () => {
-      await removeTeamMember(seedId, member.userId);
+      const result = await removeTeamMember(seedId, member.userId);
+      if (result.error) setError(result.error);
     });
   }
 
   return (
-    <div className="group flex items-center gap-3">
+    <div className="group flex flex-wrap items-center gap-3">
       <Avatar className="size-8 shrink-0">
         <AvatarImage src={member.image ?? undefined} />
         <AvatarFallback className="text-xs">
@@ -172,10 +175,14 @@ function RosterRow({
           size="icon"
           disabled={isPending}
           onClick={handleRemove}
-          className="opacity-0 group-hover:opacity-100"
+          aria-label={`Remove ${member.name} from team`}
+          className="sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
         >
           <Trash2 className="text-muted-foreground size-3.5" />
         </Button>
+      )}
+      {error && (
+        <p className="text-destructive w-full pl-11 text-xs">{error}</p>
       )}
     </div>
   );

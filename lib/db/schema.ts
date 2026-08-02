@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   doublePrecision,
   index,
@@ -167,21 +168,43 @@ export const seedUpdates = pgTable("seed_updates", {
 });
 
 // Seed Team Updates (private, Sprout-only communication)
-export const seedTeamUpdates = pgTable("seed_team_updates", {
+export const seedTeamUpdates = pgTable(
+  "seed_team_updates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seedId: uuid("seed_id")
+      .notNull()
+      .references(() => seeds.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    title: text("title"),
+    body: text("body").notNull(),
+    parentId: uuid("parent_id").references(
+      (): AnyPgColumn => seedTeamUpdates.id,
+      { onDelete: "cascade" },
+    ),
+    attachments: jsonb("attachments")
+      .$type<{ name: string; url: string; size: number }[]>()
+      .notNull()
+      .default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("idx_seed_team_updates_seed_created").on(t.seedId, t.createdAt),
+    index("idx_seed_team_updates_parent").on(t.parentId),
+  ],
+);
+
+// Durable outbox for private Blob cleanup. A database trigger adds one row for
+// every attachment whose Team Update is deleted, including cascade-deleted
+// replies, so cross-service cleanup can be retried safely.
+export const seedTeamFileDeletions = pgTable("seed_team_file_deletions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  seedId: uuid("seed_id")
-    .notNull()
-    .references(() => seeds.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id),
-  title: text("title"),
-  body: text("body").notNull(),
-  parentId: uuid("parent_id"),
-  attachments: jsonb("attachments")
-    .$type<{ name: string; url: string; size: number }[]>()
-    .notNull()
-    .default([]),
+  seedId: uuid("seed_id").notNull(),
+  url: text("url").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -257,24 +280,28 @@ export const seedBudgets = pgTable(
 );
 
 // Seed Team Events (internal upcoming events/meetings for a Sprout's team)
-export const seedTeamEvents = pgTable("seed_team_events", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  seedId: uuid("seed_id")
-    .notNull()
-    .references(() => seeds.id, { onDelete: "cascade" }),
-  createdBy: uuid("created_by")
-    .notNull()
-    .references(() => users.id),
-  title: text("title").notNull(),
-  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
-  location: text("location"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const seedTeamEvents = pgTable(
+  "seed_team_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seedId: uuid("seed_id")
+      .notNull()
+      .references(() => seeds.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    title: text("title").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    location: text("location"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("idx_seed_team_events_seed_starts").on(t.seedId, t.startsAt)],
+);
 
 // Admin Emails
 export const adminEmails = pgTable("admin_emails", {

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { discardTeamAttachment } from "@/lib/actions/team-updates";
 import {
   TEAM_ATTACHMENT_MAX_FILES,
   TEAM_ATTACHMENT_MAX_SIZE,
@@ -23,16 +24,19 @@ function formatSize(bytes: number) {
 export function AttachmentPicker({
   attachments,
   onChange,
+  onBusyChange,
   seedId,
   disabled,
 }: {
   attachments: Attachment[];
   onChange: (attachments: Attachment[]) => void;
+  onBusyChange?: (busy: boolean) => void;
   seedId: string;
   disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleFiles(files: FileList | null) {
@@ -54,6 +58,7 @@ export function AttachmentPicker({
 
     setError(null);
     setUploading(true);
+    onBusyChange?.(true);
 
     let current = attachments;
     try {
@@ -77,13 +82,34 @@ export function AttachmentPicker({
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setUploading(false);
+      onBusyChange?.(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
 
-  function removeAttachment(index: number) {
-    onChange(attachments.filter((_, i) => i !== index));
+  async function removeAttachment(index: number) {
+    const attachment = attachments[index];
+    setError(null);
+    setDeleting(true);
+    onBusyChange?.(true);
+    try {
+      const result = await discardTeamAttachment(seedId, attachment);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      onChange(attachments.filter((_, i) => i !== index));
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Attachment deletion failed.",
+      );
+    } finally {
+      setDeleting(false);
+      onBusyChange?.(false);
+    }
   }
+
+  const busy = uploading || deleting;
 
   return (
     <div className="space-y-2">
@@ -102,6 +128,8 @@ export function AttachmentPicker({
               <button
                 type="button"
                 onClick={() => removeAttachment(i)}
+                disabled={busy || disabled}
+                aria-label={`Remove ${a.name}`}
                 className="text-muted-foreground hover:text-foreground shrink-0"
               >
                 <X className="size-3" />
@@ -118,16 +146,14 @@ export function AttachmentPicker({
         accept={ACCEPTED}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
-        disabled={uploading || disabled}
+        disabled={busy || disabled}
       />
       <Button
         type="button"
         variant="outline"
         size="sm"
         disabled={
-          uploading ||
-          disabled ||
-          attachments.length >= TEAM_ATTACHMENT_MAX_FILES
+          busy || disabled || attachments.length >= TEAM_ATTACHMENT_MAX_FILES
         }
         onClick={() => inputRef.current?.click()}
       >

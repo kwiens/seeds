@@ -32,8 +32,10 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
   }
 
   function handleRemove(id: string) {
+    setError(null);
     startTransition(async () => {
-      await demoteFromCouncil(id);
+      const result = await demoteFromCouncil(id);
+      if (result.error) setError(result.error);
     });
   }
 
@@ -54,7 +56,7 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
       </form>
 
       {error && (
-        <p className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs">
+        <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
           {error}
         </p>
       )}
@@ -79,6 +81,7 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
                 size="icon"
                 disabled={isPending}
                 onClick={() => handleRemove(member.id)}
+                aria-label={`Remove ${member.name} from Council`}
               >
                 <Trash2 className="text-destructive size-4" />
               </Button>
