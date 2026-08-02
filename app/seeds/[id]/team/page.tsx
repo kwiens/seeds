@@ -15,14 +15,15 @@ export default async function SproutTeamPage(props: {
   const params = await props.params;
   const session = await auth();
 
+  if (!session?.user?.id) {
+    redirect("/api/auth/signin");
+  }
+
   const seed = await getSeedById(params.id);
   if (!seed) notFound();
 
   if (seed.status !== "in_progress") notFound();
 
-  if (!session?.user?.id) {
-    redirect("/api/auth/signin");
-  }
   if (!canAccessTeamUpdates(session, seed)) {
     redirect(`/seeds/${seed.id}`);
   }
