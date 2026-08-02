@@ -91,13 +91,13 @@ describe("createTeamUpdate", () => {
     expect(db.insert).not.toHaveBeenCalled();
   });
 
-  it("validates input data", async () => {
+  it("rejects a whitespace-only update", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSproutSeed() as any,
     );
 
-    const result = await createTeamUpdate("seed-1", { body: "" });
+    const result = await createTeamUpdate("seed-1", { body: "   \n  " });
     expect(result).toHaveProperty("error");
     expect(db.insert).not.toHaveBeenCalled();
   });
@@ -207,6 +207,17 @@ describe("replyToTeamUpdate", () => {
     expect(result).toEqual({
       error: "Team Updates are only available for Sprouts.",
     });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a whitespace-only reply", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(
+      mockTeamUpdate() as any,
+    );
+
+    const result = await replyToTeamUpdate("update-1", { body: "   \n  " });
+    expect(result).toEqual({ error: "Reply is required" });
     expect(db.insert).not.toHaveBeenCalled();
   });
 
