@@ -15,11 +15,9 @@ import {
 
 export function MobileNav({
   isLoggedIn,
-  hasSproutAccess,
   unreadSproutCount,
 }: {
   isLoggedIn: boolean;
-  hasSproutAccess: boolean;
   unreadSproutCount: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -76,18 +74,9 @@ export function MobileNav({
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-            >
-              My Seeds
-            </Link>
-          )}
-          {hasSproutAccess && (
-            <Link
-              href="/dashboard/sprouts"
-              onClick={() => setOpen(false)}
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             >
-              My Sprouts
+              Mine
               {unreadSproutCount > 0 && (
                 <span className="bg-primary text-primary-foreground inline-flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
                   {unreadSproutCount}

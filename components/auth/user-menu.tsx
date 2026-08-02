@@ -42,7 +42,7 @@ export function UserMenu() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">My Seeds</Link>
+          <Link href="/dashboard">Mine</Link>
         </DropdownMenuItem>
         {session.user.role === "admin" && (
           <DropdownMenuItem asChild>

@@ -9,29 +9,42 @@ import {
   getSeedsByUser,
   getSupportedSeedsByUser,
 } from "@/lib/db/queries/seeds";
+import { getMySprouts } from "@/lib/db/queries/sprouts";
+import type { DashboardTab } from "@/components/dashboard/dashboard-content";
 
 export const metadata: Metadata = {
-  title: "Dashboard | Seeds",
+  title: "Mine | Seeds",
 };
 
-export default async function DashboardPage() {
+const dashboardTabs: DashboardTab[] = ["my-sprouts", "my-seeds", "supporting"];
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/api/auth/signin");
   }
 
-  const [userSeeds, supportedSeeds] = await Promise.all([
+  const [{ tab }, sprouts, userSeeds, supportedSeeds] = await Promise.all([
+    searchParams,
+    getMySprouts(session.user.id, session.user.role),
     getSeedsByUser(session.user.id),
     getSupportedSeedsByUser(session.user.id),
   ]);
+  const initialTab = dashboardTabs.includes(tab as DashboardTab)
+    ? (tab as DashboardTab)
+    : undefined;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Mine</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your community project proposals
+            Grow your projects and follow the ideas you support.
           </p>
         </div>
         <Button asChild>
@@ -42,7 +55,12 @@ export default async function DashboardPage() {
         </Button>
       </div>
 
-      <DashboardContent userSeeds={userSeeds} supportedSeeds={supportedSeeds} />
+      <DashboardContent
+        sprouts={sprouts}
+        userSeeds={userSeeds}
+        supportedSeeds={supportedSeeds}
+        initialTab={initialTab}
+      />
     </div>
   );
 }

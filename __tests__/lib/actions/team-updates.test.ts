@@ -225,7 +225,7 @@ describe("createTeamUpdate", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("revalidates the Team page and My Sprouts hub", async () => {
+  it("revalidates the Team page and Mine dashboard", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
       mockSproutSeed() as any,
@@ -236,7 +236,7 @@ describe("createTeamUpdate", () => {
     await createTeamUpdate("seed-1", { body: "Status check" });
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 });
 
@@ -367,7 +367,7 @@ describe("replyToTeamUpdate", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("revalidates the Team page and My Sprouts hub", async () => {
+  it("revalidates the Team page and Mine dashboard", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(
       mockTeamUpdate() as any,
@@ -378,7 +378,7 @@ describe("replyToTeamUpdate", () => {
     await replyToTeamUpdate("update-1", { body: "On it." });
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 });
 
@@ -472,7 +472,7 @@ describe("deleteTeamUpdate", () => {
     });
   });
 
-  it("revalidates the Team page and My Sprouts hub", async () => {
+  it("revalidates the Team page and Mine dashboard", async () => {
     setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
       id: "update-1",
@@ -485,7 +485,7 @@ describe("deleteTeamUpdate", () => {
     await deleteTeamUpdate("update-1");
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 });
 

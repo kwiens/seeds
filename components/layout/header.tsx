@@ -9,7 +9,6 @@ import { getMySprouts } from "@/lib/db/queries/sprouts";
 export async function Header() {
   const session = await auth();
   const isAdmin = session?.user?.role === "admin";
-  const seesAllSprouts = isAdmin || session?.user?.role === "council";
   // Admins always have access and don't need an unread badge, so avoid the
   // platform-wide query. Council members do use it for cross-Sprout unread
   // counts because their site-wide access is part of their working view.
@@ -17,7 +16,6 @@ export async function Header() {
     session?.user?.id && !isAdmin
       ? await getMySprouts(session.user.id, session.user.role)
       : [];
-  const hasSproutAccess = seesAllSprouts || sprouts.length > 0;
   const unreadSproutCount = sprouts.filter((s) => s.unreadCount > 0).length;
 
   return (
@@ -61,17 +59,9 @@ export async function Header() {
           {session && (
             <Link
               href="/dashboard"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-            >
-              My Seeds
-            </Link>
-          )}
-          {hasSproutAccess && (
-            <Link
-              href="/dashboard/sprouts"
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             >
-              My Sprouts
+              Mine
               {unreadSproutCount > 0 && (
                 <span className="bg-primary text-primary-foreground inline-flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
                   {unreadSproutCount}
@@ -85,7 +75,6 @@ export async function Header() {
           {session ? <UserMenu /> : <SignInButton />}
           <MobileNav
             isLoggedIn={!!session}
-            hasSproutAccess={hasSproutAccess}
             unreadSproutCount={unreadSproutCount}
           />
         </div>

@@ -39,7 +39,7 @@ export default async function DashboardSeedDetailPage(props: {
       <Button variant="ghost" size="sm" asChild className="mb-4">
         <Link href="/dashboard">
           <ArrowLeft className="mr-1.5 size-3.5" />
-          Back to My Seeds
+          Back to Mine
         </Link>
       </Button>
 

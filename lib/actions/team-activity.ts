@@ -47,5 +47,5 @@ export async function markSproutActivityRead(
     });
 
   revalidatePath("/", "layout");
-  revalidatePath("/dashboard/sprouts");
+  revalidatePath("/dashboard");
 }

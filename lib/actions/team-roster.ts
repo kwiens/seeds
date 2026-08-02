@@ -85,7 +85,7 @@ export async function addTeamMember(
   }
 
   revalidatePath(`/seeds/${seedId}/team`);
-  revalidatePath("/dashboard/sprouts");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -138,6 +138,6 @@ export async function removeTeamMember(seedId: string, userId: string) {
   await db.delete(seedTeamMembers).where(eq(seedTeamMembers.id, membership.id));
 
   revalidatePath(`/seeds/${seedId}/team`);
-  revalidatePath("/dashboard/sprouts");
+  revalidatePath("/dashboard");
   return { success: true };
 }

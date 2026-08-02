@@ -137,7 +137,7 @@ describe("addTeamMember", () => {
       }),
     );
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
   it("rejects assigning a Steward when the session isn't Admin", async () => {
@@ -302,7 +302,7 @@ describe("removeTeamMember", () => {
     expect(result).toEqual({ success: true });
     expect(chain.where).toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
   it("allows an Admin to remove a Steward", async () => {

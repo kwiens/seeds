@@ -53,7 +53,7 @@ export async function createTeamUpdate(seedId: string, data: unknown) {
   });
 
   revalidatePath(`/seeds/${seedId}/team`);
-  revalidatePath("/dashboard/sprouts");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -98,7 +98,7 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
   });
 
   revalidatePath(`/seeds/${parent.seed.id}/team`);
-  revalidatePath("/dashboard/sprouts");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -129,7 +129,7 @@ export async function deleteTeamUpdate(updateId: string) {
   await processTeamFileDeletionQueue();
 
   revalidatePath(`/seeds/${update.seedId}/team`);
-  revalidatePath("/dashboard/sprouts");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 

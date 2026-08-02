@@ -233,7 +233,7 @@ export const seedTeamMembers = pgTable(
 );
 
 // Seed Team Activity Reads (per-user "last checked" marker, powers the
-// new-activity badge on My Sprouts / nav)
+// new-activity badge on Mine / nav)
 export const seedTeamActivityReads = pgTable(
   "seed_team_activity_reads",
   {

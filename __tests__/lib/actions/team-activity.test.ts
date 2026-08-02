@@ -87,7 +87,7 @@ describe("markSproutActivityRead", () => {
     );
     expect(chain._onConflictDoUpdate).toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard/sprouts");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
   it("does not write a marker for someone without Team access", async () => {
