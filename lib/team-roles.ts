@@ -7,7 +7,7 @@ export const teamRoleLabels: Record<TeamRole, string> = {
   co_gardener: "co-Gardener",
   guide: "Guide",
   roots: "Roots",
-  cultivator: "Contributor",
+  cultivator: "Community Volunteer",
 };
 
 export const teamRoleKeys = Object.keys(teamRoleLabels) as TeamRole[];
