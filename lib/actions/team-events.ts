@@ -39,7 +39,7 @@ export async function createEvent(projectId: string, data: unknown) {
     startsAt: parsed.data.startsAt,
     location: parsed.data.location || null,
   });
-  revalidatePath(`/seeds/${projectId}/team`);
+  revalidatePath(`/dashboard/projects/${projectId}/team`);
   return { success: true };
 }
 
@@ -73,7 +73,7 @@ export async function updateEvent(eventId: string, data: unknown) {
       updatedAt: new Date(),
     })
     .where(eq(projectEvents.id, eventId));
-  revalidatePath(`/seeds/${event.projectId}/team`);
+  revalidatePath(`/dashboard/projects/${event.projectId}/team`);
   return { success: true };
 }
 
@@ -94,6 +94,6 @@ export async function deleteEvent(eventId: string) {
   }
 
   await db.delete(projectEvents).where(eq(projectEvents.id, eventId));
-  revalidatePath(`/seeds/${event.projectId}/team`);
+  revalidatePath(`/dashboard/projects/${event.projectId}/team`);
   return { success: true };
 }

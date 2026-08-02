@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, Sun, Eye } from "lucide-react";
+import { Settings2, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
@@ -48,20 +48,12 @@ export function DashboardSeedList({ seeds }: { seeds: DashboardSeed[] }) {
               </span>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/dashboard/seeds/${seed.id}`}>
-                <Eye className="mr-1.5 size-3.5" />
-                Supporters
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/seeds/${seed.id}/edit`}>
-                <Pencil className="mr-1.5 size-3.5" />
-                Edit
-              </Link>
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/projects/${seed.id}`}>
+              <Settings2 className="mr-1.5 size-3.5" />
+              Manage
+            </Link>
+          </Button>
         </div>
       ))}
     </div>

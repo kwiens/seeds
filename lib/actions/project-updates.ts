@@ -29,12 +29,12 @@ async function findProject(projectId: string) {
 
 function revalidatePublicUpdatePaths(projectId: string, updateId?: string) {
   revalidatePath(`/seeds/${projectId}`);
-  revalidatePath(`/seeds/${projectId}/updates`);
+  revalidatePath(`/dashboard/projects/${projectId}/updates`);
   if (updateId) revalidatePath(`/seeds/${projectId}/updates/${updateId}`);
 }
 
 function revalidateTeamUpdatePaths(projectId: string) {
-  revalidatePath(`/seeds/${projectId}/team`);
+  revalidatePath(`/dashboard/projects/${projectId}/team`);
   revalidatePath("/dashboard");
 }
 

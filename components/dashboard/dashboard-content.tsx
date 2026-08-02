@@ -71,7 +71,7 @@ export function DashboardContent({
           onClick={() => setActiveTab("my-sprouts")}
         >
           <Leaf className="size-4" />
-          Team Workspaces
+          My Sprouts
         </TabsTrigger>
         <TabsTrigger
           value="my-seeds"
@@ -79,7 +79,7 @@ export function DashboardContent({
           onClick={() => setActiveTab("my-seeds")}
         >
           <Sprout className="size-4" />
-          My Projects
+          My Seeds
         </TabsTrigger>
         <TabsTrigger
           value="supporting"
@@ -95,8 +95,8 @@ export function DashboardContent({
         {sprouts.length === 0 ? (
           <div className="rounded-lg border border-dashed py-16 text-center">
             <p className="text-muted-foreground">
-              No team workspaces yet — they become available when a project
-              reaches the Sprout stage.
+              No Sprouts yet — once one of your Seeds reaches the Sprout stage,
+              its team workspace will show up here.
             </p>
           </div>
         ) : (
@@ -104,7 +104,7 @@ export function DashboardContent({
             {sprouts.map((sprout) => (
               <Link
                 key={sprout.id}
-                href={`/seeds/${sprout.id}/team`}
+                href={`/dashboard/projects/${sprout.id}`}
                 className="hover:border-primary flex items-center gap-4 rounded-lg border p-4 transition-colors"
               >
                 {sprout.unreadCount > 0 && (

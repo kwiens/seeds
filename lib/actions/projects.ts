@@ -78,7 +78,7 @@ export async function createProject(data: unknown) {
 
   revalidatePath("/");
   revalidatePath("/dashboard");
-  redirect(`/seeds/${projectId}`);
+  redirect(`/dashboard/projects/${projectId}`);
 }
 
 export async function updateProject(id: string, data: unknown) {
@@ -148,7 +148,8 @@ export async function updateProject(id: string, data: unknown) {
   await db.batch(statements);
 
   revalidatePath(`/seeds/${id}`);
+  revalidatePath(`/dashboard/projects/${id}`);
   revalidatePath("/");
   revalidatePath("/dashboard");
-  redirect(`/seeds/${id}`);
+  redirect(`/dashboard/projects/${id}/edit`);
 }

@@ -61,6 +61,6 @@ export async function saveBudget(
     });
 
   revalidatePath(`/seeds/${projectId}`);
-  revalidatePath(`/seeds/${projectId}/team`);
+  revalidatePath(`/dashboard/projects/${projectId}/team`);
   return { success: true };
 }

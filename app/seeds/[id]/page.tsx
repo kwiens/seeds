@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { FileText, Mail, Pencil, QrCode, Sun, Users } from "lucide-react";
+import { Mail, QrCode, Settings2, Sun, Users } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
 import { canAccessTeamWorkspace, canManageProject } from "@/lib/auth-utils";
@@ -135,9 +135,10 @@ export default async function SeedPage(props: {
   if (!seed) notFound();
 
   const canEdit = await canManageProject(session, seed);
-  const hasTeamAccess = hasTeamWorkspace(seed.stage)
-    ? await canAccessTeamWorkspace(session, seed)
-    : false;
+  const hasTeamAccess =
+    !seed.archivedAt && hasTeamWorkspace(seed.stage)
+      ? await canAccessTeamWorkspace(session, seed)
+      : false;
 
   // Pending seeds are intentionally public so creators can share links
   // before approval. Only archived seeds are restricted to owner/admin.
@@ -183,30 +184,21 @@ export default async function SeedPage(props: {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {canEdit && (
+          {canEdit ? (
             <Button variant="outline" asChild>
-              <Link href={`/seeds/${seed.id}/edit`}>
-                <Pencil className="mr-1.5 size-3.5" />
-                Edit
+              <Link href={`/dashboard/projects/${seed.id}`}>
+                <Settings2 className="mr-1.5 size-3.5" />
+                Manage project
               </Link>
             </Button>
-          )}
-          {canEdit && (
+          ) : hasTeamAccess ? (
             <Button variant="outline" asChild>
-              <Link href={`/seeds/${seed.id}/updates`}>
-                <FileText className="mr-1.5 size-3.5" />
-                {updates.length > 0 ? "Manage Updates" : "Post Update"}
-              </Link>
-            </Button>
-          )}
-          {hasTeamAccess && (
-            <Button variant="outline" asChild>
-              <Link href={`/seeds/${seed.id}/team`}>
+              <Link href={`/dashboard/projects/${seed.id}/team`}>
                 <Users className="mr-1.5 size-3.5" />
-                Team
+                Team workspace
               </Link>
             </Button>
-          )}
+          ) : null}
           <SupportButton
             seedId={seed.id}
             supportCount={supportCount}
@@ -424,7 +416,7 @@ export default async function SeedPage(props: {
                 {canEdit && (
                   <div className="mt-3 flex gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/seeds/${seed.id}`}>
+                      <Link href={`/dashboard/projects/${seed.id}/supporters`}>
                         <Sun className="mr-1.5 size-3.5" />
                         View Supporters
                       </Link>

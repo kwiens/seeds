@@ -128,7 +128,9 @@ describe("saveBudget", () => {
       }),
     );
     expect(chain._onConflictDoUpdate).toHaveBeenCalled();
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/dashboard/projects/seed-1/team",
+    );
   });
 
   it("allows an admin to save a budget on any Sprout", async () => {

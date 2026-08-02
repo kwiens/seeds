@@ -12,6 +12,7 @@ import {
   createPublicProjectUpdate,
   editPublicProjectUpdate,
 } from "@/lib/actions/project-updates";
+import { projectWorkspacePath } from "@/lib/project-workspace-navigation";
 import { EMPTY_TIPTAP_DOC } from "@/lib/tiptap";
 
 interface UpdateFormProps {
@@ -26,6 +27,7 @@ interface UpdateFormProps {
 
 export function UpdateForm({ seedId, update }: UpdateFormProps) {
   const router = useRouter();
+  const updatesPath = projectWorkspacePath(seedId, "updates");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
@@ -48,7 +50,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
       if (result?.error) {
         setError(result.error);
       } else {
-        router.push(`/seeds/${seedId}/updates`);
+        router.push(updatesPath);
       }
     });
   }
@@ -101,7 +103,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(`/seeds/${seedId}/updates`)}
+            onClick={() => router.push(updatesPath)}
           >
             Cancel
           </Button>

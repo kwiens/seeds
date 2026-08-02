@@ -147,7 +147,7 @@ export function AdminSeedTable({
                   <TableCell className="hidden sm:table-cell">
                     {seed.supportCount > 0 ? (
                       <Link
-                        href={`/dashboard/seeds/${seed.id}`}
+                        href={`/dashboard/projects/${seed.id}/supporters`}
                         className="hover:underline"
                       >
                         {seed.supportCount}

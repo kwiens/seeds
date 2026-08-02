@@ -159,7 +159,9 @@ describe("createEvent", () => {
         location: "123 Main St",
       }),
     );
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/dashboard/projects/seed-1/team",
+    );
   });
 
   it("stores a null location when omitted", async () => {
@@ -269,7 +271,9 @@ describe("updateEvent", () => {
         location: "456 Oak Ave",
       }),
     );
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/dashboard/projects/seed-1/team",
+    );
   });
 
   it("allows an admin to update an event on any Sprout", async () => {
@@ -345,7 +349,9 @@ describe("deleteEvent", () => {
 
     expect(result).toEqual({ success: true });
     expect(db.delete).toHaveBeenCalled();
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/dashboard/projects/seed-1/team",
+    );
   });
 
   it("allows an admin to delete an event on any Sprout", async () => {

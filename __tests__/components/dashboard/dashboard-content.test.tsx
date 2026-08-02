@@ -122,7 +122,7 @@ describe("DashboardContent", () => {
       />,
     );
 
-    selectTab(/my projects/i);
+    selectTab(/my seeds/i);
     expect(screen.getByText("Community Garden")).toBeInTheDocument();
 
     selectTab(/supporting/i);
@@ -156,7 +156,7 @@ describe("DashboardContent", () => {
       />,
     );
 
-    selectTab(/my projects/i);
+    selectTab(/my seeds/i);
 
     expect(
       screen.getByText("You haven't planted any seeds yet."),
@@ -176,11 +176,9 @@ describe("DashboardContent", () => {
     );
 
     expect(
-      screen.getByRole("tab", { name: /team workspaces/i }),
+      screen.getByRole("tab", { name: /my sprouts/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("tab", { name: /my projects/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /my seeds/i })).toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: /supporting/i }),
     ).toBeInTheDocument();

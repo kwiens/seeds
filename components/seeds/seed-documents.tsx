@@ -35,7 +35,7 @@ export function SeedDocuments({
             {documents.map((doc) => (
               <a
                 key={`${doc.updateId}-${doc.attachmentIndex}`}
-                href={`/seeds/${seedId}/team#update-${doc.updateId}`}
+                href={`/dashboard/projects/${seedId}/team#update-${doc.updateId}`}
                 className="hover:bg-accent flex items-center gap-2 rounded-md p-1.5"
               >
                 <FileText className="text-muted-foreground size-4 shrink-0" />

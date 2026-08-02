@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidatePath } from "next/cache";
 import { mockAdminSession, mockSession, setAuthMock } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -104,6 +105,9 @@ describe("consolidated project roster", () => {
       state: "active",
       addedBy: "user-1",
     });
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/dashboard/projects/project-1/team",
+    );
   });
 
   it("requires project leadership for ordinary team roles", async () => {
@@ -174,6 +178,9 @@ describe("consolidated project roster", () => {
     });
     expect(chain.set).toHaveBeenCalledWith(
       expect.objectContaining({ state: "inactive" }),
+    );
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/dashboard/projects/project-1/team",
     );
   });
 

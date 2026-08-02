@@ -123,7 +123,7 @@ export function SeedActions({
 
         {/* Standard actions */}
         <DropdownMenuItem asChild>
-          <Link href={`/seeds/${projectId}/edit`}>
+          <Link href={`/dashboard/projects/${projectId}/edit`}>
             <Pencil className="mr-2 size-4" />
             Edit
           </Link>

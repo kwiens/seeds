@@ -66,6 +66,9 @@ describe("project actions", () => {
       }),
     );
     expect(db.batch).toHaveBeenCalledTimes(1);
+    expect(redirect).toHaveBeenCalledWith(
+      `/dashboard/projects/${(valueCalls[0] as { id: string }).id}`,
+    );
   });
 
   it("creates the submitter as an active gardener participant", async () => {
@@ -147,6 +150,6 @@ describe("project actions", () => {
     expect(db.update).toHaveBeenCalledTimes(1);
     expect(db.delete).toHaveBeenCalledTimes(1);
     expect(db.batch).toHaveBeenCalledTimes(1);
-    expect(redirect).toHaveBeenCalledWith("/seeds/project-1");
+    expect(redirect).toHaveBeenCalledWith("/dashboard/projects/project-1/edit");
   });
 });

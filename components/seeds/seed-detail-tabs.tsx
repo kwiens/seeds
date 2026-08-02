@@ -30,7 +30,7 @@ export function SeedDetailTabs({
           {canEdit && (
             <div className="mb-6 flex justify-end">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/seeds/${seedId}/updates`}>
+                <Link href={`/dashboard/projects/${seedId}/updates`}>
                   <Pencil className="mr-1.5 size-3.5" />
                   Manage Updates
                 </Link>

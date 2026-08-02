@@ -92,7 +92,7 @@ export async function addTeamMember(
     throw error;
   }
 
-  revalidatePath(`/seeds/${projectId}/team`);
+  revalidatePath(`/dashboard/projects/${projectId}/team`);
   revalidatePath("/dashboard");
   return { success: true };
 }
@@ -160,7 +160,7 @@ export async function removeTeamMember(projectId: string, userId: string) {
       ),
     );
 
-  revalidatePath(`/seeds/${projectId}/team`);
+  revalidatePath(`/dashboard/projects/${projectId}/team`);
   revalidatePath("/dashboard");
   return { success: true };
 }

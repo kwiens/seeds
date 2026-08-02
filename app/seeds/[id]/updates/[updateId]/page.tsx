@@ -63,7 +63,9 @@ export default async function UpdatePage(props: {
           </h1>
           {canEdit && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/seeds/${seed.id}/updates/${update.id}/edit`}>
+              <Link
+                href={`/dashboard/projects/${seed.id}/updates/${update.id}/edit`}
+              >
                 <Pencil className="mr-1.5 size-3.5" />
                 Edit
               </Link>
