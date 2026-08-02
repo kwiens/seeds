@@ -23,7 +23,7 @@ export async function saveBudget(
 
   const seed = await db.query.seeds.findFirst({
     where: (seeds, { eq }) => eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true },
+    columns: { id: true, createdBy: true, status: true },
   });
   if (!seed) return { error: "Seed not found." };
 
@@ -31,6 +31,10 @@ export async function saveBudget(
     return {
       error: "You do not have permission to edit this Sprout's budget.",
     };
+  }
+
+  if (seed.status !== "in_progress") {
+    return { error: "Budgets are only available for Sprouts." };
   }
 
   const parsed = budgetFormSchema.safeParse(data);

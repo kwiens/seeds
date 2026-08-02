@@ -21,7 +21,11 @@ function formatCurrency(amount: number) {
 }
 
 function csvField(value: string | number): string {
-  const str = String(value);
+  const raw = String(value);
+  // Spreadsheet apps execute cells beginning with these characters as
+  // formulas. Prefix user-controlled text so exported budgets stay inert.
+  const str =
+    typeof value === "string" && /^\s*[=+\-@]/.test(raw) ? `'${raw}` : raw;
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 

@@ -22,7 +22,12 @@ import { db } from "@/lib/db";
 import { saveBudget } from "@/lib/actions/budgets";
 
 function mockSeedRow(overrides?: Record<string, unknown>) {
-  return { id: "seed-1", createdBy: "user-1", ...overrides };
+  return {
+    id: "seed-1",
+    createdBy: "user-1",
+    status: "in_progress",
+    ...overrides,
+  };
 }
 
 describe("saveBudget", () => {
@@ -59,6 +64,20 @@ describe("saveBudget", () => {
     const result = await saveBudget("seed-1", "proposed", { lineItems: [] });
     expect(result).toEqual({
       error: "You do not have permission to edit this Sprout's budget.",
+    });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a seed that is not a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSeedRow({ status: "approved" }) as any,
+    );
+
+    const result = await saveBudget("seed-1", "proposed", { lineItems: [] });
+
+    expect(result).toEqual({
+      error: "Budgets are only available for Sprouts.",
     });
     expect(db.insert).not.toHaveBeenCalled();
   });
