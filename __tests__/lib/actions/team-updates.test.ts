@@ -317,9 +317,10 @@ describe("deleteTeamUpdate", () => {
 
     expect(result).toEqual({ success: true });
     expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(chain.where).toHaveBeenCalledTimes(1);
   });
 
-  it("deletes a top-level update's replies along with it", async () => {
+  it("deletes a top-level update and its replies atomically", async () => {
     setAuthMock(auth, mockAdminSession());
     vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue({
       id: "update-1",
@@ -332,7 +333,8 @@ describe("deleteTeamUpdate", () => {
     const result = await deleteTeamUpdate("update-1");
 
     expect(result).toEqual({ success: true });
-    expect(db.delete).toHaveBeenCalledTimes(2);
+    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(chain.where).toHaveBeenCalledTimes(1);
   });
 
   it("revalidates the Team page and My Sprouts hub", async () => {

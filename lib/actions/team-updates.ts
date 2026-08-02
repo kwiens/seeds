@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canAccessTeamUpdates } from "@/lib/auth-utils";
@@ -103,15 +103,16 @@ export async function deleteTeamUpdate(updateId: string) {
   });
   if (!update) return { error: "Update not found." };
 
-  // Deleting a top-level update takes its replies with it — an orphaned
-  // reply with no visible parent would be confusing to leave behind.
-  if (update.parentId === null) {
-    await db
-      .delete(seedTeamUpdates)
-      .where(eq(seedTeamUpdates.parentId, updateId));
-  }
-
-  await db.delete(seedTeamUpdates).where(eq(seedTeamUpdates.id, updateId));
+  // Delete a top-level update and its replies in one statement so a failed
+  // second query or a concurrent reply cannot leave a partial thread behind.
+  const deleteWhere =
+    update.parentId === null
+      ? or(
+          eq(seedTeamUpdates.id, updateId),
+          eq(seedTeamUpdates.parentId, updateId),
+        )
+      : eq(seedTeamUpdates.id, updateId);
+  await db.delete(seedTeamUpdates).where(deleteWhere);
 
   revalidatePath(`/seeds/${update.seedId}/team`);
   revalidatePath("/dashboard/sprouts");
