@@ -230,6 +230,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   updates: many(seedUpdates),
   teamUpdates: many(seedTeamUpdates),
   teamMemberships: many(seedTeamMembers, { relationName: "teamMemberUser" }),
+  addedTeamMemberships: many(seedTeamMembers, {
+    relationName: "teamMemberAddedBy",
+  }),
 }));
 
 export const seedsRelations = relations(seeds, ({ one, many }) => ({
