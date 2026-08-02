@@ -137,10 +137,9 @@ export default async function AdminPage() {
                 <p className="text-muted-foreground text-sm">
                   Council members are eligible to be assigned as a Steward on a
                   Sprout — this doesn&apos;t grant any site-wide admin powers.
-                  You don&apos;t need to promote anyone here first: assigning
-                  someone as Steward from a Sprout&apos;s Team page promotes
-                  them to Council automatically. This list is just for managing
-                  Council membership directly.
+                  Steward and Council are independent: assigning someone as
+                  Steward from a Sprout&apos;s Team page does not add them to
+                  Council, so promote them here first if they need it.
                 </p>
               </div>
               <CouncilList members={councilMembers} />

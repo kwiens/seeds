@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,16 +14,20 @@ type CouncilMember = {
 
 export function CouncilList({ members }: { members: CouncilMember[] }) {
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleAdd(formData: FormData) {
     const email = formData.get("email") as string;
     if (!email) return;
+    setError(null);
     startTransition(async () => {
       const result = await promoteToCouncil(email);
-      if (result.success) {
-        formRef.current?.reset();
+      if (result.error) {
+        setError(result.error);
+        return;
       }
+      formRef.current?.reset();
     });
   }
 
@@ -48,6 +52,12 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
           Promote to Council
         </Button>
       </form>
+
+      {error && (
+        <p className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs">
+          {error}
+        </p>
+      )}
 
       {members.length === 0 ? (
         <p className="text-muted-foreground text-sm">No Council members yet.</p>
