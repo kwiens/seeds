@@ -83,11 +83,8 @@ function isRemoteLocation(location: string) {
 }
 
 function formatWhen(date: Date) {
-  const day = date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  // The date badge beside the row already shows month + day.
+  const day = date.toLocaleDateString("en-US", { weekday: "short" });
   const time = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -404,35 +401,39 @@ function EventRow({
             </div>
           )}
         </div>
-        <p className="text-muted-foreground text-xs">{formatWhen(start)}</p>
-        {location &&
-          (remote ? (
-            <a
-              href={location}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
-            >
-              <Video className="size-2.5" />
-              Join online
-              <span className="sr-only">(opens in new tab)</span>
-            </a>
-          ) : (
-            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-              <MapPin className="size-2.5" />
-              {location}
-            </span>
-          ))}
-        <a
-          href={gcalLink(event.title, start, location)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary mt-1.5 flex items-center gap-1 text-xs font-medium hover:underline"
-        >
-          <CalendarIcon className="size-2.5" />
-          Add to Google Calendar
-          <span className="sr-only">(opens in new tab)</span>
-        </a>
+        <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
+          <span className="shrink-0">{formatWhen(start)}</span>
+          {location &&
+            (remote ? (
+              <a
+                href={location}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary inline-flex shrink-0 items-center gap-1 hover:underline"
+              >
+                <Video className="size-3" aria-hidden="true" />
+                Join online
+                <span className="sr-only">(opens in new tab)</span>
+              </a>
+            ) : (
+              <span className="inline-flex max-w-full min-w-0 items-center gap-1">
+                <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                <span className="truncate" title={location}>
+                  {location}
+                </span>
+              </span>
+            ))}
+          <a
+            href={gcalLink(event.title, start, location)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary inline-flex shrink-0 items-center gap-1 font-medium hover:underline"
+          >
+            <CalendarIcon className="size-3" aria-hidden="true" />
+            Add to calendar
+            <span className="sr-only">(opens in new tab)</span>
+          </a>
+        </div>
         {error && (
           <p role="alert" className="text-destructive mt-1 text-xs">
             {error}
