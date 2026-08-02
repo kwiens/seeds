@@ -9,8 +9,7 @@ import { getMySprouts } from "@/lib/db/queries/sprouts";
 export async function Header() {
   const session = await auth();
   const isAdmin = session?.user?.role === "admin";
-  const seesAllSprouts =
-    isAdmin || session?.user?.role === "council";
+  const seesAllSprouts = isAdmin || session?.user?.role === "council";
   // Admins always have access and don't need an unread badge, so avoid the
   // platform-wide query. Council members do use it for cross-Sprout unread
   // counts because their site-wide access is part of their working view.
