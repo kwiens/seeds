@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored AI-agent skill bundles (impeccable installer output)
+    ".claude/**",
+    ".github/skills/**",
+    ".github/hooks/**",
   ]),
   // Relax strict typing in test files — mock chains require type casts
   {
