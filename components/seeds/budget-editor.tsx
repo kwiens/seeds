@@ -150,7 +150,7 @@ export function BudgetEditor({
 }
 
 function totalOf(budget: Budget | null): number | null {
-  if (!budget) return null;
+  if (!budget || !Array.isArray(budget.lineItems)) return null;
   return budget.lineItems.reduce((sum, item) => sum + item.amount, 0);
 }
 
