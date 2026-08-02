@@ -7,6 +7,7 @@ import { canAccessTeamUpdates } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { seedTeamUpdates } from "@/lib/db/schema";
 import {
+  attachmentsBelongToSeed,
   teamUpdateFormSchema,
   teamUpdateReplyFormSchema,
 } from "@/lib/validations/team-update";
@@ -36,6 +37,9 @@ export async function createTeamUpdate(seedId: string, data: unknown) {
   const parsed = teamUpdateFormSchema.safeParse(data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
+  }
+  if (!attachmentsBelongToSeed(parsed.data.attachments, seedId)) {
+    return { error: "Invalid attachment URL." };
   }
 
   await db.insert(seedTeamUpdates).values({
@@ -78,6 +82,9 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
   const parsed = teamUpdateReplyFormSchema.safeParse(data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
+  }
+  if (!attachmentsBelongToSeed(parsed.data.attachments, parent.seed.id)) {
+    return { error: "Invalid attachment URL." };
   }
 
   await db.insert(seedTeamUpdates).values({

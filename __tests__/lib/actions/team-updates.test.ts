@@ -48,6 +48,14 @@ function mockTeamUpdate(overrides?: Record<string, unknown>) {
   };
 }
 
+function mockAttachment(name: string, seedId = "seed-1", size = 1000) {
+  return {
+    name,
+    url: `https://test.private.blob.vercel-storage.com/seeds/${seedId}/attachments/${name}`,
+    size,
+  };
+}
+
 describe("createTeamUpdate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -139,13 +147,7 @@ describe("createTeamUpdate", () => {
     const chain = mockDbInsertSimpleChain();
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
-    const attachments = [
-      {
-        name: "design-plan.pdf",
-        url: "https://blob.example/x.pdf",
-        size: 204800,
-      },
-    ];
+    const attachments = [mockAttachment("design-plan.pdf", "seed-1", 204800)];
     const result = await createTeamUpdate("seed-1", {
       body: "New design plan attached, thoughts?",
       attachments,
@@ -163,14 +165,42 @@ describe("createTeamUpdate", () => {
       mockSproutSeed() as any,
     );
 
-    const attachments = Array.from({ length: 6 }, (_, i) => ({
-      name: `file-${i}.pdf`,
-      url: `https://blob.example/${i}.pdf`,
-      size: 1000,
-    }));
+    const attachments = Array.from({ length: 6 }, (_, i) =>
+      mockAttachment(`file-${i}.pdf`),
+    );
     const result = await createTeamUpdate("seed-1", {
       body: "Too many files",
       attachments,
+    });
+
+    expect(result).toHaveProperty("error");
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects an attachment uploaded for a different Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+
+    const result = await createTeamUpdate("seed-1", {
+      body: "Wrong file",
+      attachments: [mockAttachment("plan.pdf", "seed-2")],
+    });
+
+    expect(result).toEqual({ error: "Invalid attachment URL." });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects attachment metadata above the file-size limit", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSproutSeed() as any,
+    );
+
+    const result = await createTeamUpdate("seed-1", {
+      body: "Oversized file",
+      attachments: [mockAttachment("huge.pdf", "seed-1", 20 * 1024 * 1024 + 1)],
     });
 
     expect(result).toHaveProperty("error");
@@ -306,11 +336,7 @@ describe("replyToTeamUpdate", () => {
     vi.mocked(db.insert).mockReturnValue(chain as any);
 
     const attachments = [
-      {
-        name: "revised-plan-v2.pdf",
-        url: "https://blob.example/v2.pdf",
-        size: 51200,
-      },
+      mockAttachment("revised-plan-v2.pdf", "seed-1", 51200),
     ];
     const result = await replyToTeamUpdate("update-1", {
       body: "Updated version attached.",

@@ -7,6 +7,7 @@ export interface SeedDocument {
   url: string;
   size: number;
   updateId: string;
+  attachmentIndex: number;
   posterName: string;
   createdAt: Date;
 }
@@ -27,12 +28,13 @@ export async function getSeedDocuments(
 
   const documents: SeedDocument[] = [];
   for (const row of rows) {
-    for (const file of row.attachments) {
+    for (const [attachmentIndex, file] of row.attachments.entries()) {
       documents.push({
         name: file.name,
         url: file.url,
         size: file.size,
         updateId: row.id,
+        attachmentIndex,
         posterName: row.posterName,
         createdAt: row.createdAt,
       });

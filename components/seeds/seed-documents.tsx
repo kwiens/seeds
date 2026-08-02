@@ -34,7 +34,7 @@ export function SeedDocuments({
           <div className="space-y-1">
             {documents.map((doc) => (
               <a
-                key={doc.url}
+                key={`${doc.updateId}-${doc.attachmentIndex}`}
                 href={`/seeds/${seedId}/team#update-${doc.updateId}`}
                 className="hover:bg-accent flex items-center gap-2 rounded-md p-1.5"
               >

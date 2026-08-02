@@ -4,11 +4,13 @@ import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  TEAM_ATTACHMENT_MAX_FILES,
+  TEAM_ATTACHMENT_MAX_SIZE,
+} from "@/lib/constants";
 
 export type Attachment = { name: string; url: string; size: number };
 
-const MAX_FILES = 5;
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 const ACCEPTED =
   ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*";
 
@@ -21,10 +23,12 @@ function formatSize(bytes: number) {
 export function AttachmentPicker({
   attachments,
   onChange,
+  seedId,
   disabled,
 }: {
   attachments: Attachment[];
   onChange: (attachments: Attachment[]) => void;
+  seedId: string;
   disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,15 +38,15 @@ export function AttachmentPicker({
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
 
-    const remaining = MAX_FILES - attachments.length;
+    const remaining = TEAM_ATTACHMENT_MAX_FILES - attachments.length;
     if (remaining <= 0) {
-      setError(`Maximum ${MAX_FILES} files allowed.`);
+      setError(`Maximum ${TEAM_ATTACHMENT_MAX_FILES} files allowed.`);
       return;
     }
 
     const toUpload = Array.from(files).slice(0, remaining);
     for (const file of toUpload) {
-      if (file.size > MAX_FILE_SIZE) {
+      if (file.size > TEAM_ATTACHMENT_MAX_SIZE) {
         setError(`${file.name} exceeds the 20 MB limit.`);
         return;
       }
@@ -54,10 +58,15 @@ export function AttachmentPicker({
     let current = attachments;
     try {
       for (const file of toUpload) {
-        const blob = await upload(`seeds/attachments/${file.name}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/upload",
-        });
+        const blob = await upload(
+          `seeds/${seedId}/attachments/${encodeURIComponent(file.name)}`,
+          file,
+          {
+            access: "private",
+            handleUploadUrl: "/api/upload",
+            clientPayload: JSON.stringify({ seedId }),
+          },
+        );
         current = [
           ...current,
           { name: file.name, url: blob.url, size: file.size },
@@ -115,7 +124,11 @@ export function AttachmentPicker({
         type="button"
         variant="outline"
         size="sm"
-        disabled={uploading || disabled || attachments.length >= MAX_FILES}
+        disabled={
+          uploading ||
+          disabled ||
+          attachments.length >= TEAM_ATTACHMENT_MAX_FILES
+        }
         onClick={() => inputRef.current?.click()}
       >
         {uploading ? (

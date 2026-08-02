@@ -137,7 +137,11 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
         placeholder="Progress, next steps, questions, needs, or blockers…"
         className="min-h-24"
       />
-      <AttachmentPicker attachments={attachments} onChange={setAttachments} />
+      <AttachmentPicker
+        seedId={seedId}
+        attachments={attachments}
+        onChange={setAttachments}
+      />
       <div className="flex items-center justify-between">
         <span
           className={`text-xs ${remaining < 100 ? "text-destructive font-medium" : "text-muted-foreground"}`}
@@ -205,6 +209,7 @@ function UpdateThread({
 }
 
 function ReplyForm({
+  seedId,
   parentId,
   onDone,
 }: {
@@ -248,7 +253,11 @@ function ReplyForm({
         className="min-h-20"
       />
       <div className="mt-2">
-        <AttachmentPicker attachments={attachments} onChange={setAttachments} />
+        <AttachmentPicker
+          seedId={seedId}
+          attachments={attachments}
+          onChange={setAttachments}
+        />
       </div>
       <div className="mt-2 flex items-center justify-between">
         <span
@@ -384,10 +393,10 @@ function UpdateCard({
           </p>
           {update.attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {update.attachments.map((file) => (
+              {update.attachments.map((file, index) => (
                 <a
                   key={file.url}
-                  href={file.url}
+                  href={`/api/team-files/${update.id}/${index}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-accent hover:bg-accent/70 inline-flex max-w-[220px] items-center gap-1.5 rounded-full py-1 pr-2.5 pl-2 text-xs"
