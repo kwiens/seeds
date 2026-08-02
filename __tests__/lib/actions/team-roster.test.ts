@@ -164,6 +164,24 @@ describe("addTeamMember", () => {
     expect(result).toEqual({ error: "This person is already on the team." });
     expect(db.insert).not.toHaveBeenCalled();
   });
+
+  it("does not add the Gardener as a duplicate roster member", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
+    vi.mocked(db.query.users.findFirst).mockResolvedValue(
+      mockTargetUser({ id: "user-1" }) as any,
+    );
+
+    const result = await addTeamMember(
+      "seed-1",
+      "gardener@example.com",
+      "co_gardener",
+    );
+
+    expect(result).toEqual({ error: "The Gardener is already on the team." });
+    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
+    expect(db.insert).not.toHaveBeenCalled();
+  });
 });
 
 describe("removeTeamMember", () => {

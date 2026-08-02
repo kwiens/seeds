@@ -52,6 +52,9 @@ export async function addTeamMember(
         "No account found with that email — they need to sign in once first.",
     };
   }
+  if (target.id === seed.createdBy) {
+    return { error: "The Gardener is already on the team." };
+  }
 
   const existing = await db.query.seedTeamMembers.findFirst({
     where: (t, { and, eq }) =>
