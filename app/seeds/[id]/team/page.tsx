@@ -31,6 +31,9 @@ export default async function SproutTeamPage(props: {
     redirect(`/seeds/${seed.id}`);
   }
 
+  // Mark only activity that existed when this render began. Using the time the
+  // client effect eventually runs could hide an update that was never rendered.
+  const readThrough = new Date().toISOString();
   const [teamUpdates, members] = await Promise.all([
     getTeamUpdatesBySeed(seed.id),
     getTeamMembers(seed.id),
@@ -45,7 +48,7 @@ export default async function SproutTeamPage(props: {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <MarkSproutRead seedId={seed.id} />
+      <MarkSproutRead seedId={seed.id} readThrough={readThrough} />
       <Button variant="ghost" size="sm" asChild className="mb-4">
         <Link href={`/seeds/${seed.id}`}>
           <ArrowLeft className="mr-1.5 size-3.5" />

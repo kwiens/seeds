@@ -28,11 +28,14 @@ const lastActivitySql = sql<string>`greatest(
 // Team Updates posted since this viewer's own last visit to this Sprout's
 // Team page. Deliberately scoped to Team Updates only (not seeds.updated_at)
 // -- editing the seed's photo shouldn't flag "new activity" for the team.
-const unreadCountSql = sql<number>`(
-  select count(*)::int from seed_team_updates
-  where seed_team_updates.seed_id = seeds.id
-  and seed_team_updates.created_at > coalesce(${seedTeamActivityReads.lastReadAt}, to_timestamp(0))
-)`.as("unread_count");
+function unreadCountSql(userId: string) {
+  return sql<number>`(
+    select count(*)::int from seed_team_updates
+    where seed_team_updates.seed_id = seeds.id
+    and seed_team_updates.user_id <> ${userId}
+    and seed_team_updates.created_at > coalesce(${seedTeamActivityReads.lastReadAt}, to_timestamp(0))
+  )`.as("unread_count");
+}
 
 /**
  * Sprouts (status = "in_progress") the given user has team access to:
@@ -43,6 +46,7 @@ export async function getMySprouts(
   userId: string,
   isAdmin: boolean,
 ): Promise<MySprout[]> {
+  const unreadCount = unreadCountSql(userId);
   const rows = await db
     .select({
       id: seeds.id,
@@ -51,7 +55,7 @@ export async function getMySprouts(
       createdBy: seeds.createdBy,
       teamRole: seedTeamMembers.role,
       lastActivityAt: lastActivitySql,
-      unreadCount: unreadCountSql,
+      unreadCount,
     })
     .from(seeds)
     .leftJoin(
