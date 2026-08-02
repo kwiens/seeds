@@ -25,7 +25,10 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button
+          aria-label="Account menu"
+          className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <Avatar className="size-8">
             <AvatarImage
               src={session.user.image ?? undefined}

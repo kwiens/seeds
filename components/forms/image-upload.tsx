@@ -106,9 +106,10 @@ export function ImageUpload({
                 type="button"
                 onClick={() => removeImage(index)}
                 disabled={disabled}
-                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-all hover:bg-muted-foreground hover:text-background"
+                aria-label={`Remove photo ${index + 1}`}
+                className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-all hover:bg-muted-foreground hover:text-background"
               >
-                <X className="size-3" />
+                <X className="size-3.5" />
               </button>
               {renderOverlay?.(url, index)}
             </div>
@@ -135,10 +136,10 @@ export function ImageUpload({
             onClick={() => inputRef.current?.click()}
           >
             {uploading ? (
-              <>
+              <span role="status" className="flex items-center">
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />
                 Uploading…
-              </>
+              </span>
             ) : (
               <>
                 <ImagePlus className="mr-1.5 size-3.5" />
@@ -149,7 +150,11 @@ export function ImageUpload({
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

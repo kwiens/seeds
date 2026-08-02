@@ -121,7 +121,10 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
   return (
     <div className="space-y-2 rounded-lg border p-4">
       {error && (
-        <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+        >
           {error}
         </p>
       )}
@@ -129,12 +132,14 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         maxLength={200}
+        aria-label="Title (optional)"
         placeholder="Title (optional) — e.g. Site visit complete"
       />
       <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         maxLength={TEAM_UPDATE_MAX_LENGTH}
+        aria-label="Update details"
         placeholder="Progress, next steps, questions, needs, or blockers…"
         className="min-h-24"
       />
@@ -248,7 +253,10 @@ function ReplyForm({
   return (
     <div>
       {error && (
-        <p className="bg-destructive/10 text-destructive mb-2 rounded-md px-3 py-2 text-sm">
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive mb-2 rounded-md px-3 py-2 text-sm"
+        >
           {error}
         </p>
       )}
@@ -256,6 +264,7 @@ function ReplyForm({
         value={body}
         onChange={(e) => setBody(e.target.value)}
         maxLength={TEAM_UPDATE_MAX_LENGTH}
+        aria-label="Reply"
         placeholder="Write a reply…"
         className="min-h-20"
       />
@@ -317,14 +326,14 @@ function UpdateCard({
     >
       <div className="flex items-start gap-3">
         <Avatar className="size-7 shrink-0">
-          <AvatarImage src={update.userImage ?? undefined} />
+          <AvatarImage src={update.userImage ?? undefined} alt="" />
           <AvatarFallback className="text-xs">
             {(update.userName ?? "U").charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-x-2">
-            <span className="text-sm font-medium">
+          <div className="flex flex-wrap items-center gap-x-2">
+            <span className="min-w-0 break-words text-sm font-medium">
               {formatDisplayName(update.userName)}
             </span>
             {roleLabel && (
@@ -336,16 +345,16 @@ function UpdateCard({
               {formatRelativeTime(update.createdAt)}
             </span>
             {(onReply || isAdmin) && (
-              <div className="ml-auto flex gap-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+              <div className="ml-auto flex gap-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                 {onReply && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
+                    className="text-muted-foreground h-8 px-2 sm:h-auto sm:px-1.5 sm:py-0.5 text-xs"
                     onClick={onReply}
                   >
                     <Reply className="size-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Reply</span>
+                    <span className="sr-only sm:not-sr-only">Reply</span>
                   </Button>
                 )}
                 {isAdmin && (
@@ -354,10 +363,10 @@ function UpdateCard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground h-auto px-1.5 py-0.5 text-xs"
+                        className="text-muted-foreground h-8 px-2 sm:h-auto sm:px-1.5 sm:py-0.5 text-xs"
                       >
                         <Trash2 className="size-3 sm:mr-1" />
-                        <span className="hidden sm:inline">Delete</span>
+                        <span className="sr-only sm:not-sr-only">Delete</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -372,7 +381,10 @@ function UpdateCard({
                         </DialogDescription>
                       </DialogHeader>
                       {error && (
-                        <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+                        <p
+                          role="alert"
+                          className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+                        >
                           {error}
                         </p>
                       )}
@@ -395,9 +407,11 @@ function UpdateCard({
             )}
           </div>
           {update.title && (
-            <p className="mt-1 text-sm font-semibold">{update.title}</p>
+            <p className="mt-1 break-words text-sm font-semibold">
+              {update.title}
+            </p>
           )}
-          <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-sm">
+          <p className="text-muted-foreground mt-1 break-words whitespace-pre-wrap text-sm">
             {update.body}
           </p>
           {update.attachments.length > 0 && (
@@ -408,7 +422,7 @@ function UpdateCard({
                   href={`/api/team-files/${update.id}/${index}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-accent hover:bg-accent/70 inline-flex max-w-[220px] items-center gap-1.5 rounded-full py-1 pr-2.5 pl-2 text-xs"
+                  className="bg-accent hover:bg-accent/70 inline-flex max-w-[220px] items-center gap-1.5 rounded-full py-1.5 pr-2.5 pl-2 text-xs"
                 >
                   <FileText className="text-muted-foreground size-3 shrink-0" />
                   <span className="truncate">{file.name}</span>

@@ -24,6 +24,7 @@ export function DeleteUpdateButton({ updateId }: { updateId: string }) {
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" disabled={isPending}>
           <Trash2 className="size-4 text-destructive" />
+          <span className="sr-only">Delete update</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -34,7 +35,11 @@ export function DeleteUpdateButton({ updateId }: { updateId: string }) {
             undone.
           </DialogDescription>
         </DialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel

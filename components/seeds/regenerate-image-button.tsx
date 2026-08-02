@@ -60,7 +60,9 @@ export function RegenerateImageButton({
         )}
       </Button>
       {errorMessage && (
-        <p className="text-sm text-destructive">{errorMessage}</p>
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage}
+        </p>
       )}
     </div>
   );

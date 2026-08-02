@@ -20,10 +20,10 @@ export function UpdatesList({
           href={`/seeds/${seedId}/updates/${update.id}`}
           className="hover:bg-muted/50 block rounded-lg border p-4 transition-colors"
         >
-          <h3 className="mb-1 font-semibold">{update.title}</h3>
+          <h3 className="mb-1 break-words font-semibold">{update.title}</h3>
           <div className="mb-2 flex items-center gap-2">
             <Avatar className="size-5">
-              <AvatarImage src={update.authorImage ?? undefined} />
+              <AvatarImage src={update.authorImage ?? undefined} alt="" />
               <AvatarFallback className="text-[10px]">
                 {update.authorName[0]}
               </AvatarFallback>

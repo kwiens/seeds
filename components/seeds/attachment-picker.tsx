@@ -130,7 +130,7 @@ export function AttachmentPicker({
                 onClick={() => removeAttachment(i)}
                 disabled={busy || disabled}
                 aria-label={`Remove ${a.name}`}
-                className="text-muted-foreground hover:text-foreground shrink-0"
+                className="text-muted-foreground hover:text-foreground -m-1 shrink-0 rounded-full p-1.5"
               >
                 <X className="size-3" />
               </button>
@@ -170,7 +170,11 @@ export function AttachmentPicker({
         )}
       </Button>
 
-      {error && <p className="text-destructive text-xs">{error}</p>}
+      {error && (
+        <p role="alert" className="text-destructive text-xs">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -45,7 +45,7 @@ export function SeedCard({
           <div className="relative h-52 overflow-hidden rounded-t-lg sm:h-40">
             <Image
               src={displayImage}
-              alt={name}
+              alt=""
               fill
               className="object-cover scale-110 transition-transform group-hover:scale-115"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

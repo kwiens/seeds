@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { GripVertical, Info, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Info, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ function FieldInfoLink({ anchor }: { anchor: string }) {
       rel="noopener noreferrer"
       className="text-muted-foreground hover:text-foreground"
       title="Learn more"
+      aria-label="Learn more about this field (opens in new tab)"
     >
       <Info className="size-3.5" />
     </a>
@@ -55,6 +56,13 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
   const { data: session } = useSession();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
 
   const [name, setName] = useState(project?.name ?? "");
   const [summary, setSummary] = useState(project?.summary ?? "");
@@ -168,7 +176,11 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
       )}
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          ref={errorRef}
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -213,12 +225,12 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
 
         {/* Category */}
         <div className="space-y-2">
-          <Label>Category</Label>
+          <Label htmlFor="category">Category</Label>
           <Select
             value={category}
             onValueChange={(val) => setCategory(val as CategoryKey)}
           >
-            <SelectTrigger>
+            <SelectTrigger id="category">
               <SelectValue placeholder="Select a category..." />
             </SelectTrigger>
             <SelectContent>
@@ -266,6 +278,7 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
 
         {/* Location Description */}
         <div className="space-y-2">
+          <Label htmlFor="locationDescription">Location Description</Label>
           <Textarea
             id="locationDescription"
             value={locationDescription}
@@ -323,6 +336,7 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
 
         {/* Budget */}
         <div className="space-y-2">
+          <Label htmlFor="budget">Budget</Label>
           <Input
             id="budget"
             value={budgetEstimate}
@@ -349,11 +363,15 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
 
         {/* Badges */}
         <div className="space-y-2">
-          <Label>Badges</Label>
+          <Label id="badges-label">Badges</Label>
           <p className="text-muted-foreground text-xs">
             Select any badges that apply to this seed.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-labelledby="badges-label"
+            className="flex flex-wrap gap-2"
+          >
             {badgeKeys.map((key) => {
               const info = badges[key];
               const Icon = info.icon;
@@ -365,6 +383,7 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
                   variant={isActive ? "secondary" : "outline"}
                   size="sm"
                   className="gap-1.5"
+                  aria-pressed={isActive}
                   onClick={() => {
                     setSelectedBadges((prev) =>
                       prev.includes(key)
@@ -476,6 +495,14 @@ function RootsList({
     onRootsChange(roots.filter((_, i) => i !== index));
   }
 
+  function moveRoot(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= roots.length) return;
+    const updated = [...roots];
+    [updated[index], updated[target]] = [updated[target], updated[index]];
+    onRootsChange(updated);
+  }
+
   function toggleCommitted(index: number) {
     const updated = [...roots];
     updated[index] = {
@@ -526,6 +553,28 @@ function RootsList({
             >
               <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
               <span className="flex-1">{root.name}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Move ${root.name} up`}
+                disabled={index === 0}
+                onClick={() => moveRoot(index, -1)}
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Move ${root.name} down`}
+                disabled={index === roots.length - 1}
+                onClick={() => moveRoot(index, 1)}
+              >
+                <ArrowDown className="size-4" />
+              </Button>
               <button
                 type="button"
                 onClick={() => toggleCommitted(index)}
@@ -541,7 +590,8 @@ function RootsList({
               <button
                 type="button"
                 onClick={() => removeRoot(index)}
-                className="shrink-0 text-muted-foreground hover:text-destructive"
+                aria-label={`Remove ${root.name}`}
+                className="-m-1 shrink-0 p-1 text-muted-foreground hover:text-destructive"
               >
                 <X className="size-4" />
               </button>
@@ -561,7 +611,13 @@ function RootsList({
             }
           }}
         />
-        <Button type="button" variant="outline" size="icon" onClick={addRoot}>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Add organization"
+          onClick={addRoot}
+        >
           <Plus className="size-4" />
         </Button>
       </div>

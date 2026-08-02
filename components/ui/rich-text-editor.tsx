@@ -22,6 +22,7 @@ interface RichTextEditorProps {
   onChange: (content: JSONContent) => void;
   placeholder?: string;
   disabled?: boolean;
+  "aria-label"?: string;
 }
 
 export function RichTextEditor({
@@ -29,6 +30,7 @@ export function RichTextEditor({
   onChange,
   placeholder,
   disabled,
+  "aria-label": ariaLabel,
 }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -48,6 +50,7 @@ export function RichTextEditor({
       attributes: {
         class:
           "prose prose-sm max-w-none min-h-[16rem] px-3 py-2 focus:outline-none",
+        ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
       },
     },
     onUpdate: ({ editor }) => {

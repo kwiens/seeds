@@ -13,7 +13,7 @@ export function PhotoGrid({ photos, alt, size = "default" }: PhotoGridProps) {
 
   if (size === "sm") {
     return (
-      <div className="flex gap-1.5">
+      <div className="flex gap-1.5 overflow-x-auto">
         {photos.map((url, i) => (
           <div
             key={url}

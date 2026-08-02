@@ -58,7 +58,10 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -86,6 +89,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
             onChange={setBody}
             placeholder="Share your progress, milestones, or news..."
             disabled={isPending}
+            aria-label="Body"
           />
         </div>
 

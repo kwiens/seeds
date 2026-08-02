@@ -45,7 +45,6 @@ function ActionButton({ comment }: { comment: AdminComment }) {
       size="sm"
       onClick={handleToggle}
       disabled={isPending}
-      className="h-auto px-2 py-1"
     >
       {comment.archivedAt ? (
         <>

@@ -76,7 +76,12 @@ export function SeedActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" disabled={isPending}>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={isPending}
+          aria-label="Seed actions"
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>

@@ -58,7 +58,7 @@ export default async function UpdatePage(props: {
 
       <article className="mt-4">
         <div className="mb-6 flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="min-w-0 break-words text-3xl font-bold tracking-tight">
             {update.title ?? "Update"}
           </h1>
           {canEdit && (
@@ -75,7 +75,7 @@ export default async function UpdatePage(props: {
 
         <div className="mb-8 flex items-center gap-3">
           <Avatar className="size-8">
-            <AvatarImage src={update.authorImage ?? undefined} />
+            <AvatarImage src={update.authorImage ?? undefined} alt="" />
             <AvatarFallback>{update.authorName[0]}</AvatarFallback>
           </Avatar>
           <div className="text-sm">
@@ -100,7 +100,7 @@ export default async function UpdatePage(props: {
         )}
 
         <div
-          className="prose prose-sm max-w-none"
+          className="prose prose-sm max-w-none break-words"
           dangerouslySetInnerHTML={{ __html: renderTiptapHTML(update.body) }}
         />
       </article>

@@ -49,10 +49,10 @@ export function CommentsSection({
 }) {
   return (
     <div>
-      <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold">
+      <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold">
         <MessageCircle className="size-4" />
         Community Insights
-      </h3>
+      </h2>
       <p className="text-muted-foreground mb-4 text-sm">
         Have a connection, suggestion, or perspective that could help this seed
         grow? Share it below.

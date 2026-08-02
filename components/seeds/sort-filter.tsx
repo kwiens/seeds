@@ -32,29 +32,32 @@ export function SortFilter({
         variant={activeSort === "newest" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => setSort("newest")}
+        aria-pressed={activeSort === "newest"}
         className="gap-1.5"
       >
         <Clock className="size-4" />
-        <span className="hidden sm:inline">Newest</span>
+        <span className="sr-only sm:not-sr-only">Newest</span>
       </Button>
       <Button
         variant={activeSort === "supported" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => setSort("supported")}
+        aria-pressed={activeSort === "supported"}
         className="gap-1.5"
       >
         <Flame className="size-4" />
-        <span className="hidden sm:inline">Supported</span>
+        <span className="sr-only sm:not-sr-only">Supported</span>
       </Button>
       {isSignedIn && (
         <Button
           variant={activeSort === "mine" ? "secondary" : "ghost"}
           size="sm"
           onClick={() => setSort("mine")}
+          aria-pressed={activeSort === "mine"}
           className="gap-1.5"
         >
           <Heart className="size-4" />
-          <span className="hidden sm:inline">Backing</span>
+          <span className="sr-only sm:not-sr-only">Backing</span>
         </Button>
       )}
     </div>
