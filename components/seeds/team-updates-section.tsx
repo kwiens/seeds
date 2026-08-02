@@ -252,10 +252,15 @@ function UpdateCard({
   onReply?: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function handleDelete() {
+    setError(null);
     startTransition(async () => {
-      await deleteTeamUpdate(update.id);
+      const result = await deleteTeamUpdate(update.id);
+      if (result.error) {
+        setError(result.error);
+      }
     });
   }
 
@@ -312,6 +317,11 @@ function UpdateCard({
                           from the record. This can&apos;t be undone.
                         </DialogDescription>
                       </DialogHeader>
+                      {error && (
+                        <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+                          {error}
+                        </p>
+                      )}
                       <DialogFooter>
                         <DialogClose asChild>
                           <Button variant="outline">Cancel</Button>
