@@ -31,7 +31,12 @@ import {
 } from "@/lib/actions/team-events";
 
 function mockSeedRow(overrides?: Record<string, unknown>) {
-  return { id: "seed-1", createdBy: "user-1", ...overrides };
+  return {
+    id: "seed-1",
+    createdBy: "user-1",
+    status: "in_progress",
+    ...overrides,
+  };
 }
 
 function mockEventRow(overrides?: Record<string, unknown>) {
@@ -39,7 +44,7 @@ function mockEventRow(overrides?: Record<string, unknown>) {
     id: "event-1",
     seedId: "seed-1",
     title: "Site visit",
-    startsAt: new Date("2026-08-01T18:00:00Z"),
+    startsAt: new Date("2099-08-01T18:00:00Z"),
     location: null,
     seed: mockSeedRow(),
     ...overrides,
@@ -48,7 +53,7 @@ function mockEventRow(overrides?: Record<string, unknown>) {
 
 const validEventData = {
   title: "Site visit",
-  startsAt: new Date("2026-08-01T18:00:00Z"),
+  startsAt: new Date("2099-08-01T18:00:00Z"),
 };
 
 describe("createEvent", () => {
@@ -81,6 +86,31 @@ describe("createEvent", () => {
     expect(db.insert).not.toHaveBeenCalled();
   });
 
+  it("rejects a seed that is not a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+      mockSeedRow({ status: "approved" }) as any,
+    );
+
+    const result = await createEvent("seed-1", validEventData);
+
+    expect(result).toEqual({ error: "Events are only available for Sprouts." });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects an event in the past", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
+
+    const result = await createEvent("seed-1", {
+      title: "Already happened",
+      startsAt: new Date(Date.now() - 60_000),
+    });
+
+    expect(result).toEqual({ error: "Event must be in the future" });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
   it("validates form data", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
@@ -98,7 +128,7 @@ describe("createEvent", () => {
 
     const result = await createEvent("seed-1", {
       title: "Site visit",
-      startsAt: new Date("2026-08-01T18:00:00Z"),
+      startsAt: new Date("2099-08-01T18:00:00Z"),
       location: "123 Main St",
     });
 
@@ -108,7 +138,7 @@ describe("createEvent", () => {
         seedId: "seed-1",
         createdBy: "user-1",
         title: "Site visit",
-        startsAt: new Date("2026-08-01T18:00:00Z"),
+        startsAt: new Date("2099-08-01T18:00:00Z"),
         location: "123 Main St",
       }),
     );
@@ -173,6 +203,18 @@ describe("updateEvent", () => {
     expect(db.update).not.toHaveBeenCalled();
   });
 
+  it("rejects an event whose seed is no longer a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seedTeamEvents.findFirst).mockResolvedValue(
+      mockEventRow({ seed: mockSeedRow({ status: "approved" }) }) as any,
+    );
+
+    const result = await updateEvent("event-1", validEventData);
+
+    expect(result).toEqual({ error: "Events are only available for Sprouts." });
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
   it("validates form data", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.seedTeamEvents.findFirst).mockResolvedValue(
@@ -194,7 +236,7 @@ describe("updateEvent", () => {
 
     const result = await updateEvent("event-1", {
       title: "Rescheduled site visit",
-      startsAt: new Date("2026-08-02T18:00:00Z"),
+      startsAt: new Date("2099-08-02T18:00:00Z"),
       location: "456 Oak Ave",
     });
 
@@ -202,7 +244,7 @@ describe("updateEvent", () => {
     expect(chain.set).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Rescheduled site visit",
-        startsAt: new Date("2026-08-02T18:00:00Z"),
+        startsAt: new Date("2099-08-02T18:00:00Z"),
         location: "456 Oak Ave",
       }),
     );
@@ -251,6 +293,18 @@ describe("deleteEvent", () => {
     expect(result).toEqual({
       error: "You do not have permission to delete events for this Sprout.",
     });
+    expect(db.delete).not.toHaveBeenCalled();
+  });
+
+  it("rejects an event whose seed is no longer a Sprout", async () => {
+    setAuthMock(auth, mockSession({ id: "user-1" }));
+    vi.mocked(db.query.seedTeamEvents.findFirst).mockResolvedValue(
+      mockEventRow({ seed: mockSeedRow({ status: "approved" }) }) as any,
+    );
+
+    const result = await deleteEvent("event-1");
+
+    expect(result).toEqual({ error: "Events are only available for Sprouts." });
     expect(db.delete).not.toHaveBeenCalled();
   });
 

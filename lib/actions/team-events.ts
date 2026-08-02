@@ -16,7 +16,7 @@ export async function createEvent(seedId: string, data: unknown) {
 
   const seed = await db.query.seeds.findFirst({
     where: (seeds, { eq }) => eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true },
+    columns: { id: true, createdBy: true, status: true },
   });
   if (!seed) return { error: "Seed not found." };
 
@@ -24,6 +24,10 @@ export async function createEvent(seedId: string, data: unknown) {
     return {
       error: "You do not have permission to add events for this Sprout.",
     };
+  }
+
+  if (seed.status !== "in_progress") {
+    return { error: "Events are only available for Sprouts." };
   }
 
   const parsed = teamEventFormSchema.safeParse(data);
@@ -51,7 +55,7 @@ export async function updateEvent(eventId: string, data: unknown) {
 
   const event = await db.query.seedTeamEvents.findFirst({
     where: eq(seedTeamEvents.id, eventId),
-    with: { seed: { columns: { id: true, createdBy: true } } },
+    with: { seed: { columns: { id: true, createdBy: true, status: true } } },
   });
   if (!event) return { error: "Event not found." };
 
@@ -59,6 +63,10 @@ export async function updateEvent(eventId: string, data: unknown) {
     return {
       error: "You do not have permission to edit events for this Sprout.",
     };
+  }
+
+  if (event.seed.status !== "in_progress") {
+    return { error: "Events are only available for Sprouts." };
   }
 
   const parsed = teamEventFormSchema.safeParse(data);
@@ -88,7 +96,7 @@ export async function deleteEvent(eventId: string) {
 
   const event = await db.query.seedTeamEvents.findFirst({
     where: eq(seedTeamEvents.id, eventId),
-    with: { seed: { columns: { id: true, createdBy: true } } },
+    with: { seed: { columns: { id: true, createdBy: true, status: true } } },
   });
   if (!event) return { error: "Event not found." };
 
@@ -96,6 +104,10 @@ export async function deleteEvent(eventId: string) {
     return {
       error: "You do not have permission to delete events for this Sprout.",
     };
+  }
+
+  if (event.seed.status !== "in_progress") {
+    return { error: "Events are only available for Sprouts." };
   }
 
   await db.delete(seedTeamEvents).where(eq(seedTeamEvents.id, eventId));

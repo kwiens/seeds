@@ -165,6 +165,7 @@ function DatePicker({
         <div className="mb-2 flex items-center justify-between">
           <button
             type="button"
+            aria-label="Previous month"
             onClick={() => setViewMonth(new Date(year, month - 1, 1))}
             className="hover:bg-accent flex size-6 items-center justify-center rounded"
           >
@@ -175,6 +176,7 @@ function DatePicker({
           </span>
           <button
             type="button"
+            aria-label="Next month"
             onClick={() => setViewMonth(new Date(year, month + 1, 1))}
             className="hover:bg-accent flex size-6 items-center justify-center rounded"
           >
@@ -363,6 +365,7 @@ function EventRow({
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label={`Edit ${event.title}`}
                 className="size-6"
                 onClick={onEdit}
               >
@@ -371,6 +374,7 @@ function EventRow({
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label={`Delete ${event.title}`}
                 className="size-6"
                 disabled={isPending}
                 onClick={handleDelete}
@@ -381,16 +385,23 @@ function EventRow({
           )}
         </div>
         <p className="text-muted-foreground text-xs">{formatWhen(start)}</p>
-        {location && (
-          <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-            {remote ? (
+        {location &&
+          (remote ? (
+            <a
+              href={location}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
+            >
               <Video className="size-2.5" />
-            ) : (
+              Join online
+            </a>
+          ) : (
+            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
               <MapPin className="size-2.5" />
-            )}
-            {remote ? "Remote" : location}
-          </span>
-        )}
+              {location}
+            </span>
+          ))}
         <a
           href={gcalLink(event.title, start, location)}
           target="_blank"

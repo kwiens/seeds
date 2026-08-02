@@ -5,7 +5,12 @@ export const teamEventFormSchema = z.object({
     .string()
     .min(1, "Title is required")
     .max(200, "Title must be 200 characters or fewer"),
-  startsAt: z.coerce.date(),
+  startsAt: z.coerce
+    .date()
+    .refine(
+      (date) => date.getTime() > Date.now(),
+      "Event must be in the future",
+    ),
   location: z
     .string()
     .max(300, "Location must be 300 characters or fewer")
