@@ -46,6 +46,7 @@ export async function createTeamUpdate(seedId: string, data: unknown) {
   });
 
   revalidatePath(`/dashboard/seeds/${seedId}`);
+  revalidatePath(`/seeds/${seedId}/team`);
   return { success: true };
 }
 
@@ -86,5 +87,6 @@ export async function replyToTeamUpdate(parentId: string, data: unknown) {
   });
 
   revalidatePath(`/dashboard/seeds/${parent.seed.id}`);
+  revalidatePath(`/seeds/${parent.seed.id}/team`);
   return { success: true };
 }
