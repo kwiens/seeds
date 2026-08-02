@@ -4,17 +4,17 @@ import { mockSession, setAuthMock } from "../../test-utils";
 
 vi.mock("@vercel/blob", () => ({ get: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth-utils", () => ({ canAccessTeamUpdates: vi.fn() }));
+vi.mock("@/lib/auth-utils", () => ({ canAccessTeamWorkspace: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
-      seedTeamUpdates: { findFirst: vi.fn() },
+      projectUpdates: { findFirst: vi.fn() },
     },
   },
 }));
 
 import { auth } from "@/auth";
-import { canAccessTeamUpdates } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { GET } from "@/app/api/team-files/[updateId]/[attachmentIndex]/route";
 
@@ -27,11 +27,12 @@ function mockUpdate() {
     attachments: [
       {
         name: "plan.pdf",
-        url: "https://test.private.blob.vercel-storage.com/seeds/seed-1/attachments/plan.pdf",
+        url: "https://test.private.blob.vercel-storage.com/projects/seed-1/attachments/plan.pdf",
         size: 4,
       },
     ],
-    seed: { id: "seed-1", createdBy: "user-1", status: "in_progress" },
+    visibility: "team",
+    project: { id: "seed-1", stage: "sprout" },
   };
 }
 
@@ -51,15 +52,15 @@ describe("GET /api/team-files/[updateId]/[attachmentIndex]", () => {
     const response = await GET(new Request("http://localhost"), context);
 
     expect(response.status).toBe(401);
-    expect(db.query.seedTeamUpdates.findFirst).not.toHaveBeenCalled();
+    expect(db.query.projectUpdates.findFirst).not.toHaveBeenCalled();
   });
 
   it("does not fetch the blob for a user outside the Sprout team", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(
       mockUpdate() as any,
     );
-    vi.mocked(canAccessTeamUpdates).mockResolvedValue(false);
+    vi.mocked(canAccessTeamWorkspace).mockResolvedValue(false);
 
     const response = await GET(new Request("http://localhost"), context);
 
@@ -69,10 +70,10 @@ describe("GET /api/team-files/[updateId]/[attachmentIndex]", () => {
 
   it("streams a private blob only after Team access is verified", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seedTeamUpdates.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(
       mockUpdate() as any,
     );
-    vi.mocked(canAccessTeamUpdates).mockResolvedValue(true);
+    vi.mocked(canAccessTeamWorkspace).mockResolvedValue(true);
     vi.mocked(get).mockResolvedValue({
       statusCode: 200,
       stream: new ReadableStream({

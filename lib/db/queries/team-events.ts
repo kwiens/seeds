@@ -1,13 +1,13 @@
 import { and, asc, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seedTeamEvents } from "@/lib/db/schema";
+import { projectEvents } from "@/lib/db/schema";
 
-export async function getUpcomingEvents(seedId: string) {
-  return db.query.seedTeamEvents.findMany({
+export async function getUpcomingEvents(projectId: string) {
+  return db.query.projectEvents.findMany({
     where: and(
-      eq(seedTeamEvents.seedId, seedId),
-      gte(seedTeamEvents.startsAt, new Date()),
+      eq(projectEvents.projectId, projectId),
+      gte(projectEvents.startsAt, new Date()),
     ),
-    orderBy: asc(seedTeamEvents.startsAt),
+    orderBy: asc(projectEvents.startsAt),
   });
 }

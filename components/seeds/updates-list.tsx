@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PhotoGrid } from "@/components/photo-grid";
-import type { SeedUpdateWithAuthor } from "@/lib/db/queries/updates";
+import type { PublicProjectUpdateWithAuthor } from "@/lib/db/queries/project-updates";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
 import { extractPlainText } from "@/lib/tiptap";
 
@@ -9,7 +9,7 @@ export function UpdatesList({
   updates,
   seedId,
 }: {
-  updates: SeedUpdateWithAuthor[];
+  updates: PublicProjectUpdateWithAuthor[];
   seedId: string;
 }) {
   return (
@@ -35,7 +35,11 @@ export function UpdatesList({
           </div>
           {update.photos.length > 0 && (
             <div className="mb-2">
-              <PhotoGrid photos={update.photos} alt={update.title} size="sm" />
+              <PhotoGrid
+                photos={update.photos}
+                alt={update.title ?? "Project update"}
+                size="sm"
+              />
             </div>
           )}
           <p className="text-muted-foreground line-clamp-3 whitespace-pre-line text-sm">

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
-import { inArray } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seeds } from "@/lib/db/schema";
+import { projects } from "@/lib/db/schema";
 
 const BASE_URL = "https://www.npcseeds.org";
 
@@ -10,12 +10,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // leak moderation. Draft and archived are already non-public.
   const publicSeeds = await db
     .select({
-      id: seeds.id,
-      updatedAt: seeds.updatedAt,
+      id: projects.id,
+      updatedAt: projects.updatedAt,
     })
-    .from(seeds)
+    .from(projects)
     .where(
-      inArray(seeds.status, ["approved", "in_progress", "in_maintenance"]),
+      and(eq(projects.approvalState, "approved"), isNull(projects.archivedAt)),
     );
 
   const seedEntries: MetadataRoute.Sitemap = publicSeeds.map((seed) => ({

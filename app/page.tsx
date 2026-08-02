@@ -5,11 +5,11 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import type { CategoryKey } from "@/lib/categories";
 import {
-  getApprovedSeeds,
-  getAllSeedsForMap,
-  getSeedPreviewsByStatus,
+  getSeedStageProjects,
+  getAllProjectsForMap,
+  getProjectPreviewsByStage,
   type SortOption,
-} from "@/lib/db/queries/seeds";
+} from "@/lib/db/queries/projects";
 import { getHomepagePhase } from "@/lib/db/queries/settings";
 import { HomeContent } from "./home-content";
 import { HomePhase2 } from "./home-phase2";
@@ -89,7 +89,7 @@ async function Phase1Content({
         : "newest";
 
   const [seedResult, mapSeeds] = await Promise.all([
-    getApprovedSeeds({
+    getSeedStageProjects({
       category,
       page,
       sort,
@@ -97,12 +97,12 @@ async function Phase1Content({
       search,
     }),
     // Scope Phase 1 map to the Seed bucket (pending+approved) to match the grid.
-    getAllSeedsForMap({ category, status: "approved", userId, search }),
+    getAllProjectsForMap({ category, stage: "seed", userId, search }),
   ]);
 
   return (
     <HomeContent
-      seeds={seedResult.seeds}
+      seeds={seedResult.projects}
       mapSeeds={mapSeeds}
       currentPage={seedResult.currentPage}
       totalPages={seedResult.totalPages}
@@ -114,7 +114,7 @@ async function Phase1Content({
 }
 
 async function Phase2Content({ userId }: { userId?: string }) {
-  const previews = await getSeedPreviewsByStatus({ userId });
+  const previews = await getProjectPreviewsByStage({ userId });
 
   return <HomePhase2 previews={previews} />;
 }

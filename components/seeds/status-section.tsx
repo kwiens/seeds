@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SeedListView } from "@/components/seeds/seed-list-view";
-import { statuses, type StatusKey } from "@/lib/statuses";
 import type { CategoryKey } from "@/lib/categories";
+import { projectStages, type ProjectStage } from "@/lib/project-stages";
 
 interface SeedPreview {
   id: string;
@@ -12,21 +12,21 @@ interface SeedPreview {
   supportCount: number;
   imageUrl?: string | null;
   coverPhotoUrl?: string | null;
-  status?: string;
+  stage: ProjectStage;
+  approvalState: "draft" | "pending" | "approved";
 }
 
 export function StatusSection({
-  statusKey,
+  stage,
   seeds,
   totalCount,
 }: {
-  statusKey: StatusKey;
+  stage: ProjectStage;
   seeds: SeedPreview[];
   totalCount: number;
 }) {
-  const info = statuses[statusKey];
+  const info = projectStages[stage];
   const Icon = info.icon;
-
   if (totalCount === 0) return null;
 
   return (

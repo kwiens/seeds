@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
 import {
   getAdminEmails,
-  getAllSeeds,
+  getAllProjects,
   getCouncilMembers,
   getSupporterEmailsMap,
 } from "@/lib/db/queries/admin";
@@ -42,7 +42,7 @@ export default async function AdminPage() {
     homepagePhase,
     bannerConfig,
   ] = await Promise.all([
-    getAllSeeds(),
+    getAllProjects(),
     getSupporterEmailsMap(),
     getAdminEmails(),
     getCouncilMembers(),

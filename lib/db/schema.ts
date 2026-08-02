@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
@@ -13,7 +13,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-// Enums
 export const categoryEnum = pgEnum("category", [
   "daily_access",
   "outdoor_play",
@@ -22,18 +21,24 @@ export const categoryEnum = pgEnum("category", [
   "connected_communities",
 ]);
 
-export const statusEnum = pgEnum("status", [
+export const projectStageEnum = pgEnum("project_stage", [
+  "seed",
+  "sprout",
+  "tree",
+]);
+
+export const approvalStateEnum = pgEnum("approval_state", [
   "draft",
   "pending",
   "approved",
-  "in_progress",
-  "in_maintenance",
-  "archived",
 ]);
 
 export const roleEnum = pgEnum("role", ["user", "admin", "council"]);
 
-export const teamRoleEnum = pgEnum("team_role", [
+export const participantRoleEnum = pgEnum("participant_role", [
+  "supporter",
+  "gardener",
+  "member",
   "steward",
   "co_gardener",
   "guide",
@@ -41,9 +46,20 @@ export const teamRoleEnum = pgEnum("team_role", [
   "cultivator",
 ]);
 
+export const participantStateEnum = pgEnum("participant_state", [
+  "prospective",
+  "invited",
+  "active",
+  "inactive",
+]);
+
+export const updateVisibilityEnum = pgEnum("update_visibility", [
+  "public",
+  "team",
+]);
+
 export const budgetStatusEnum = pgEnum("budget_status", ["proposed", "final"]);
 
-// Users
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
@@ -55,36 +71,32 @@ export const users = pgTable("users", {
     .defaultNow(),
 });
 
-// Seeds
-export const seeds = pgTable(
-  "seeds",
+// A project keeps the same identity as it grows from Seed to Sprout to Tree.
+// Approval and archival are independent axes so lifecycle data is never lost.
+export const projects = pgTable(
+  "projects",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     summary: text("summary").notNull(),
-    gardeners: jsonb("gardeners").$type<string[]>().notNull().default([]),
     locationAddress: text("location_address"),
     locationDescription: text("location_description"),
     locationLat: doublePrecision("location_lat"),
     locationLng: doublePrecision("location_lng"),
     category: categoryEnum("category").notNull(),
-    roots: jsonb("roots")
-      .$type<{ name: string; committed: boolean }[]>()
-      .notNull()
-      .default([]),
-    supportPeople: jsonb("support_people")
-      .$type<string[]>()
-      .notNull()
-      .default([]),
     waterHave: jsonb("water_have").$type<string[]>().notNull().default([]),
     waterNeed: jsonb("water_need").$type<string[]>().notNull().default([]),
-    budget: text("budget"),
+    budgetEstimate: text("budget_estimate"),
     obstacles: text("obstacles"),
     imageUrl: text("image_url"),
     photos: jsonb("photos").$type<string[]>().notNull().default([]),
     coverPhotoUrl: text("cover_photo_url"),
     badges: jsonb("badges").$type<string[]>().notNull().default([]),
-    status: statusEnum("status").notNull().default("pending"),
+    stage: projectStageEnum("stage").notNull().default("seed"),
+    approvalState: approvalStateEnum("approval_state")
+      .notNull()
+      .default("pending"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
@@ -95,15 +107,17 @@ export const seeds = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("idx_seeds_badges").using("gin", t.badges)],
+  (t) => [
+    index("idx_projects_badges").using("gin", t.badges),
+    index("idx_projects_stage_approval").on(t.stage, t.approvalState),
+  ],
 );
 
-// Seed Approvals
-export const seedApprovals = pgTable("seed_approvals", {
+export const projectApprovals = pgTable("project_approvals", {
   id: uuid("id").defaultRandom().primaryKey(),
-  seedId: uuid("seed_id")
+  projectId: uuid("project_id")
     .notNull()
-    .references(() => seeds.id, { onDelete: "cascade" }),
+    .references(() => projects.id, { onDelete: "cascade" }),
   approvedBy: uuid("approved_by")
     .notNull()
     .references(() => users.id),
@@ -112,78 +126,78 @@ export const seedApprovals = pgTable("seed_approvals", {
     .defaultNow(),
 });
 
-// Seed Supports (sunlight / upvotes)
-export const seedSupports = pgTable(
-  "seed_supports",
+// One row represents one person's role on a project. A person can have several
+// rows, allowing supporter and team roles to coexist with independent states.
+// displayName also supports people/organizations that do not yet have accounts.
+export const projectParticipants = pgTable(
+  "project_participants",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seedId: uuid("seed_id")
+    projectId: uuid("project_id")
       .notNull()
-      .references(() => seeds.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id),
+    displayName: text("display_name").notNull(),
+    role: participantRoleEnum("role").notNull(),
+    state: participantStateEnum("state").notNull().default("active"),
+    addedBy: uuid("added_by").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [uniqueIndex("seed_supports_unique").on(t.seedId, t.userId)],
+  (t) => [
+    uniqueIndex("project_participants_user_role_unique")
+      .on(t.projectId, t.userId, t.role)
+      .where(sql`${t.userId} is not null`),
+    uniqueIndex("project_participants_named_role_unique")
+      .on(t.projectId, t.displayName, t.role)
+      .where(sql`${t.userId} is null`),
+    index("idx_project_participants_project_state").on(t.projectId, t.state),
+  ],
 );
 
-// Seed Comments (Community Insights)
-export const seedComments = pgTable("seed_comments", {
+export const projectComments = pgTable("project_comments", {
   id: uuid("id").defaultRandom().primaryKey(),
-  seedId: uuid("seed_id")
+  projectId: uuid("project_id")
     .notNull()
-    .references(() => seeds.id, { onDelete: "cascade" }),
+    .references(() => projects.id, { onDelete: "cascade" }),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
   content: text("content").notNull(),
-  parentId: uuid("parent_id"),
+  parentId: uuid("parent_id").references(
+    (): AnyPgColumn => projectComments.id,
+    { onDelete: "cascade" },
+  ),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
 });
 
-// Seed Updates
-export const seedUpdates = pgTable("seed_updates", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  seedId: uuid("seed_id")
-    .notNull()
-    .references(() => seeds.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  body: jsonb("body").notNull(),
-  photos: jsonb("photos").$type<string[]>().notNull().default([]),
-  createdBy: uuid("created_by")
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-// Seed Team Updates (private, Sprout-only communication)
-export const seedTeamUpdates = pgTable(
-  "seed_team_updates",
+// Public progress posts and private team discussion share one model. Visibility
+// controls authorization and presentation; parentId is used for team replies.
+export const projectUpdates = pgTable(
+  "project_updates",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seedId: uuid("seed_id")
+    projectId: uuid("project_id")
       .notNull()
-      .references(() => seeds.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
+      .references(() => projects.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
+    visibility: updateVisibilityEnum("visibility").notNull(),
     title: text("title"),
-    body: text("body").notNull(),
+    body: jsonb("body").notNull(),
     parentId: uuid("parent_id").references(
-      (): AnyPgColumn => seedTeamUpdates.id,
+      (): AnyPgColumn => projectUpdates.id,
       { onDelete: "cascade" },
     ),
+    photos: jsonb("photos").$type<string[]>().notNull().default([]),
     attachments: jsonb("attachments")
       .$type<{ name: string; url: string; size: number }[]>()
       .notNull()
@@ -191,76 +205,67 @@ export const seedTeamUpdates = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    index("idx_seed_team_updates_seed_created").on(t.seedId, t.createdAt),
-    index("idx_seed_team_updates_parent").on(t.parentId),
+    index("idx_project_updates_project_visibility_created").on(
+      t.projectId,
+      t.visibility,
+      t.createdAt,
+    ),
+    index("idx_project_updates_parent").on(t.parentId),
   ],
 );
 
-// Durable outbox for private Blob cleanup. A database trigger adds one row for
-// every attachment whose Team Update is deleted, including cascade-deleted
-// replies, so cross-service cleanup can be retried safely.
-export const seedTeamFileDeletions = pgTable("seed_team_file_deletions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  seedId: uuid("seed_id").notNull(),
-  url: text("url").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-// Seed Team Members (Sprout roster: Steward, co-Gardener, Guide, Roots, Cultivator)
-export const seedTeamMembers = pgTable(
-  "seed_team_members",
+// Durable outbox for private Blob cleanup. It intentionally has no project FK
+// so queued file deletions survive a cascading project deletion.
+export const projectUpdateFileDeletions = pgTable(
+  "project_update_file_deletions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seedId: uuid("seed_id")
-      .notNull()
-      .references(() => seeds.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id),
-    role: teamRoleEnum("role").notNull(),
-    addedBy: uuid("added_by")
-      .notNull()
-      .references(() => users.id),
+    projectId: uuid("project_id").notNull(),
+    url: text("url").notNull().unique(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("seed_team_members_unique").on(t.seedId, t.userId)],
 );
 
-// Seed Team Activity Reads (per-user "last checked" marker, powers the
-// new-activity badge on Mine / nav)
-export const seedTeamActivityReads = pgTable(
-  "seed_team_activity_reads",
+export const projectActivityReads = pgTable(
+  "project_activity_reads",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seedId: uuid("seed_id")
+    projectId: uuid("project_id")
       .notNull()
-      .references(() => seeds.id, { onDelete: "cascade" }),
+      .references(() => projects.id, { onDelete: "cascade" }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id),
+    visibility: updateVisibilityEnum("visibility").notNull().default("team"),
     lastReadAt: timestamp("last_read_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("seed_team_activity_reads_unique").on(t.seedId, t.userId),
+    uniqueIndex("project_activity_reads_unique").on(
+      t.projectId,
+      t.userId,
+      t.visibility,
+    ),
   ],
 );
 
-// Seed Budgets (Proposed and Final, tracked separately per Sprout)
-export const seedBudgets = pgTable(
-  "seed_budgets",
+// Detailed proposed/final budgets are additive Sprout/Tree capabilities. The
+// early-stage estimate remains projects.budgetEstimate.
+export const projectBudgets = pgTable(
+  "project_budgets",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seedId: uuid("seed_id")
+    projectId: uuid("project_id")
       .notNull()
-      .references(() => seeds.id, { onDelete: "cascade" }),
+      .references(() => projects.id, { onDelete: "cascade" }),
     status: budgetStatusEnum("status").notNull(),
     lineItems: jsonb("line_items")
       .$type<{ label: string; amount: number }[]>()
@@ -276,17 +281,16 @@ export const seedBudgets = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("seed_budgets_unique").on(t.seedId, t.status)],
+  (t) => [uniqueIndex("project_budgets_unique").on(t.projectId, t.status)],
 );
 
-// Seed Team Events (internal upcoming events/meetings for a Sprout's team)
-export const seedTeamEvents = pgTable(
-  "seed_team_events",
+export const projectEvents = pgTable(
+  "project_events",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seedId: uuid("seed_id")
+    projectId: uuid("project_id")
       .notNull()
-      .references(() => seeds.id, { onDelete: "cascade" }),
+      .references(() => projects.id, { onDelete: "cascade" }),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
@@ -300,10 +304,11 @@ export const seedTeamEvents = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("idx_seed_team_events_seed_starts").on(t.seedId, t.startsAt)],
+  (t) => [
+    index("idx_project_events_project_starts").on(t.projectId, t.startsAt),
+  ],
 );
 
-// Admin Emails
 export const adminEmails = pgTable("admin_emails", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
@@ -313,7 +318,6 @@ export const adminEmails = pgTable("admin_emails", {
     .defaultNow(),
 });
 
-// Site Settings (key-value config)
 export const siteSettings = pgTable("site_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
@@ -322,149 +326,139 @@ export const siteSettings = pgTable("site_settings", {
     .defaultNow(),
 });
 
-// Relations
 export const usersRelations = relations(users, ({ many }) => ({
-  seeds: many(seeds),
-  supports: many(seedSupports),
-  approvals: many(seedApprovals),
-  comments: many(seedComments),
-  updates: many(seedUpdates),
-  teamUpdates: many(seedTeamUpdates),
-  teamMemberships: many(seedTeamMembers, { relationName: "teamMemberUser" }),
-  addedTeamMemberships: many(seedTeamMembers, {
-    relationName: "teamMemberAddedBy",
+  createdProjects: many(projects),
+  participations: many(projectParticipants, {
+    relationName: "participantUser",
   }),
-  teamActivityReads: many(seedTeamActivityReads),
-  budgetUpdates: many(seedBudgets),
-  teamEvents: many(seedTeamEvents),
+  addedParticipations: many(projectParticipants, {
+    relationName: "participantAddedBy",
+  }),
+  approvals: many(projectApprovals),
+  comments: many(projectComments),
+  updates: many(projectUpdates),
+  activityReads: many(projectActivityReads),
+  budgetUpdates: many(projectBudgets),
+  events: many(projectEvents),
 }));
 
-export const seedsRelations = relations(seeds, ({ one, many }) => ({
-  creator: one(users, { fields: [seeds.createdBy], references: [users.id] }),
-  supports: many(seedSupports),
-  approvals: many(seedApprovals),
-  comments: many(seedComments),
-  updates: many(seedUpdates),
-  teamUpdates: many(seedTeamUpdates),
-  teamMembers: many(seedTeamMembers),
-  teamActivityReads: many(seedTeamActivityReads),
-  budgets: many(seedBudgets),
-  teamEvents: many(seedTeamEvents),
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  creator: one(users, { fields: [projects.createdBy], references: [users.id] }),
+  participants: many(projectParticipants),
+  approvals: many(projectApprovals),
+  comments: many(projectComments),
+  updates: many(projectUpdates),
+  activityReads: many(projectActivityReads),
+  budgets: many(projectBudgets),
+  events: many(projectEvents),
 }));
 
-export const seedSupportsRelations = relations(seedSupports, ({ one }) => ({
-  seed: one(seeds, {
-    fields: [seedSupports.seedId],
-    references: [seeds.id],
-  }),
-  user: one(users, {
-    fields: [seedSupports.userId],
-    references: [users.id],
-  }),
-}));
-
-export const seedApprovalsRelations = relations(seedApprovals, ({ one }) => ({
-  seed: one(seeds, {
-    fields: [seedApprovals.seedId],
-    references: [seeds.id],
-  }),
-  approver: one(users, {
-    fields: [seedApprovals.approvedBy],
-    references: [users.id],
-  }),
-}));
-
-export const seedCommentsRelations = relations(
-  seedComments,
-  ({ one, many }) => ({
-    seed: one(seeds, { fields: [seedComments.seedId], references: [seeds.id] }),
-    user: one(users, { fields: [seedComments.userId], references: [users.id] }),
-    parent: one(seedComments, {
-      fields: [seedComments.parentId],
-      references: [seedComments.id],
-      relationName: "commentReplies",
-    }),
-    replies: many(seedComments, { relationName: "commentReplies" }),
-  }),
-);
-
-export const seedUpdatesRelations = relations(seedUpdates, ({ one }) => ({
-  seed: one(seeds, { fields: [seedUpdates.seedId], references: [seeds.id] }),
-  author: one(users, {
-    fields: [seedUpdates.createdBy],
-    references: [users.id],
-  }),
-}));
-
-export const seedTeamUpdatesRelations = relations(
-  seedTeamUpdates,
-  ({ one, many }) => ({
-    seed: one(seeds, {
-      fields: [seedTeamUpdates.seedId],
-      references: [seeds.id],
-    }),
-    user: one(users, {
-      fields: [seedTeamUpdates.userId],
-      references: [users.id],
-    }),
-    parent: one(seedTeamUpdates, {
-      fields: [seedTeamUpdates.parentId],
-      references: [seedTeamUpdates.id],
-      relationName: "teamUpdateReplies",
-    }),
-    replies: many(seedTeamUpdates, { relationName: "teamUpdateReplies" }),
-  }),
-);
-
-export const seedTeamMembersRelations = relations(
-  seedTeamMembers,
+export const projectParticipantsRelations = relations(
+  projectParticipants,
   ({ one }) => ({
-    seed: one(seeds, {
-      fields: [seedTeamMembers.seedId],
-      references: [seeds.id],
+    project: one(projects, {
+      fields: [projectParticipants.projectId],
+      references: [projects.id],
     }),
     user: one(users, {
-      fields: [seedTeamMembers.userId],
+      fields: [projectParticipants.userId],
       references: [users.id],
-      relationName: "teamMemberUser",
+      relationName: "participantUser",
     }),
     addedByUser: one(users, {
-      fields: [seedTeamMembers.addedBy],
+      fields: [projectParticipants.addedBy],
       references: [users.id],
-      relationName: "teamMemberAddedBy",
+      relationName: "participantAddedBy",
     }),
   }),
 );
 
-export const seedTeamActivityReadsRelations = relations(
-  seedTeamActivityReads,
+export const projectApprovalsRelations = relations(
+  projectApprovals,
   ({ one }) => ({
-    seed: one(seeds, {
-      fields: [seedTeamActivityReads.seedId],
-      references: [seeds.id],
+    project: one(projects, {
+      fields: [projectApprovals.projectId],
+      references: [projects.id],
+    }),
+    approver: one(users, {
+      fields: [projectApprovals.approvedBy],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const projectCommentsRelations = relations(
+  projectComments,
+  ({ one, many }) => ({
+    project: one(projects, {
+      fields: [projectComments.projectId],
+      references: [projects.id],
     }),
     user: one(users, {
-      fields: [seedTeamActivityReads.userId],
+      fields: [projectComments.userId],
+      references: [users.id],
+    }),
+    parent: one(projectComments, {
+      fields: [projectComments.parentId],
+      references: [projectComments.id],
+      relationName: "commentReplies",
+    }),
+    replies: many(projectComments, { relationName: "commentReplies" }),
+  }),
+);
+
+export const projectUpdatesRelations = relations(
+  projectUpdates,
+  ({ one, many }) => ({
+    project: one(projects, {
+      fields: [projectUpdates.projectId],
+      references: [projects.id],
+    }),
+    author: one(users, {
+      fields: [projectUpdates.createdBy],
+      references: [users.id],
+    }),
+    parent: one(projectUpdates, {
+      fields: [projectUpdates.parentId],
+      references: [projectUpdates.id],
+      relationName: "projectUpdateReplies",
+    }),
+    replies: many(projectUpdates, { relationName: "projectUpdateReplies" }),
+  }),
+);
+
+export const projectActivityReadsRelations = relations(
+  projectActivityReads,
+  ({ one }) => ({
+    project: one(projects, {
+      fields: [projectActivityReads.projectId],
+      references: [projects.id],
+    }),
+    user: one(users, {
+      fields: [projectActivityReads.userId],
       references: [users.id],
     }),
   }),
 );
 
-export const seedBudgetsRelations = relations(seedBudgets, ({ one }) => ({
-  seed: one(seeds, { fields: [seedBudgets.seedId], references: [seeds.id] }),
+export const projectBudgetsRelations = relations(projectBudgets, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectBudgets.projectId],
+    references: [projects.id],
+  }),
   updatedByUser: one(users, {
-    fields: [seedBudgets.updatedBy],
+    fields: [projectBudgets.updatedBy],
     references: [users.id],
   }),
 }));
 
-export const seedTeamEventsRelations = relations(seedTeamEvents, ({ one }) => ({
-  seed: one(seeds, {
-    fields: [seedTeamEvents.seedId],
-    references: [seeds.id],
+export const projectEventsRelations = relations(projectEvents, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectEvents.projectId],
+    references: [projects.id],
   }),
   creator: one(users, {
-    fields: [seedTeamEvents.createdBy],
+    fields: [projectEvents.createdBy],
     references: [users.id],
   }),
 }));

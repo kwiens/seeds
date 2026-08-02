@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { seedFormSchema } from "@/lib/validations/seed";
+import { projectFormSchema } from "@/lib/validations/project";
 
-describe("seedFormSchema", () => {
+describe("projectFormSchema", () => {
   const validData = {
     name: "Community Garden",
     summary: "A garden for the neighborhood.",
@@ -14,18 +14,18 @@ describe("seedFormSchema", () => {
     obstacles: "Need permits from the city.",
   };
 
-  it("accepts valid seed data", () => {
-    const result = seedFormSchema.safeParse(validData);
+  it("accepts valid project data", () => {
+    const result = projectFormSchema.safeParse(validData);
     expect(result.success).toBe(true);
   });
 
   it("requires name", () => {
-    const result = seedFormSchema.safeParse({ ...validData, name: "" });
+    const result = projectFormSchema.safeParse({ ...validData, name: "" });
     expect(result.success).toBe(false);
   });
 
   it("enforces name max length", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       name: "a".repeat(161),
     });
@@ -33,7 +33,7 @@ describe("seedFormSchema", () => {
   });
 
   it("enforces summary max length", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       summary: "a".repeat(10001),
     });
@@ -41,7 +41,7 @@ describe("seedFormSchema", () => {
   });
 
   it("requires valid category", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       category: "invalid_category",
     });
@@ -57,13 +57,13 @@ describe("seedFormSchema", () => {
       "connected_communities",
     ];
     for (const category of validCategories) {
-      const result = seedFormSchema.safeParse({ ...validData, category });
+      const result = projectFormSchema.safeParse({ ...validData, category });
       expect(result.success).toBe(true);
     }
   });
 
   it("defaults arrays to empty", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       name: "Test",
       summary: "Test summary.",
       category: "respect",
@@ -78,12 +78,12 @@ describe("seedFormSchema", () => {
   });
 
   it("requires summary", () => {
-    const result = seedFormSchema.safeParse({ ...validData, summary: "" });
+    const result = projectFormSchema.safeParse({ ...validData, summary: "" });
     expect(result.success).toBe(false);
   });
 
   it("accepts name at exactly 160 characters", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       name: "a".repeat(160),
     });
@@ -91,7 +91,7 @@ describe("seedFormSchema", () => {
   });
 
   it("accepts summary at exactly 10000 characters", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       summary: "a".repeat(10000),
     });
@@ -99,7 +99,7 @@ describe("seedFormSchema", () => {
   });
 
   it("accepts optional location fields", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       locationAddress: "123 Main St",
       locationLat: 35.0456,
@@ -109,7 +109,7 @@ describe("seedFormSchema", () => {
   });
 
   it("accepts optional locationDescription", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       locationDescription: "A neighborhood near downtown.",
     });
@@ -117,7 +117,7 @@ describe("seedFormSchema", () => {
   });
 
   it("enforces locationDescription max length", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       locationDescription: "a".repeat(10001),
     });
@@ -125,39 +125,39 @@ describe("seedFormSchema", () => {
   });
 
   it("accepts locationDescription at exactly 10000 characters", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       locationDescription: "a".repeat(10000),
     });
     expect(result.success).toBe(true);
   });
 
-  it("accepts optional budget", () => {
-    const result = seedFormSchema.safeParse({
+  it("accepts optional budget estimate", () => {
+    const result = projectFormSchema.safeParse({
       ...validData,
-      budget: "$5,000",
+      budgetEstimate: "$5,000",
     });
     expect(result.success).toBe(true);
   });
 
-  it("enforces budget max length", () => {
-    const result = seedFormSchema.safeParse({
+  it("enforces budget estimate max length", () => {
+    const result = projectFormSchema.safeParse({
       ...validData,
-      budget: "a".repeat(501),
+      budgetEstimate: "a".repeat(501),
     });
     expect(result.success).toBe(false);
   });
 
-  it("accepts budget at exactly 500 characters", () => {
-    const result = seedFormSchema.safeParse({
+  it("accepts budget estimate at exactly 500 characters", () => {
+    const result = projectFormSchema.safeParse({
       ...validData,
-      budget: "a".repeat(500),
+      budgetEstimate: "a".repeat(500),
     });
     expect(result.success).toBe(true);
   });
 
   it("accepts optional obstacles", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       obstacles: undefined,
     });
@@ -165,7 +165,7 @@ describe("seedFormSchema", () => {
   });
 
   it("enforces obstacles max length", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       obstacles: "a".repeat(10001),
     });
@@ -173,7 +173,7 @@ describe("seedFormSchema", () => {
   });
 
   it("accepts obstacles at exactly 10000 characters", () => {
-    const result = seedFormSchema.safeParse({
+    const result = projectFormSchema.safeParse({
       ...validData,
       obstacles: "a".repeat(10000),
     });
@@ -182,7 +182,7 @@ describe("seedFormSchema", () => {
 
   describe("badges", () => {
     it("accepts known badge keys", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         badges: ["funded", "needs_volunteers"],
       });
@@ -190,7 +190,7 @@ describe("seedFormSchema", () => {
     });
 
     it("rejects unknown badge keys", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         badges: ["not_a_real_badge"],
       });
@@ -198,7 +198,7 @@ describe("seedFormSchema", () => {
     });
 
     it("rejects arbitrary strings", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         badges: ["<script>alert(1)</script>"],
       });
@@ -206,7 +206,7 @@ describe("seedFormSchema", () => {
     });
 
     it("defaults to empty array", () => {
-      const result = seedFormSchema.safeParse(validData);
+      const result = projectFormSchema.safeParse(validData);
       expect(result.success).toBe(true);
       if (result.success) expect(result.data.badges).toEqual([]);
     });
@@ -222,7 +222,7 @@ describe("seedFormSchema", () => {
 
     for (const field of stringArrayFields) {
       it(`rejects ${field} items longer than 200 characters`, () => {
-        const result = seedFormSchema.safeParse({
+        const result = projectFormSchema.safeParse({
           ...validData,
           [field]: ["a".repeat(201)],
         });
@@ -230,7 +230,7 @@ describe("seedFormSchema", () => {
       });
 
       it(`accepts ${field} items at exactly 200 characters`, () => {
-        const result = seedFormSchema.safeParse({
+        const result = projectFormSchema.safeParse({
           ...validData,
           [field]: ["a".repeat(200)],
         });
@@ -238,7 +238,7 @@ describe("seedFormSchema", () => {
       });
 
       it(`rejects ${field} with more than 50 items`, () => {
-        const result = seedFormSchema.safeParse({
+        const result = projectFormSchema.safeParse({
           ...validData,
           [field]: Array.from({ length: 51 }, (_, i) => `item-${i}`),
         });
@@ -246,7 +246,7 @@ describe("seedFormSchema", () => {
       });
 
       it(`accepts ${field} with exactly 50 items`, () => {
-        const result = seedFormSchema.safeParse({
+        const result = projectFormSchema.safeParse({
           ...validData,
           [field]: Array.from({ length: 50 }, (_, i) => `item-${i}`),
         });
@@ -255,7 +255,7 @@ describe("seedFormSchema", () => {
     }
 
     it("rejects roots items with name longer than 200 characters", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         roots: [{ name: "a".repeat(201), committed: false }],
       });
@@ -263,7 +263,7 @@ describe("seedFormSchema", () => {
     });
 
     it("accepts roots items with name at exactly 200 characters", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         roots: [{ name: "a".repeat(200), committed: true }],
       });
@@ -271,7 +271,7 @@ describe("seedFormSchema", () => {
     });
 
     it("rejects roots with more than 50 items", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         roots: Array.from({ length: 51 }, (_, i) => ({
           name: `org-${i}`,
@@ -282,7 +282,7 @@ describe("seedFormSchema", () => {
     });
 
     it("accepts roots with exactly 50 items", () => {
-      const result = seedFormSchema.safeParse({
+      const result = projectFormSchema.safeParse({
         ...validData,
         roots: Array.from({ length: 50 }, (_, i) => ({
           name: `org-${i}`,

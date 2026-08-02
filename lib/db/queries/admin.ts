@@ -1,43 +1,50 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { adminEmails, seedSupports, seeds, users } from "@/lib/db/schema";
-import { supportCountSql } from "./seeds";
+import {
+  adminEmails,
+  projectParticipants,
+  projects,
+  users,
+} from "@/lib/db/schema";
+import { supportCountSql } from "./projects";
 
-export async function getAllSeeds() {
+export async function getAllProjects() {
   return db
     .select({
-      id: seeds.id,
-      name: seeds.name,
-      category: seeds.category,
-      status: seeds.status,
-      badges: seeds.badges,
-      createdAt: seeds.createdAt,
+      id: projects.id,
+      name: projects.name,
+      category: projects.category,
+      stage: projects.stage,
+      approvalState: projects.approvalState,
+      archivedAt: projects.archivedAt,
+      badges: projects.badges,
+      createdAt: projects.createdAt,
       creatorName: users.name,
       creatorEmail: users.email,
       supportCount: supportCountSql,
     })
-    .from(seeds)
-    .innerJoin(users, eq(seeds.createdBy, users.id))
-    .orderBy(desc(seeds.createdAt));
+    .from(projects)
+    .innerJoin(users, eq(projects.createdBy, users.id))
+    .orderBy(desc(projects.createdAt));
 }
 
 export async function getSupporterEmailsMap() {
   const rows = await db
-    .select({
-      seedId: seedSupports.seedId,
-      email: users.email,
-    })
-    .from(seedSupports)
-    .innerJoin(users, eq(seedSupports.userId, users.id));
+    .select({ projectId: projectParticipants.projectId, email: users.email })
+    .from(projectParticipants)
+    .innerJoin(users, eq(projectParticipants.userId, users.id))
+    .where(
+      and(
+        eq(projectParticipants.role, "supporter"),
+        eq(projectParticipants.state, "active"),
+      ),
+    );
 
   const map = new Map<string, string[]>();
   for (const row of rows) {
-    const emails = map.get(row.seedId);
-    if (emails) {
-      emails.push(row.email);
-    } else {
-      map.set(row.seedId, [row.email]);
-    }
+    const emails = map.get(row.projectId);
+    if (emails) emails.push(row.email);
+    else map.set(row.projectId, [row.email]);
   }
   return map;
 }
@@ -65,11 +72,7 @@ export async function isDbAdminEmail(email: string): Promise<boolean> {
 
 export async function getCouncilMembers() {
   return db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-    })
+    .select({ id: users.id, name: users.name, email: users.email })
     .from(users)
     .where(eq(users.role, "council"))
     .orderBy(desc(users.createdAt));

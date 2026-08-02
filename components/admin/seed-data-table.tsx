@@ -28,7 +28,9 @@ interface AdminSeed {
   id: string;
   name: string;
   category: CategoryKey;
-  status: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
+  archivedAt: Date | null;
   badges: string[];
   createdAt: Date;
   creatorName: string;
@@ -44,10 +46,16 @@ export function AdminSeedTable({
   supporterEmailsMap: Record<string, string[]>;
 }) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
 
   const filtered = seeds.filter((s) => {
-    if (statusFilter !== "all" && s.status !== statusFilter) return false;
+    if (stageFilter === "archived" && !s.archivedAt) return false;
+    if (
+      stageFilter !== "all" &&
+      stageFilter !== "archived" &&
+      s.stage !== stageFilter
+    )
+      return false;
     if (search && !s.name.toLowerCase().includes(search.toLowerCase()))
       return false;
     return true;
@@ -62,16 +70,15 @@ export function AdminSeedTable({
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={stageFilter} onValueChange={setStageFilter}>
           <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Seed (Pending)</SelectItem>
-            <SelectItem value="approved">Seed (Supported)</SelectItem>
-            <SelectItem value="in_progress">Sprout</SelectItem>
-            <SelectItem value="in_maintenance">Tree</SelectItem>
+            <SelectItem value="all">All stages</SelectItem>
+            <SelectItem value="seed">Seed</SelectItem>
+            <SelectItem value="sprout">Sprout</SelectItem>
+            <SelectItem value="tree">Tree</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
@@ -131,7 +138,11 @@ export function AdminSeedTable({
                     <CategoryBadge category={seed.category} />
                   </TableCell>
                   <TableCell>
-                    <SeedStatusBadge status={seed.status} />
+                    <SeedStatusBadge
+                      stage={seed.stage}
+                      approvalState={seed.approvalState}
+                      archivedAt={seed.archivedAt}
+                    />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {seed.supportCount > 0 ? (
@@ -150,8 +161,10 @@ export function AdminSeedTable({
                   </TableCell>
                   <TableCell>
                     <SeedActions
-                      seedId={seed.id}
-                      status={seed.status}
+                      projectId={seed.id}
+                      stage={seed.stage}
+                      approvalState={seed.approvalState}
+                      archived={!!seed.archivedAt}
                       badges={seed.badges}
                       creatorEmail={seed.creatorEmail}
                       supporterEmails={supporterEmailsMap[seed.id]}

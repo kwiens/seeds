@@ -1,5 +1,5 @@
 import { FileText } from "lucide-react";
-import type { SeedDocument } from "@/lib/db/queries/documents";
+import type { ProjectDocument } from "@/lib/db/queries/documents";
 import { formatRelativeTime } from "@/lib/format";
 
 function formatSize(bytes: number) {
@@ -13,7 +13,7 @@ export function SeedDocuments({
   documents,
 }: {
   seedId: string;
-  documents: SeedDocument[];
+  documents: ProjectDocument[];
 }) {
   return (
     <details className="group rounded-lg border p-4">

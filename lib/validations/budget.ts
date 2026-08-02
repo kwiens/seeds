@@ -11,6 +11,7 @@ export const budgetFormSchema = z.object({
     .max(100)
     .default([]),
   notes: z.string().max(5000).optional(),
+  isPublic: z.boolean().default(false),
 });
 
 export type BudgetFormValues = z.infer<typeof budgetFormSchema>;

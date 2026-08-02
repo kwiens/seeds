@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ImagePlus, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { regenerateSeedImage } from "@/lib/actions/generate-image";
+import { regenerateProjectImage } from "@/lib/actions/generate-image";
 
 export function RegenerateImageButton({
   seedId,
@@ -21,7 +21,7 @@ export function RegenerateImageButton({
     setStatus("generating");
     setErrorMessage(null);
 
-    const result = await regenerateSeedImage(seedId);
+    const result = await regenerateProjectImage(seedId);
     if (result.error) {
       setStatus("error");
       setErrorMessage(result.error);

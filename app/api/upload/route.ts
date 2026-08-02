@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { auth } from "@/auth";
-import { canAccessTeamUpdates } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { TEAM_ATTACHMENT_MAX_SIZE } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 
 const IMAGE_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -38,25 +39,25 @@ export async function POST(request: NextRequest) {
           throw new Error("Not authenticated");
         }
 
-        const attachmentSeedId = parseAttachmentSeedId(clientPayload);
+        const attachmentProjectId = parseAttachmentProjectId(clientPayload);
         if (attachmentUpload) {
           if (
-            !attachmentSeedId ||
-            !pathname.startsWith(`seeds/${attachmentSeedId}/attachments/`)
+            !attachmentProjectId ||
+            !pathname.startsWith(`projects/${attachmentProjectId}/attachments/`)
           ) {
             throw new Error("Invalid attachment upload request");
           }
 
-          const seed = await db.query.seeds.findFirst({
-            where: (seeds, { eq }) => eq(seeds.id, attachmentSeedId),
-            columns: { id: true, createdBy: true, status: true },
+          const project = await db.query.projects.findFirst({
+            where: (projects, { eq }) => eq(projects.id, attachmentProjectId),
+            columns: { id: true, stage: true },
           });
           if (
-            !seed ||
-            seed.status !== "in_progress" ||
-            !(await canAccessTeamUpdates(session, seed))
+            !project ||
+            !hasTeamWorkspace(project.stage) ||
+            !(await canAccessTeamWorkspace(session, project))
           ) {
-            throw new Error("You do not have access to this Sprout's files");
+            throw new Error("You do not have access to this project's files");
           }
         }
 
@@ -88,20 +89,20 @@ function isAttachmentUpload(body: HandleUploadBody) {
     body.type === "blob.generate-client-token"
       ? body.payload.pathname
       : body.payload.blob.pathname;
-  return /^seeds\/[^/]+\/attachments\//.test(pathname);
+  return /^projects\/[^/]+\/attachments\//.test(pathname);
 }
 
-function parseAttachmentSeedId(clientPayload: string | null) {
+function parseAttachmentProjectId(clientPayload: string | null) {
   if (!clientPayload) return null;
   try {
     const parsed: unknown = JSON.parse(clientPayload);
     if (
       typeof parsed === "object" &&
       parsed !== null &&
-      "seedId" in parsed &&
-      typeof parsed.seedId === "string"
+      "projectId" in parsed &&
+      typeof parsed.projectId === "string"
     ) {
-      return parsed.seedId;
+      return parsed.projectId;
     }
   } catch {
     // Invalid payloads are rejected by the caller.

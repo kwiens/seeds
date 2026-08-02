@@ -1,12 +1,9 @@
 import { Sparkles, Sprout, TreeDeciduous, type LucideIcon } from "lucide-react";
 
-export type StatusKey =
-  | "pending"
-  | "approved"
-  | "in_progress"
-  | "in_maintenance";
+export type ProjectStage = "seed" | "sprout" | "tree";
+export type ApprovalState = "draft" | "pending" | "approved";
 
-export interface StatusInfo {
+export interface ProjectStageInfo {
   label: string;
   pluralLabel: string;
   description: string;
@@ -19,20 +16,8 @@ export interface StatusInfo {
   badgeVariant: "default" | "secondary" | "outline" | "destructive";
 }
 
-export const statuses: Record<StatusKey, StatusInfo> = {
-  pending: {
-    label: "Seed",
-    pluralLabel: "Seeds",
-    description: "Community ideas gathering support.",
-    icon: Sparkles,
-    color: "emerald",
-    bgClass: "bg-emerald-100 dark:bg-emerald-900/30",
-    textClass: "text-emerald-700 dark:text-emerald-300",
-    sublabel: "Gathering Resources",
-    slug: "seeds",
-    badgeVariant: "secondary",
-  },
-  approved: {
+export const projectStages: Record<ProjectStage, ProjectStageInfo> = {
+  seed: {
     label: "Seed",
     pluralLabel: "Seeds",
     description: "Community ideas gathering support.",
@@ -44,7 +29,7 @@ export const statuses: Record<StatusKey, StatusInfo> = {
     slug: "seeds",
     badgeVariant: "default",
   },
-  in_progress: {
+  sprout: {
     label: "Sprout",
     pluralLabel: "Sprouts",
     description: "Projects actively underway.",
@@ -56,7 +41,7 @@ export const statuses: Record<StatusKey, StatusInfo> = {
     slug: "sprouts",
     badgeVariant: "default",
   },
-  in_maintenance: {
+  tree: {
     label: "Tree",
     pluralLabel: "Trees",
     description: "Successful projects now being maintained.",
@@ -70,27 +55,40 @@ export const statuses: Record<StatusKey, StatusInfo> = {
   },
 };
 
-/** Public statuses ordered by maturity (least mature first).
- *  "pending" is merged into "approved" as one "Seeds" section. */
-export const publicStatusOrder: StatusKey[] = [
-  "approved",
-  "in_progress",
-  "in_maintenance",
+export const publicProjectStageOrder: ProjectStage[] = [
+  "seed",
+  "sprout",
+  "tree",
 ];
 
-/** Statuses that are grouped together under the "seeds" slug */
-export const seedStatuses: StatusKey[] = ["pending", "approved"];
-
-const slugMap: Record<string, StatusKey> = {
-  seeds: "approved",
-  sprouts: "in_progress",
-  trees: "in_maintenance",
+const slugMap: Record<string, ProjectStage> = {
+  seeds: "seed",
+  sprouts: "sprout",
+  trees: "tree",
 };
 
-export function slugToStatusKey(slug: string): StatusKey | undefined {
+export function slugToProjectStage(slug: string): ProjectStage | undefined {
   return slugMap[slug];
 }
 
-export function statusKeyToSlug(key: StatusKey): string {
-  return statuses[key].slug;
+export function projectStageToSlug(stage: ProjectStage): string {
+  return projectStages[stage].slug;
+}
+
+// Capabilities accumulate: Sprouts add the team workspace and Trees retain it.
+export function hasTeamWorkspace(stage: ProjectStage): boolean {
+  return stage === "sprout" || stage === "tree";
+}
+
+export function projectDisplayState(project: {
+  stage: ProjectStage;
+  approvalState: ApprovalState;
+  archivedAt: Date | null;
+}): string {
+  if (project.archivedAt) return "Archived";
+  if (project.approvalState === "draft")
+    return `Draft ${projectStages[project.stage].label}`;
+  if (project.approvalState === "pending")
+    return `Pending ${projectStages[project.stage].label}`;
+  return projectStages[project.stage].label;
 }

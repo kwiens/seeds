@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { markSproutActivityRead } from "@/lib/actions/team-activity";
+import { markProjectActivityRead } from "@/lib/actions/team-activity";
 
 // Fires once per page view, client-side -- revalidatePath requires a real
 // Server Action invocation, which a Server Component's render body can't do.
@@ -13,7 +13,7 @@ export function MarkSproutRead({
   readThrough: string;
 }) {
   useEffect(() => {
-    markSproutActivityRead(seedId, readThrough);
+    markProjectActivityRead(seedId, readThrough);
   }, [seedId, readThrough]);
 
   return null;

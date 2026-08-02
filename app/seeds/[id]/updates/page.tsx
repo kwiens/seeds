@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -14,8 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DeleteUpdateButton } from "@/components/seeds/update-actions";
-import { getUpdatesBySeed } from "@/lib/db/queries/updates";
-import { getSeedById } from "@/lib/db/queries/seeds";
+import { getPublicProjectUpdates } from "@/lib/db/queries/project-updates";
+import { getProjectById } from "@/lib/db/queries/projects";
 
 export const metadata: Metadata = {
   title: "Manage Updates | Seeds",
@@ -31,14 +31,14 @@ export default async function ManageUpdatesPage(props: {
     redirect("/api/auth/signin");
   }
 
-  const seed = await getSeedById(params.id);
+  const seed = await getProjectById(params.id);
   if (!seed) notFound();
 
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, seed))) {
     redirect(`/seeds/${seed.id}`);
   }
 
-  const updates = await getUpdatesBySeed(seed.id);
+  const updates = await getPublicProjectUpdates(seed.id);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -83,7 +83,7 @@ export default async function ManageUpdatesPage(props: {
                       href={`/seeds/${seed.id}/updates/${update.id}`}
                       className="font-medium hover:underline"
                     >
-                      {update.title}
+                      {update.title ?? "Update"}
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">

@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { UpdateForm } from "@/components/forms/update-form";
-import { getSeedById } from "@/lib/db/queries/seeds";
+import { getProjectById } from "@/lib/db/queries/projects";
 
 export const metadata: Metadata = {
   title: "New Update | Seeds",
@@ -19,10 +19,10 @@ export default async function NewUpdatePage(props: {
     redirect("/api/auth/signin");
   }
 
-  const seed = await getSeedById(params.id);
+  const seed = await getProjectById(params.id);
   if (!seed) notFound();
 
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, seed))) {
     redirect(`/seeds/${seed.id}`);
   }
 

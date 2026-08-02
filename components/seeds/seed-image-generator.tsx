@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { generateSeedImage } from "@/lib/actions/generate-image";
+import { generateProjectImage } from "@/lib/actions/generate-image";
 
 export function SeedImageGenerator({ seedId }: { seedId: string }) {
   const [status, setStatus] = useState<"generating" | "done" | "error">(
@@ -14,7 +14,7 @@ export function SeedImageGenerator({ seedId }: { seedId: string }) {
     if (called.current) return;
     called.current = true;
 
-    generateSeedImage(seedId).then((result) => {
+    generateProjectImage(seedId).then((result) => {
       if (result.error) {
         setStatus("error");
       } else {

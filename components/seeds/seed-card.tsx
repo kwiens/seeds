@@ -14,7 +14,8 @@ interface SeedCardProps {
   summary?: string;
   imageUrl?: string | null;
   coverPhotoUrl?: string | null;
-  status?: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
 }
 
 export function SeedCard({
@@ -25,14 +26,17 @@ export function SeedCard({
   summary,
   imageUrl,
   coverPhotoUrl,
-  status,
+  stage,
+  approvalState,
 }: SeedCardProps) {
   const info = categories[category];
   const Icon = info.icon;
 
-  // Proposed seeds (pending) use the AI image; all other stages prefer the cover photo
+  // Unapproved Seeds use the AI image; mature/approved projects prefer a cover photo.
   const displayImage =
-    status === "pending" ? imageUrl : (coverPhotoUrl ?? imageUrl);
+    stage === "seed" && approvalState !== "approved"
+      ? imageUrl
+      : (coverPhotoUrl ?? imageUrl);
 
   return (
     <Link href={`/seeds/${id}`} className="min-w-0">
@@ -57,7 +61,7 @@ export function SeedCard({
         <CardContent className="p-4">
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
             <CategoryBadge category={category} />
-            {status === "approved" && (
+            {stage === "seed" && approvalState === "approved" && (
               <Badge
                 variant="outline"
                 className="gap-1 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"

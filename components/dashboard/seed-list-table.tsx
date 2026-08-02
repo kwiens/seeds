@@ -11,7 +11,9 @@ interface DashboardSeed {
   id: string;
   name: string;
   category: CategoryKey;
-  status: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
+  archivedAt: Date | null;
   supportCount: number;
   createdAt: Date;
 }
@@ -32,7 +34,11 @@ export function DashboardSeedList({ seeds }: { seeds: DashboardSeed[] }) {
               >
                 {seed.name}
               </Link>
-              <SeedStatusBadge status={seed.status} />
+              <SeedStatusBadge
+                stage={seed.stage}
+                approvalState={seed.approvalState}
+                archivedAt={seed.archivedAt}
+              />
             </div>
             <div className="flex items-center gap-3">
               <CategoryBadge category={seed.category} />

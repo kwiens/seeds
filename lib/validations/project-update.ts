@@ -9,7 +9,7 @@ const tiptapDocSchema = z
   .passthrough()
   .refine((doc) => extractPlainText(doc).trim().length > 0, "Body is required");
 
-export const seedUpdateFormSchema = z.object({
+export const projectUpdateFormSchema = z.object({
   title: z
     .string()
     .min(1, "Title is required")
@@ -18,4 +18,4 @@ export const seedUpdateFormSchema = z.object({
   photos: z.array(z.string().url()).max(6).default([]),
 });
 
-export type SeedUpdateFormValues = z.infer<typeof seedUpdateFormSchema>;
+export type SeedUpdateFormValues = z.infer<typeof projectUpdateFormSchema>;

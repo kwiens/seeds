@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { SeedForm } from "@/components/forms/seed-form";
-import { getSeedById } from "@/lib/db/queries/seeds";
+import { getProjectById } from "@/lib/db/queries/projects";
 
 export const metadata: Metadata = {
   title: "Edit Seed | Seeds",
@@ -19,11 +19,11 @@ export default async function EditSeedPage(props: {
     redirect("/api/auth/signin");
   }
 
-  const seed = await getSeedById(params.id);
-  if (!seed) notFound();
+  const project = await getProjectById(params.id);
+  if (!project) notFound();
 
-  if (!canEditSeed(session, seed)) {
-    redirect(`/seeds/${seed.id}`);
+  if (!(await canManageProject(session, project))) {
+    redirect(`/seeds/${project.id}`);
   }
 
   return (
@@ -34,7 +34,7 @@ export default async function EditSeedPage(props: {
           Update your community project proposal.
         </p>
       </div>
-      <SeedForm seed={seed} />
+      <SeedForm project={project} />
     </div>
   );
 }

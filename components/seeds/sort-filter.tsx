@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Clock, Flame, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { SortOption } from "@/lib/db/queries/seeds";
+import type { SortOption } from "@/lib/db/queries/projects";
 
 export function SortFilter({
   activeSort,

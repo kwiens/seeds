@@ -1,10 +1,10 @@
 "use server";
 
-import { eq, desc, ne, sql, count } from "drizzle-orm";
+import { and, count, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { seeds, seedSupports, users } from "@/lib/db/schema";
 import { categories, type CategoryKey } from "@/lib/categories";
+import { db } from "@/lib/db";
+import { projectParticipants, projects, users } from "@/lib/db/schema";
 
 function escapeCsvField(value: string): string {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
@@ -19,48 +19,46 @@ function toCsvRow(fields: string[]): string {
 
 async function requireAdmin() {
   const session = await auth();
-  if (session?.user?.role !== "admin") {
-    throw new Error("Unauthorized");
-  }
+  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
 }
 
 export async function exportContributorsCsv(): Promise<string> {
   await requireAdmin();
-
   const rows = await db
     .select({
-      seedName: seeds.name,
-      category: seeds.category,
-      status: seeds.status,
+      projectName: projects.name,
+      category: projects.category,
+      stage: projects.stage,
+      approvalState: projects.approvalState,
       creatorName: users.name,
       creatorEmail: users.email,
-      createdAt: seeds.createdAt,
+      createdAt: projects.createdAt,
     })
-    .from(seeds)
-    .innerJoin(users, eq(seeds.createdBy, users.id))
-    .where(ne(seeds.status, "archived"))
-    .orderBy(desc(seeds.createdAt));
+    .from(projects)
+    .innerJoin(users, eq(projects.createdBy, users.id))
+    .where(isNull(projects.archivedAt))
+    .orderBy(desc(projects.createdAt));
 
   const header = toCsvRow([
-    "Seed Name",
+    "Project Name",
     "Category",
-    "Status",
+    "Stage",
+    "Approval State",
     "Contributor Name",
     "Contributor Email",
     "Created At",
   ]);
-
-  const lines = rows.map((r) =>
+  const lines = rows.map((row) =>
     toCsvRow([
-      r.seedName,
-      r.category,
-      r.status,
-      r.creatorName,
-      r.creatorEmail,
-      r.createdAt.toISOString(),
+      row.projectName,
+      row.category,
+      row.stage,
+      row.approvalState,
+      row.creatorName,
+      row.creatorEmail,
+      row.createdAt.toISOString(),
     ]),
   );
-
   return [header, ...lines].join("\n");
 }
 
@@ -69,45 +67,73 @@ export async function exportSeedsCsv(): Promise<string> {
 
   const supportCounts = db
     .select({
-      seedId: seedSupports.seedId,
+      projectId: projectParticipants.projectId,
       count: count().as("support_count"),
     })
-    .from(seedSupports)
-    .groupBy(seedSupports.seedId)
+    .from(projectParticipants)
+    .where(
+      and(
+        eq(projectParticipants.role, "supporter"),
+        eq(projectParticipants.state, "active"),
+      ),
+    )
+    .groupBy(projectParticipants.projectId)
     .as("support_counts");
 
-  const rows = await db
-    .select({
-      id: seeds.id,
-      name: seeds.name,
-      summary: seeds.summary,
-      category: seeds.category,
-      status: seeds.status,
-      gardeners: seeds.gardeners,
-      locationAddress: seeds.locationAddress,
-      locationDescription: seeds.locationDescription,
-      roots: seeds.roots,
-      supportPeople: seeds.supportPeople,
-      waterHave: seeds.waterHave,
-      waterNeed: seeds.waterNeed,
-      budget: seeds.budget,
-      obstacles: seeds.obstacles,
-      createdAt: seeds.createdAt,
-      creatorName: users.name,
-      creatorEmail: users.email,
-      supportCount: sql<number>`coalesce(${supportCounts.count}, 0)`,
-    })
-    .from(seeds)
-    .innerJoin(users, eq(seeds.createdBy, users.id))
-    .leftJoin(supportCounts, eq(seeds.id, supportCounts.seedId))
-    .where(ne(seeds.status, "archived"))
-    .orderBy(desc(seeds.createdAt));
+  const [rows, participants] = await Promise.all([
+    db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        summary: projects.summary,
+        category: projects.category,
+        stage: projects.stage,
+        approvalState: projects.approvalState,
+        locationAddress: projects.locationAddress,
+        locationDescription: projects.locationDescription,
+        waterHave: projects.waterHave,
+        waterNeed: projects.waterNeed,
+        budgetEstimate: projects.budgetEstimate,
+        obstacles: projects.obstacles,
+        createdAt: projects.createdAt,
+        creatorName: users.name,
+        creatorEmail: users.email,
+        supportCount: sql<number>`coalesce(${supportCounts.count}, 0)`,
+      })
+      .from(projects)
+      .innerJoin(users, eq(projects.createdBy, users.id))
+      .leftJoin(supportCounts, eq(projects.id, supportCounts.projectId))
+      .where(isNull(projects.archivedAt))
+      .orderBy(desc(projects.createdAt)),
+    db
+      .select({
+        projectId: projectParticipants.projectId,
+        displayName: projectParticipants.displayName,
+        role: projectParticipants.role,
+        state: projectParticipants.state,
+      })
+      .from(projectParticipants)
+      .where(
+        and(
+          ne(projectParticipants.role, "supporter"),
+          ne(projectParticipants.state, "inactive"),
+        ),
+      ),
+  ]);
+
+  const participantsByProject = new Map<string, typeof participants>();
+  for (const participant of participants) {
+    const list = participantsByProject.get(participant.projectId) ?? [];
+    list.push(participant);
+    participantsByProject.set(participant.projectId, list);
+  }
 
   const header = toCsvRow([
     "ID",
     "Name",
     "Category",
-    "Status",
+    "Stage",
+    "Approval State",
     "Summary",
     "Gardeners",
     "Location",
@@ -116,7 +142,7 @@ export async function exportSeedsCsv(): Promise<string> {
     "Guides",
     "Fertilizer (Have)",
     "Water (Need)",
-    "Budget",
+    "Budget Estimate",
     "Obstacles",
     "URL",
     "Created At",
@@ -125,59 +151,69 @@ export async function exportSeedsCsv(): Promise<string> {
     "Creator Email",
   ]);
 
-  const joinArray = (val: unknown): string =>
-    Array.isArray(val) ? val.join("; ") : "";
-
-  const lines = rows.map((r) => {
-    const roots = Array.isArray(r.roots)
-      ? (r.roots as { name: string; committed: boolean }[])
-          .map((root) => `${root.name}${root.committed ? " (committed)" : ""}`)
-          .join("; ")
-      : "";
+  const lines = rows.map((row) => {
+    const projectPeople = participantsByProject.get(row.id) ?? [];
+    const namesFor = (role: (typeof projectPeople)[number]["role"]) =>
+      projectPeople
+        .filter((participant) => participant.role === role)
+        .map((participant) => participant.displayName)
+        .join("; ");
+    const roots = projectPeople
+      .filter((participant) => participant.role === "roots")
+      .map(
+        (participant) =>
+          `${participant.displayName}${participant.state === "active" ? " (committed)" : ""}`,
+      )
+      .join("; ");
 
     return toCsvRow([
-      r.id,
-      r.name,
-      categories[r.category as CategoryKey]?.label ?? r.category,
-      r.status,
-      r.summary,
-      joinArray(r.gardeners),
-      r.locationAddress ?? "",
-      r.locationDescription ?? "",
+      row.id,
+      row.name,
+      categories[row.category as CategoryKey]?.label ?? row.category,
+      row.stage,
+      row.approvalState,
+      row.summary,
+      namesFor("gardener"),
+      row.locationAddress ?? "",
+      row.locationDescription ?? "",
       roots,
-      joinArray(r.supportPeople),
-      joinArray(r.waterHave),
-      joinArray(r.waterNeed),
-      r.budget ?? "",
-      r.obstacles ?? "",
-      `https://www.npcseeds.org/seeds/${r.id}`,
-      r.createdAt.toISOString(),
-      String(r.supportCount),
-      r.creatorName,
-      r.creatorEmail,
+      namesFor("guide"),
+      row.waterHave.join("; "),
+      row.waterNeed.join("; "),
+      row.budgetEstimate ?? "",
+      row.obstacles ?? "",
+      `https://www.npcseeds.org/seeds/${row.id}`,
+      row.createdAt.toISOString(),
+      String(row.supportCount),
+      row.creatorName,
+      row.creatorEmail,
     ]);
   });
-
   return [header, ...lines].join("\n");
 }
 
 export async function exportSupportersCsv(): Promise<string> {
   await requireAdmin();
-
   const rows = await db
     .selectDistinctOn([users.email], {
       supporterName: users.name,
       supporterEmail: users.email,
     })
-    .from(seedSupports)
-    .innerJoin(users, eq(seedSupports.userId, users.id))
-    .innerJoin(seeds, eq(seedSupports.seedId, seeds.id))
-    .where(ne(seeds.status, "archived"))
+    .from(projectParticipants)
+    .innerJoin(users, eq(projectParticipants.userId, users.id))
+    .innerJoin(projects, eq(projectParticipants.projectId, projects.id))
+    .where(
+      and(
+        eq(projectParticipants.role, "supporter"),
+        eq(projectParticipants.state, "active"),
+        isNull(projects.archivedAt),
+      ),
+    )
     .orderBy(users.email);
 
   const header = toCsvRow(["Name", "Email"]);
-
-  const lines = rows.map((r) => toCsvRow([r.supporterName, r.supporterEmail]));
-
+  const lines = rows.map((row) =>
+    toCsvRow([row.supporterName, row.supporterEmail]),
+  );
   return [header, ...lines].join("\n");
 }

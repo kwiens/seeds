@@ -179,6 +179,7 @@ function BudgetStageEditor({
     budget?.lineItems ?? [],
   );
   const [notes, setNotes] = useState(budget?.notes ?? "");
+  const [isPublic, setIsPublic] = useState(budget?.isPublic ?? false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -217,7 +218,11 @@ function BudgetStageEditor({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await saveBudget(seedId, status, { lineItems, notes });
+      const result = await saveBudget(seedId, status, {
+        lineItems,
+        notes,
+        isPublic,
+      });
       if (result.error) {
         setError(result.error);
         return;
@@ -322,6 +327,17 @@ function BudgetStageEditor({
           </span>
         </div>
       </div>
+
+      {canManage && (
+        <label className="flex items-center gap-2 text-xs font-medium">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(event) => setIsPublic(event.target.checked)}
+          />
+          Show this detailed budget on the public project page
+        </label>
+      )}
 
       <div>
         <p className="mb-1.5 text-xs font-semibold">Notes</p>

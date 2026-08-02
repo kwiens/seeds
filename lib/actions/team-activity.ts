@@ -3,25 +3,26 @@
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { canAccessTeamUpdates } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { seeds, seedTeamActivityReads } from "@/lib/db/schema";
+import { projectActivityReads, projects } from "@/lib/db/schema";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 
-export async function markSproutActivityRead(
-  seedId: string,
+export async function markProjectActivityRead(
+  projectId: string,
   readThrough: string,
 ) {
   const session = await auth();
   if (!session?.user?.id) return;
 
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true, status: true },
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { id: true, stage: true },
   });
   if (
-    !seed ||
-    seed.status !== "in_progress" ||
-    !(await canAccessTeamUpdates(session, seed))
+    !project ||
+    !hasTeamWorkspace(project.stage) ||
+    !(await canAccessTeamWorkspace(session, project))
   )
     return;
 
@@ -32,17 +33,21 @@ export async function markSproutActivityRead(
   );
 
   await db
-    .insert(seedTeamActivityReads)
+    .insert(projectActivityReads)
     .values({
-      seedId,
+      projectId,
       userId: session.user.id,
+      visibility: "team",
       lastReadAt: effectiveReadThrough,
     })
     .onConflictDoUpdate({
-      target: [seedTeamActivityReads.seedId, seedTeamActivityReads.userId],
-      // An older tab can finish after a newer one; never move the marker back.
+      target: [
+        projectActivityReads.projectId,
+        projectActivityReads.userId,
+        projectActivityReads.visibility,
+      ],
       set: {
-        lastReadAt: sql`greatest(${seedTeamActivityReads.lastReadAt}, ${effectiveReadThrough})`,
+        lastReadAt: sql`greatest(${projectActivityReads.lastReadAt}, ${effectiveReadThrough})`,
       },
     });
 

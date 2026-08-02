@@ -4,40 +4,51 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { seeds, seedSupports } from "@/lib/db/schema";
+import { projectParticipants, projects } from "@/lib/db/schema";
 
-const AUTO_PROMOTE_THRESHOLD = 10;
+const AUTO_APPROVE_THRESHOLD = 10;
 
-export async function toggleSupport(seedId: string) {
+export async function toggleSupport(projectId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "You must be signed in to support a seed." };
   }
 
-  const existing = await db.query.seedSupports.findFirst({
+  const existing = await db.query.projectParticipants.findFirst({
     where: and(
-      eq(seedSupports.seedId, seedId),
-      eq(seedSupports.userId, session.user.id),
+      eq(projectParticipants.projectId, projectId),
+      eq(projectParticipants.userId, session.user.id),
+      eq(projectParticipants.role, "supporter"),
     ),
   });
 
   let promoted = false;
   try {
     if (existing) {
-      await db.delete(seedSupports).where(eq(seedSupports.id, existing.id));
+      const nextState = existing.state === "active" ? "inactive" : "active";
+      await db
+        .update(projectParticipants)
+        .set({ state: nextState, updatedAt: new Date() })
+        .where(eq(projectParticipants.id, existing.id));
+      if (nextState === "active") {
+        promoted = await autoApproveIfEligible(projectId);
+      }
     } else {
-      await db.insert(seedSupports).values({
-        seedId,
+      await db.insert(projectParticipants).values({
+        projectId,
         userId: session.user.id,
+        displayName: session.user.name?.trim() || "Supporter",
+        role: "supporter",
+        state: "active",
+        addedBy: session.user.id,
       });
-
-      promoted = await autoPromoteIfEligible(seedId);
+      promoted = await autoApproveIfEligible(projectId);
     }
-  } catch {
-    // Unique constraint violation from concurrent double-click — treat as no-op
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
   }
 
-  revalidatePath(`/seeds/${seedId}`);
+  revalidatePath(`/seeds/${projectId}`);
   revalidatePath("/");
   if (promoted) {
     revalidatePath("/admin");
@@ -46,20 +57,33 @@ export async function toggleSupport(seedId: string) {
   return { success: true };
 }
 
-// Single conditional UPDATE: atomically promotes iff still pending AND
-// supporter count has reached the threshold. Returns whether a promotion fired.
-async function autoPromoteIfEligible(seedId: string) {
+function isUniqueViolation(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  );
+}
+
+async function autoApproveIfEligible(projectId: string) {
   const updated = await db
-    .update(seeds)
-    .set({ status: "approved", updatedAt: new Date() })
+    .update(projects)
+    .set({ approvalState: "approved", updatedAt: new Date() })
     .where(
       and(
-        eq(seeds.id, seedId),
-        eq(seeds.status, "pending"),
-        sql`(SELECT COUNT(*) FROM ${seedSupports} WHERE ${seedSupports.seedId} = ${seedId}) >= ${AUTO_PROMOTE_THRESHOLD}`,
+        eq(projects.id, projectId),
+        eq(projects.stage, "seed"),
+        eq(projects.approvalState, "pending"),
+        sql`(
+          SELECT COUNT(*) FROM ${projectParticipants}
+          WHERE ${projectParticipants.projectId} = ${projectId}
+            AND ${projectParticipants.role} = 'supporter'
+            AND ${projectParticipants.state} = 'active'
+        ) >= ${AUTO_APPROVE_THRESHOLD}`,
       ),
     )
-    .returning({ id: seeds.id });
+    .returning({ id: projects.id });
 
   return updated.length > 0;
 }

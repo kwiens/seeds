@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
 
-export const seedFormSchema = z
+export const projectFormSchema = z
   .object({
     name: z
       .string()
@@ -35,7 +35,7 @@ export const seedFormSchema = z
     supportPeople: z.array(z.string().max(200)).max(50).default([]),
     waterHave: z.array(z.string().max(200)).max(50).default([]),
     waterNeed: z.array(z.string().max(200)).max(50).default([]),
-    budget: z.string().max(500).optional(),
+    budgetEstimate: z.string().max(500).optional(),
     obstacles: z.string().max(10000).optional(),
     photos: z.array(z.string().url()).max(5).default([]),
     coverPhotoUrl: z.string().url().nullable().optional(),
@@ -52,4 +52,4 @@ export const seedFormSchema = z
     },
   );
 
-export type SeedFormValues = z.infer<typeof seedFormSchema>;
+export type ProjectFormValues = z.infer<typeof projectFormSchema>;

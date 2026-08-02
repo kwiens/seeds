@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seedTeamUpdates, users } from "@/lib/db/schema";
+import { projectUpdates, users } from "@/lib/db/schema";
 
-export interface SeedDocument {
+export interface ProjectDocument {
   name: string;
   url: string;
   size: number;
@@ -12,36 +12,34 @@ export interface SeedDocument {
   createdAt: Date;
 }
 
-export async function getSeedDocuments(
-  seedId: string,
-): Promise<SeedDocument[]> {
+export async function getProjectDocuments(
+  projectId: string,
+): Promise<ProjectDocument[]> {
   const rows = await db
     .select({
-      id: seedTeamUpdates.id,
-      attachments: seedTeamUpdates.attachments,
-      createdAt: seedTeamUpdates.createdAt,
+      id: projectUpdates.id,
+      attachments: projectUpdates.attachments,
+      createdAt: projectUpdates.createdAt,
       posterName: users.name,
     })
-    .from(seedTeamUpdates)
-    .innerJoin(users, eq(seedTeamUpdates.userId, users.id))
-    .where(eq(seedTeamUpdates.seedId, seedId));
+    .from(projectUpdates)
+    .innerJoin(users, eq(projectUpdates.createdBy, users.id))
+    .where(
+      and(
+        eq(projectUpdates.projectId, projectId),
+        eq(projectUpdates.visibility, "team"),
+      ),
+    );
 
-  const documents: SeedDocument[] = [];
-  for (const row of rows) {
-    for (const [attachmentIndex, file] of row.attachments.entries()) {
-      documents.push({
-        name: file.name,
-        url: file.url,
-        size: file.size,
+  return rows
+    .flatMap((row) =>
+      row.attachments.map((file, attachmentIndex) => ({
+        ...file,
         updateId: row.id,
         attachmentIndex,
         posterName: row.posterName,
         createdAt: row.createdAt,
-      });
-    }
-  }
-
-  return documents.sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  );
+      })),
+    )
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

@@ -1,33 +1,46 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seedTeamMembers } from "@/lib/db/schema";
+import { projectParticipants } from "@/lib/db/schema";
+import { teamAccessRoles } from "@/lib/participant-roles";
 
-export function canEditSeed(
-  session: { user: { id: string; role: string } } | null | undefined,
-  seed: { createdBy: string },
-): boolean {
-  if (!session?.user?.id) return false;
-  return seed.createdBy === session.user.id || session.user.role === "admin";
-}
+type Session = { user: { id: string; role: string } } | null | undefined;
 
-// Who can view/post in a Sprout's private Team Updates thread: the owner,
-// an Admin, a Council member (site-wide, on every Sprout -- not a roster
-// row), or anyone with a seed_team_members row for this Sprout (Steward,
-// co-Gardener, Guide, Roots, Cultivator).
-export async function canAccessTeamUpdates(
-  session: { user: { id: string; role: string } } | null | undefined,
-  seed: { id: string; createdBy: string },
+export async function canManageProject(
+  session: Session,
+  project: { id: string },
 ): Promise<boolean> {
-  if (canEditSeed(session, seed)) return true;
   if (!session?.user?.id) return false;
-  if (session.user.role === "council") return true;
+  if (session.user.role === "admin") return true;
 
-  const membership = await db.query.seedTeamMembers.findFirst({
+  const leadership = await db.query.projectParticipants.findFirst({
     where: and(
-      eq(seedTeamMembers.seedId, seed.id),
-      eq(seedTeamMembers.userId, session.user.id),
+      eq(projectParticipants.projectId, project.id),
+      eq(projectParticipants.userId, session.user.id),
+      inArray(projectParticipants.role, ["gardener", "co_gardener"]),
+      eq(projectParticipants.state, "active"),
     ),
     columns: { id: true },
   });
-  return !!membership;
+  return !!leadership;
+}
+
+export async function canAccessTeamWorkspace(
+  session: Session,
+  project: { id: string },
+): Promise<boolean> {
+  if (!session?.user?.id) return false;
+  if (session.user.role === "admin" || session.user.role === "council") {
+    return true;
+  }
+
+  const participation = await db.query.projectParticipants.findFirst({
+    where: and(
+      eq(projectParticipants.projectId, project.id),
+      eq(projectParticipants.userId, session.user.id),
+      inArray(projectParticipants.role, teamAccessRoles),
+      eq(projectParticipants.state, "active"),
+    ),
+    columns: { id: true },
+  });
+  return !!participation;
 }

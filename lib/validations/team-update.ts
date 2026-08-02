@@ -66,11 +66,11 @@ export type TeamUpdateReplyFormValues = z.infer<
   typeof teamUpdateReplyFormSchema
 >;
 
-export function attachmentsBelongToSeed(
+export function attachmentsBelongToProject(
   attachments: { url: string }[],
-  seedId: string,
+  projectId: string,
 ) {
-  const expectedPrefix = `/seeds/${seedId}/attachments/`;
+  const expectedPrefix = `/projects/${projectId}/attachments/`;
   return attachments.every((attachment) =>
     new URL(attachment.url).pathname.startsWith(expectedPrefix),
   );

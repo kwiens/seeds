@@ -2,39 +2,35 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { seedBudgets } from "@/lib/db/schema";
+import { projectBudgets } from "@/lib/db/schema";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 import { budgetFormSchema } from "@/lib/validations/budget";
 
 export async function saveBudget(
-  seedId: string,
+  projectId: string,
   status: string,
   data: unknown,
 ) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
-
+  if (!session?.user?.id) return { error: "You must be signed in." };
   if (status !== "proposed" && status !== "final") {
     return { error: "Invalid budget stage." };
   }
 
-  const seed = await db.query.seeds.findFirst({
-    where: (seeds, { eq }) => eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true, status: true },
+  const project = await db.query.projects.findFirst({
+    where: (projects, { eq }) => eq(projects.id, projectId),
+    columns: { id: true, stage: true },
   });
-  if (!seed) return { error: "Seed not found." };
-
-  if (!canEditSeed(session, seed)) {
+  if (!project) return { error: "Project not found." };
+  if (!(await canManageProject(session, project))) {
     return {
-      error: "You do not have permission to edit this Sprout's budget.",
+      error: "You do not have permission to edit this project's budget.",
     };
   }
-
-  if (seed.status !== "in_progress") {
-    return { error: "Budgets are only available for Sprouts." };
+  if (!hasTeamWorkspace(project.stage)) {
+    return { error: "Detailed budgets become available at the Sprout stage." };
   }
 
   const parsed = budgetFormSchema.safeParse(data);
@@ -43,25 +39,28 @@ export async function saveBudget(
   }
 
   await db
-    .insert(seedBudgets)
+    .insert(projectBudgets)
     .values({
-      seedId,
+      projectId,
       status,
       lineItems: parsed.data.lineItems,
       notes: parsed.data.notes || null,
+      isPublic: parsed.data.isPublic,
       updatedBy: session.user.id,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
-      target: [seedBudgets.seedId, seedBudgets.status],
+      target: [projectBudgets.projectId, projectBudgets.status],
       set: {
         lineItems: parsed.data.lineItems,
         notes: parsed.data.notes || null,
+        isPublic: parsed.data.isPublic,
         updatedBy: session.user.id,
         updatedAt: new Date(),
       },
     });
 
-  revalidatePath(`/seeds/${seedId}/team`);
+  revalidatePath(`/seeds/${projectId}`);
+  revalidatePath(`/seeds/${projectId}/team`);
   return { success: true };
 }

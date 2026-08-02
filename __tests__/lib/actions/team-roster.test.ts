@@ -1,321 +1,203 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { revalidatePath } from "next/cache";
-import {
-  mockSession,
-  mockAdminSession,
-  mockDbDeleteChain,
-  mockDbInsertSimpleChain,
-  setAuthMock,
-} from "../../test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mockAdminSession, mockSession, setAuthMock } from "../../test-utils";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/auth-utils", () => ({ canManageProject: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
-      seeds: { findFirst: vi.fn() },
-      seedTeamMembers: { findFirst: vi.fn() },
+      projects: { findFirst: vi.fn() },
+      projectParticipants: { findFirst: vi.fn(), findMany: vi.fn() },
       users: { findFirst: vi.fn() },
     },
     insert: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn(),
   },
 }));
 
 import { auth } from "@/auth";
+import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
 
-function mockSeedRow(overrides?: Record<string, unknown>) {
-  return {
-    id: "seed-1",
-    createdBy: "user-1",
-    status: "in_progress",
-    ...overrides,
-  };
+const target = {
+  id: "target-1",
+  email: "guide@example.com",
+  name: "Guide Person",
+  role: "user" as const,
+  image: null,
+  createdAt: new Date(),
+};
+
+function insertChain() {
+  return { values: vi.fn().mockResolvedValue(undefined) };
 }
 
-function mockTargetUser(overrides?: Record<string, unknown>) {
-  return {
-    id: "target-1",
-    email: "guide@example.com",
-    role: "user",
-    ...overrides,
-  };
+function updateChain() {
+  const where = vi.fn().mockResolvedValue(undefined);
+  return { set: vi.fn(() => ({ where })), where };
 }
 
-describe("addTeamMember", () => {
+describe("consolidated project roster", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(canManageProject).mockResolvedValue(true);
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue({
+      id: "project-1",
+      stage: "sprout",
+    } as never);
+    vi.mocked(db.query.users.findFirst).mockResolvedValue(target as never);
+    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue(
+      undefined,
+    );
+    vi.mocked(db.query.projectParticipants.findMany).mockResolvedValue(
+      [] as never,
+    );
   });
 
   it("requires authentication", async () => {
     setAuthMock(auth, null);
-    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
-    expect(result).toEqual({ error: "You must be signed in." });
+    await expect(
+      addTeamMember("project-1", target.email, "guide"),
+    ).resolves.toHaveProperty("error");
   });
 
-  it("rejects an invalid role", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    const result = await addTeamMember("seed-1", "guide@example.com", "wizard");
-    expect(result).toEqual({ error: "Invalid role." });
+  it("rejects roles outside the participant role vocabulary", async () => {
+    setAuthMock(auth, mockSession());
+    await expect(
+      addTeamMember("project-1", target.email, "wizard"),
+    ).resolves.toEqual({ error: "Invalid role." });
   });
 
-  it("returns error when seed not found", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
-
-    const result = await addTeamMember(
-      "nonexistent",
-      "guide@example.com",
-      "guide",
-    );
-    expect(result).toEqual({ error: "Seed not found." });
-  });
-
-  it("returns error when no account exists for that email", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
-
-    const result = await addTeamMember("seed-1", "nobody@example.com", "guide");
-    expect(result).toEqual({
-      error:
-        "No account found with that email — they need to sign in once first.",
+  it("does not add team roles at Seed stage", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue({
+      id: "project-1",
+      stage: "seed",
+    } as never);
+    await expect(
+      addTeamMember("project-1", target.email, "guide"),
+    ).resolves.toEqual({
+      error: "Team members can be managed after a project becomes a Sprout.",
     });
   });
 
-  it("does not add team members before a Seed becomes a Sprout", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
-      mockSeedRow({ status: "approved" }) as any,
-    );
-
-    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
-
-    expect(result).toEqual({
-      error: "Team members can only be managed for Sprouts.",
+  it.each([
+    "sprout",
+    "tree",
+  ] as const)("adds an active role at the %s stage", async (stage) => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue({
+      id: "project-1",
+      stage,
+    } as never);
+    const chain = insertChain();
+    vi.mocked(db.insert).mockReturnValue(chain as never);
+    await expect(
+      addTeamMember("project-1", target.email, "guide"),
+    ).resolves.toEqual({ success: true });
+    expect(chain.values).toHaveBeenCalledWith({
+      projectId: "project-1",
+      userId: "target-1",
+      displayName: "Guide Person",
+      role: "guide",
+      state: "active",
+      addedBy: "user-1",
     });
-    expect(db.query.users.findFirst).not.toHaveBeenCalled();
   });
 
-  it("rejects a non-owner non-admin adding a co-Gardener", async () => {
-    setAuthMock(auth, mockSession({ id: "other-user" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-
-    const result = await addTeamMember(
-      "seed-1",
-      "guide@example.com",
-      "co_gardener",
-    );
-    expect(result).toEqual({
-      error: "You do not have permission to manage this Sprout's team.",
-    });
-    expect(db.query.users.findFirst).not.toHaveBeenCalled();
-    expect(db.insert).not.toHaveBeenCalled();
+  it("requires project leadership for ordinary team roles", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(canManageProject).mockResolvedValue(false);
+    await expect(
+      addTeamMember("project-1", target.email, "guide"),
+    ).resolves.toHaveProperty("error");
   });
 
-  it("lets the Gardener add a Guide", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser() as any,
-    );
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
-    const chain = mockDbInsertSimpleChain();
-    vi.mocked(db.insert).mockReturnValue(chain as any);
-
-    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
-
-    expect(result).toEqual({ success: true });
-    expect(chain.values).toHaveBeenCalledWith(
-      expect.objectContaining({
-        seedId: "seed-1",
-        userId: "target-1",
-        role: "guide",
-        addedBy: "user-1",
-      }),
-    );
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+  it("reserves steward assignment for admins", async () => {
+    setAuthMock(auth, mockSession());
+    await expect(
+      addTeamMember("project-1", target.email, "steward"),
+    ).resolves.toHaveProperty("error");
   });
 
-  it("rejects assigning a Steward when the session isn't Admin", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" })); // the Gardener, not an admin
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-
-    const result = await addTeamMember("seed-1", "gail@example.com", "steward");
-    expect(result).toEqual({
-      error: "Only Admins can assign a City/County Steward.",
-    });
-    expect(db.query.users.findFirst).not.toHaveBeenCalled();
-    expect(db.insert).not.toHaveBeenCalled();
-  });
-
-  it("allows an Admin to assign a Steward regardless of the target's current role", async () => {
+  it("allows admins to assign stewards", async () => {
     setAuthMock(auth, mockAdminSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser({ role: "user" }) as any,
+    const chain = insertChain();
+    vi.mocked(db.insert).mockReturnValue(chain as never);
+    await expect(
+      addTeamMember("project-1", target.email, "steward"),
+    ).resolves.toEqual({ success: true });
+    expect(chain.values).toHaveBeenCalledWith(
+      expect.objectContaining({ role: "steward", state: "active" }),
     );
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
-    const chain = mockDbInsertSimpleChain();
-    vi.mocked(db.insert).mockReturnValue(chain as any);
+  });
 
-    const result = await addTeamMember("seed-1", "gail@example.com", "steward");
+  it("reactivates an inactive role instead of inserting a duplicate", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue({
+      id: "participant-1",
+      state: "inactive",
+    } as never);
+    const chain = updateChain();
+    vi.mocked(db.update).mockReturnValue(chain as never);
+    await expect(
+      addTeamMember("project-1", target.email, "guide"),
+    ).resolves.toEqual({ success: true });
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ state: "active", displayName: "Guide Person" }),
+    );
+    expect(db.insert).not.toHaveBeenCalled();
+  });
 
-    expect(result).toEqual({ success: true });
+  it("rejects assigning the same active role twice", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue({
+      id: "participant-1",
+      state: "active",
+    } as never);
+    await expect(
+      addTeamMember("project-1", target.email, "guide"),
+    ).resolves.toEqual({ error: "This person is already a Guide." });
+  });
+
+  it("marks team roles inactive so participant history is preserved", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectParticipants.findMany).mockResolvedValue([
+      { id: "participant-1", role: "guide" },
+      { id: "participant-2", role: "member" },
+    ] as never);
+    const chain = updateChain();
+    vi.mocked(db.update).mockReturnValue(chain as never);
+    await expect(removeTeamMember("project-1", "target-1")).resolves.toEqual({
+      success: true,
+    });
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ state: "inactive" }),
+    );
+  });
+
+  it("does not treat supporter-only participation as team membership", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectParticipants.findMany).mockResolvedValue(
+      [] as never,
+    );
+    await expect(removeTeamMember("project-1", "target-1")).resolves.toEqual({
+      error: "This person isn't on the team.",
+    });
+  });
+
+  it.each([
+    "gardener",
+    "steward",
+  ] as const)("requires an admin to remove an active %s role", async (role) => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectParticipants.findMany).mockResolvedValue([
+      { id: "participant-1", role },
+    ] as never);
+    await expect(
+      removeTeamMember("project-1", "target-1"),
+    ).resolves.toHaveProperty("error");
     expect(db.update).not.toHaveBeenCalled();
-    expect(chain.values).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "steward" }),
-    );
-  });
-
-  it("rejects adding someone already on the team", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser() as any,
-    );
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue({
-      id: "membership-1",
-    } as any);
-
-    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
-    expect(result).toEqual({ error: "This person is already on the team." });
-    expect(db.insert).not.toHaveBeenCalled();
-  });
-
-  it("maps a concurrent duplicate insert to the existing-member error", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser() as any,
-    );
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
-    const chain = mockDbInsertSimpleChain();
-    chain.values.mockRejectedValueOnce({ code: "23505" });
-    vi.mocked(db.insert).mockReturnValue(chain as any);
-
-    const result = await addTeamMember("seed-1", "guide@example.com", "guide");
-
-    expect(result).toEqual({ error: "This person is already on the team." });
-    expect(revalidatePath).not.toHaveBeenCalled();
-  });
-
-  it("does not add the Gardener as a duplicate roster member", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(
-      mockTargetUser({ id: "user-1" }) as any,
-    );
-
-    const result = await addTeamMember(
-      "seed-1",
-      "gardener@example.com",
-      "co_gardener",
-    );
-
-    expect(result).toEqual({ error: "The Gardener is already on the team." });
-    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
-    expect(db.insert).not.toHaveBeenCalled();
-  });
-});
-
-describe("removeTeamMember", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("requires authentication", async () => {
-    setAuthMock(auth, null);
-    const result = await removeTeamMember("seed-1", "target-1");
-    expect(result).toEqual({ error: "You must be signed in." });
-  });
-
-  it("returns error when the membership doesn't exist", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
-
-    const result = await removeTeamMember("seed-1", "target-1");
-    expect(result).toEqual({ error: "This person isn't on the team." });
-  });
-
-  it("rejects a non-owner non-admin removing a Guide", async () => {
-    setAuthMock(auth, mockSession({ id: "other-user" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue({
-      id: "membership-1",
-      role: "guide",
-    } as any);
-
-    const result = await removeTeamMember("seed-1", "target-1");
-    expect(result).toEqual({
-      error: "You do not have permission to manage this Sprout's team.",
-    });
-    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
-    expect(db.delete).not.toHaveBeenCalled();
-  });
-
-  it("does not remove team members before a Seed becomes a Sprout", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
-      mockSeedRow({ status: "approved" }) as any,
-    );
-
-    const result = await removeTeamMember("seed-1", "target-1");
-
-    expect(result).toEqual({
-      error: "Team members can only be managed for Sprouts.",
-    });
-    expect(db.query.seedTeamMembers.findFirst).not.toHaveBeenCalled();
-  });
-
-  it("rejects a non-admin removing a Steward", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" })); // the Gardener
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue({
-      id: "membership-1",
-      role: "steward",
-    } as any);
-
-    const result = await removeTeamMember("seed-1", "target-1");
-    expect(result).toEqual({
-      error: "Only Admins can remove a City/County Steward.",
-    });
-    expect(db.delete).not.toHaveBeenCalled();
-  });
-
-  it("allows the Gardener to remove a Guide", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue({
-      id: "membership-1",
-      role: "guide",
-    } as any);
-    const chain = mockDbDeleteChain();
-    vi.mocked(db.delete).mockReturnValue(chain as any);
-
-    const result = await removeTeamMember("seed-1", "target-1");
-
-    expect(result).toEqual({ success: true });
-    expect(chain.where).toHaveBeenCalled();
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1/team");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
-  });
-
-  it("allows an Admin to remove a Steward", async () => {
-    setAuthMock(auth, mockAdminSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(mockSeedRow() as any);
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue({
-      id: "membership-1",
-      role: "steward",
-    } as any);
-    const chain = mockDbDeleteChain();
-    vi.mocked(db.delete).mockReturnValue(chain as any);
-
-    const result = await removeTeamMember("seed-1", "target-1");
-    expect(result).toEqual({ success: true });
   });
 });

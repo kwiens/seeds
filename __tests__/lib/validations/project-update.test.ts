@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { seedUpdateFormSchema } from "@/lib/validations/seed-update";
+import { projectUpdateFormSchema } from "@/lib/validations/project-update";
 
-describe("seedUpdateFormSchema", () => {
+describe("projectUpdateFormSchema", () => {
   const validBody = {
     type: "doc",
     content: [
@@ -18,17 +18,20 @@ describe("seedUpdateFormSchema", () => {
   };
 
   it("accepts valid update data", () => {
-    const result = seedUpdateFormSchema.safeParse(validData);
+    const result = projectUpdateFormSchema.safeParse(validData);
     expect(result.success).toBe(true);
   });
 
   it("requires title", () => {
-    const result = seedUpdateFormSchema.safeParse({ ...validData, title: "" });
+    const result = projectUpdateFormSchema.safeParse({
+      ...validData,
+      title: "",
+    });
     expect(result.success).toBe(false);
   });
 
   it("rejects empty content array", () => {
-    const result = seedUpdateFormSchema.safeParse({
+    const result = projectUpdateFormSchema.safeParse({
       ...validData,
       body: { type: "doc", content: [] },
     });
@@ -36,7 +39,7 @@ describe("seedUpdateFormSchema", () => {
   });
 
   it("rejects empty paragraph (no visible text)", () => {
-    const result = seedUpdateFormSchema.safeParse({
+    const result = projectUpdateFormSchema.safeParse({
       ...validData,
       body: { type: "doc", content: [{ type: "paragraph" }] },
     });
@@ -44,7 +47,7 @@ describe("seedUpdateFormSchema", () => {
   });
 
   it("rejects whitespace-only text", () => {
-    const result = seedUpdateFormSchema.safeParse({
+    const result = projectUpdateFormSchema.safeParse({
       ...validData,
       body: {
         type: "doc",
@@ -57,7 +60,7 @@ describe("seedUpdateFormSchema", () => {
   });
 
   it("enforces title max length", () => {
-    const result = seedUpdateFormSchema.safeParse({
+    const result = projectUpdateFormSchema.safeParse({
       ...validData,
       title: "a".repeat(201),
     });
@@ -65,7 +68,7 @@ describe("seedUpdateFormSchema", () => {
   });
 
   it("accepts title at max length", () => {
-    const result = seedUpdateFormSchema.safeParse({
+    const result = projectUpdateFormSchema.safeParse({
       ...validData,
       title: "a".repeat(200),
     });
@@ -73,7 +76,7 @@ describe("seedUpdateFormSchema", () => {
   });
 
   it("rejects plain string body", () => {
-    const result = seedUpdateFormSchema.safeParse({
+    const result = projectUpdateFormSchema.safeParse({
       ...validData,
       body: "a plain string",
     });
@@ -81,9 +84,11 @@ describe("seedUpdateFormSchema", () => {
   });
 
   it("rejects missing fields", () => {
-    expect(seedUpdateFormSchema.safeParse({}).success).toBe(false);
-    expect(seedUpdateFormSchema.safeParse({ title: "hi" }).success).toBe(false);
-    expect(seedUpdateFormSchema.safeParse({ body: validBody }).success).toBe(
+    expect(projectUpdateFormSchema.safeParse({}).success).toBe(false);
+    expect(projectUpdateFormSchema.safeParse({ title: "hi" }).success).toBe(
+      false,
+    );
+    expect(projectUpdateFormSchema.safeParse({ body: validBody }).success).toBe(
       false,
     );
   });

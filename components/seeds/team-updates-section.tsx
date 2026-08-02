@@ -22,10 +22,10 @@ import {
   AttachmentPicker,
 } from "@/components/seeds/attachment-picker";
 import {
-  createTeamUpdate,
-  deleteTeamUpdate,
-  replyToTeamUpdate,
-} from "@/lib/actions/team-updates";
+  createTeamProjectUpdate,
+  deleteProjectUpdate,
+  replyToTeamProjectUpdate,
+} from "@/lib/actions/project-updates";
 import { TEAM_UPDATE_MAX_LENGTH } from "@/lib/constants";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
 
@@ -103,7 +103,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
     if (!body.trim()) return;
     setError(null);
     startTransition(async () => {
-      const result = await createTeamUpdate(seedId, {
+      const result = await createTeamProjectUpdate(seedId, {
         title: title.trim() || undefined,
         body,
         attachments,
@@ -139,7 +139,7 @@ function NewUpdateForm({ seedId }: { seedId: string }) {
         className="min-h-24"
       />
       <AttachmentPicker
-        seedId={seedId}
+        projectId={seedId}
         attachments={attachments}
         onChange={setAttachments}
         onBusyChange={setIsUploading}
@@ -231,7 +231,10 @@ function ReplyForm({
     if (!body.trim()) return;
     setError(null);
     startTransition(async () => {
-      const result = await replyToTeamUpdate(parentId, { body, attachments });
+      const result = await replyToTeamProjectUpdate(parentId, {
+        body,
+        attachments,
+      });
       if (result.error) {
         setError(result.error);
         return;
@@ -258,7 +261,7 @@ function ReplyForm({
       />
       <div className="mt-2">
         <AttachmentPicker
-          seedId={seedId}
+          projectId={seedId}
           attachments={attachments}
           onChange={setAttachments}
           onBusyChange={setIsUploading}
@@ -300,7 +303,7 @@ function UpdateCard({
   function handleDelete() {
     setError(null);
     startTransition(async () => {
-      const result = await deleteTeamUpdate(update.id);
+      const result = await deleteProjectUpdate(update.id);
       if (result.error) {
         setError(result.error);
       }

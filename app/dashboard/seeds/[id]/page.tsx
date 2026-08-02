@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -13,7 +13,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SupporterExport } from "@/components/dashboard/supporter-list";
-import { getSeedById, getSeedSupporters } from "@/lib/db/queries/seeds";
+import {
+  getProjectById,
+  getProjectSupporters,
+} from "@/lib/db/queries/projects";
 
 export default async function DashboardSeedDetailPage(props: {
   params: Promise<{ id: string }>;
@@ -25,14 +28,16 @@ export default async function DashboardSeedDetailPage(props: {
     redirect("/api/auth/signin");
   }
 
-  const seed = await getSeedById(params.id);
+  const seed = await getProjectById(params.id);
   if (!seed) notFound();
 
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, seed))) {
     redirect("/dashboard");
   }
 
-  const supporters = await getSeedSupporters(seed.id, { includeEmail: true });
+  const supporters = await getProjectSupporters(seed.id, {
+    includeEmail: true,
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

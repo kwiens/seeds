@@ -9,7 +9,8 @@ interface SeedData {
   supportCount: number;
   imageUrl?: string | null;
   coverPhotoUrl?: string | null;
-  status?: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
 }
 
 export function SeedListView({ seeds }: { seeds: SeedData[] }) {
@@ -35,7 +36,8 @@ export function SeedListView({ seeds }: { seeds: SeedData[] }) {
           supportCount={seed.supportCount}
           imageUrl={seed.imageUrl}
           coverPhotoUrl={seed.coverPhotoUrl}
-          status={seed.status}
+          stage={seed.stage}
+          approvalState={seed.approvalState}
         />
       ))}
     </div>

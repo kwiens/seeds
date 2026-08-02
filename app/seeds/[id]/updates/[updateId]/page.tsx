@@ -3,11 +3,11 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getUpdateById } from "@/lib/db/queries/updates";
-import { getSeedById } from "@/lib/db/queries/seeds";
+import { getPublicProjectUpdateById } from "@/lib/db/queries/project-updates";
+import { getProjectById } from "@/lib/db/queries/projects";
 import { formatDisplayName } from "@/lib/format";
 import { PhotoGrid } from "@/components/photo-grid";
 import { renderTiptapHTML, extractPlainText } from "@/lib/tiptap";
@@ -16,10 +16,10 @@ export async function generateMetadata(props: {
   params: Promise<{ id: string; updateId: string }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  const update = await getUpdateById(params.updateId);
+  const update = await getPublicProjectUpdateById(params.updateId);
   if (!update) return { title: "Update Not Found" };
   return {
-    title: `${update.title} | Seeds`,
+    title: `${update.title ?? "Update"} | Seeds`,
     description: extractPlainText(update.body).slice(0, 160),
   };
 }
@@ -31,16 +31,16 @@ export default async function UpdatePage(props: {
   const session = await auth();
 
   const [seed, update] = await Promise.all([
-    getSeedById(params.id),
-    getUpdateById(params.updateId),
+    getProjectById(params.id),
+    getPublicProjectUpdateById(params.updateId),
   ]);
   if (!seed) notFound();
-  if (!update || update.seedId !== seed.id) notFound();
+  if (!update || update.projectId !== seed.id) notFound();
 
-  const canEdit = canEditSeed(session, seed);
+  const canEdit = await canManageProject(session, seed);
 
   // Archived seeds are restricted to owner/admin — apply same guard as seed detail page
-  if (seed.status === "archived" && !canEdit) {
+  if (seed.archivedAt && !canEdit) {
     notFound();
   }
   const wasEdited =
@@ -58,7 +58,9 @@ export default async function UpdatePage(props: {
 
       <article className="mt-4">
         <div className="mb-6 flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">{update.title}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {update.title ?? "Update"}
+          </h1>
           {canEdit && (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/seeds/${seed.id}/updates/${update.id}/edit`}>
@@ -91,7 +93,7 @@ export default async function UpdatePage(props: {
 
         {update.photos.length > 0 && (
           <div className="mb-8">
-            <PhotoGrid photos={update.photos} alt={update.title} />
+            <PhotoGrid photos={update.photos} alt={update.title ?? "Update"} />
           </div>
         )}
 

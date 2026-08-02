@@ -1,55 +1,51 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { seeds, seedTeamMembers } from "@/lib/db/schema";
+import { projectParticipants, projects } from "@/lib/db/schema";
 import { findUserByEmail } from "@/lib/db/queries/users";
-import { teamRoleKeys, teamRoleLabels, type TeamRole } from "@/lib/team-roles";
+import {
+  teamRoleKeys,
+  teamRoleLabels,
+  type TeamRole,
+} from "@/lib/participant-roles";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 
 export async function addTeamMember(
-  seedId: string,
+  projectId: string,
   email: string,
   role: string,
 ) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
-
-  if (!teamRoleKeys.includes(role as TeamRole)) {
+  if (!session?.user?.id) return { error: "You must be signed in." };
+  if (!teamRoleKeys.includes(role as TeamRole))
     return { error: "Invalid role." };
-  }
   const teamRole = role as TeamRole;
 
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true, status: true },
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { id: true, stage: true },
   });
-  if (!seed) return { error: "Seed not found." };
-  if (seed.status !== "in_progress") {
-    return { error: "Team members can only be managed for Sprouts." };
+  if (!project) return { error: "Project not found." };
+  if (!hasTeamWorkspace(project.stage)) {
+    return {
+      error: "Team members can be managed after a project becomes a Sprout.",
+    };
   }
 
   if (teamRole === "steward") {
     if (session.user.role !== "admin") {
-      return {
-        error: `Only Admins can assign a ${teamRoleLabels.steward}.`,
-      };
+      return { error: `Only Admins can assign a ${teamRoleLabels.steward}.` };
     }
-  } else {
-    if (!canEditSeed(session, seed)) {
-      return {
-        error: "You do not have permission to manage this Sprout's team.",
-      };
-    }
+  } else if (!(await canManageProject(session, project))) {
+    return {
+      error: "You do not have permission to manage this project's team.",
+    };
   }
 
-  // Check authorization before looking up the target. Otherwise a signed-in
-  // user without team-management access can use this action to enumerate
-  // which email addresses have accounts.
   const target = await findUserByEmail(email);
   if (!target) {
     return {
@@ -57,34 +53,46 @@ export async function addTeamMember(
         "No account found with that email — they need to sign in once first.",
     };
   }
-  if (target.id === seed.createdBy) {
-    return { error: "The Gardener is already on the team." };
-  }
 
-  const existing = await db.query.seedTeamMembers.findFirst({
-    where: (t, { and, eq }) =>
-      and(eq(t.seedId, seedId), eq(t.userId, target.id)),
-    columns: { id: true },
+  const existingRole = await db.query.projectParticipants.findFirst({
+    where: and(
+      eq(projectParticipants.projectId, projectId),
+      eq(projectParticipants.userId, target.id),
+      eq(projectParticipants.role, teamRole),
+    ),
   });
-  if (existing) {
-    return { error: "This person is already on the team." };
+  if (existingRole?.state === "active") {
+    return { error: `This person is already a ${teamRoleLabels[teamRole]}.` };
   }
 
   try {
-    await db.insert(seedTeamMembers).values({
-      seedId,
-      userId: target.id,
-      role: teamRole,
-      addedBy: session.user.id,
-    });
-  } catch (error) {
-    if (isUniqueViolation(error)) {
-      return { error: "This person is already on the team." };
+    if (existingRole) {
+      await db
+        .update(projectParticipants)
+        .set({
+          state: "active",
+          displayName: target.name,
+          addedBy: session.user.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(projectParticipants.id, existingRole.id));
+    } else {
+      await db.insert(projectParticipants).values({
+        projectId,
+        userId: target.id,
+        displayName: target.name,
+        role: teamRole,
+        state: "active",
+        addedBy: session.user.id,
+      });
     }
+  } catch (error) {
+    if (isUniqueViolation(error))
+      return { error: "This role is already assigned." };
     throw error;
   }
 
-  revalidatePath(`/seeds/${seedId}/team`);
+  revalidatePath(`/seeds/${projectId}/team`);
   revalidatePath("/dashboard");
   return { success: true };
 }
@@ -98,46 +106,61 @@ function isUniqueViolation(error: unknown) {
   );
 }
 
-export async function removeTeamMember(seedId: string, userId: string) {
+export async function removeTeamMember(projectId: string, userId: string) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
+  if (!session?.user?.id) return { error: "You must be signed in." };
 
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
-    columns: { id: true, createdBy: true, status: true },
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { id: true, stage: true },
   });
-  if (!seed) return { error: "Seed not found." };
-  if (seed.status !== "in_progress") {
-    return { error: "Team members can only be managed for Sprouts." };
+  if (!project) return { error: "Project not found." };
+  if (!hasTeamWorkspace(project.stage)) {
+    return { error: "This project does not have a team workspace yet." };
   }
-
-  // Authorize before checking the membership so outsiders cannot use this
-  // action to discover who belongs to a private Sprout team.
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, project))) {
     return {
-      error: "You do not have permission to manage this Sprout's team.",
+      error: "You do not have permission to manage this project's team.",
     };
   }
 
-  const membership = await db.query.seedTeamMembers.findFirst({
-    where: (t, { and, eq }) => and(eq(t.seedId, seedId), eq(t.userId, userId)),
+  const activeRoles = await db.query.projectParticipants.findMany({
+    where: and(
+      eq(projectParticipants.projectId, projectId),
+      eq(projectParticipants.userId, userId),
+      eq(projectParticipants.state, "active"),
+      ne(projectParticipants.role, "supporter"),
+    ),
     columns: { id: true, role: true },
   });
-  if (!membership) return { error: "This person isn't on the team." };
-
-  if (membership.role === "steward") {
-    if (session.user.role !== "admin") {
-      return {
-        error: `Only Admins can remove a ${teamRoleLabels.steward}.`,
-      };
-    }
+  if (activeRoles.length === 0)
+    return { error: "This person isn't on the team." };
+  if (
+    activeRoles.some((item) => item.role === "gardener") &&
+    session.user.role !== "admin"
+  ) {
+    return { error: "Only Admins can remove a Gardener." };
+  }
+  if (
+    activeRoles.some((item) => item.role === "steward") &&
+    session.user.role !== "admin"
+  ) {
+    return { error: `Only Admins can remove a ${teamRoleLabels.steward}.` };
   }
 
-  await db.delete(seedTeamMembers).where(eq(seedTeamMembers.id, membership.id));
+  await db
+    .update(projectParticipants)
+    .set({ state: "inactive", updatedAt: new Date() })
+    .where(
+      and(
+        eq(projectParticipants.projectId, projectId),
+        eq(projectParticipants.userId, userId),
+        eq(projectParticipants.state, "active"),
+        inArray(projectParticipants.role, ["gardener", ...teamRoleKeys]),
+      ),
+    );
 
-  revalidatePath(`/seeds/${seedId}/team`);
+  revalidatePath(`/seeds/${projectId}/team`);
   revalidatePath("/dashboard");
   return { success: true };
 }

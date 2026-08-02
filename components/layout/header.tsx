@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { getMySprouts } from "@/lib/db/queries/sprouts";
+import { getMyProjects } from "@/lib/db/queries/my-projects";
 
 export async function Header() {
   const session = await auth();
@@ -14,7 +14,7 @@ export async function Header() {
   // counts because their site-wide access is part of their working view.
   const sprouts =
     session?.user?.id && !isAdmin
-      ? await getMySprouts(session.user.id, session.user.role)
+      ? await getMyProjects(session.user.id, session.user.role)
       : [];
   const unreadSproutCount = sprouts.filter((s) => s.unreadCount > 0).length;
 

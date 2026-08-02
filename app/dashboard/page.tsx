@@ -6,10 +6,10 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import {
-  getSeedsByUser,
-  getSupportedSeedsByUser,
-} from "@/lib/db/queries/seeds";
-import { getMySprouts } from "@/lib/db/queries/sprouts";
+  getProjectsCreatedByUser,
+  getSupportedProjectsByUser,
+} from "@/lib/db/queries/projects";
+import { getMyProjects } from "@/lib/db/queries/my-projects";
 import type { DashboardTab } from "@/components/dashboard/dashboard-content";
 
 export const metadata: Metadata = {
@@ -30,9 +30,9 @@ export default async function DashboardPage({
 
   const [{ tab }, sprouts, userSeeds, supportedSeeds] = await Promise.all([
     searchParams,
-    getMySprouts(session.user.id, session.user.role),
-    getSeedsByUser(session.user.id),
-    getSupportedSeedsByUser(session.user.id),
+    getMyProjects(session.user.id, session.user.role),
+    getProjectsCreatedByUser(session.user.id),
+    getSupportedProjectsByUser(session.user.id),
   ]);
   const initialTab = dashboardTabs.includes(tab as DashboardTab)
     ? (tab as DashboardTab)

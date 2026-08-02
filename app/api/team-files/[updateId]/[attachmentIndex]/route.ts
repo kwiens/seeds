@@ -2,9 +2,10 @@ import { get } from "@vercel/blob";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { canAccessTeamUpdates } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { seedTeamUpdates } from "@/lib/db/schema";
+import { projectUpdates } from "@/lib/db/schema";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 
 export async function GET(
   _request: Request,
@@ -23,19 +24,24 @@ export async function GET(
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
-  const update = await db.query.seedTeamUpdates.findFirst({
-    where: eq(seedTeamUpdates.id, updateId),
-    columns: { attachments: true },
+  const update = await db.query.projectUpdates.findFirst({
+    where: eq(projectUpdates.id, updateId),
+    columns: { attachments: true, visibility: true },
     with: {
-      seed: { columns: { id: true, createdBy: true, status: true } },
+      project: { columns: { id: true, stage: true } },
     },
   });
   const attachment = update?.attachments[attachmentIndex];
-  if (!update || !attachment || update.seed.status !== "in_progress") {
+  if (
+    !update ||
+    !attachment ||
+    update.visibility !== "team" ||
+    !hasTeamWorkspace(update.project.stage)
+  ) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
-  if (!(await canAccessTeamUpdates(session, update.seed))) {
+  if (!(await canAccessTeamWorkspace(session, update.project))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

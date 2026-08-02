@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { UpdateForm } from "@/components/forms/update-form";
-import { getUpdateById } from "@/lib/db/queries/updates";
-import { getSeedById } from "@/lib/db/queries/seeds";
+import { getPublicProjectUpdateById } from "@/lib/db/queries/project-updates";
+import { getProjectById } from "@/lib/db/queries/projects";
 import { EMPTY_TIPTAP_DOC, parseTiptapDoc } from "@/lib/tiptap";
 
 export const metadata: Metadata = {
@@ -22,13 +22,13 @@ export default async function EditUpdatePage(props: {
   }
 
   const [seed, update] = await Promise.all([
-    getSeedById(params.id),
-    getUpdateById(params.updateId),
+    getProjectById(params.id),
+    getPublicProjectUpdateById(params.updateId),
   ]);
   if (!seed) notFound();
-  if (!update || update.seedId !== seed.id) notFound();
+  if (!update || update.projectId !== seed.id) notFound();
 
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, seed))) {
     redirect(`/seeds/${seed.id}`);
   }
 
@@ -44,7 +44,7 @@ export default async function EditUpdatePage(props: {
         seedId={seed.id}
         update={{
           id: update.id,
-          title: update.title,
+          title: update.title ?? "",
           body: parseTiptapDoc(update.body) ?? EMPTY_TIPTAP_DOC,
           photos: update.photos,
         }}

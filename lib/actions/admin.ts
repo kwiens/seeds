@@ -5,7 +5,8 @@ import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { seedApprovals, seeds, siteSettings } from "@/lib/db/schema";
+import { projectApprovals, projects, siteSettings } from "@/lib/db/schema";
+import type { ApprovalState, ProjectStage } from "@/lib/project-stages";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
 import {
   BANNER_CACHE_TAG,
@@ -44,10 +45,10 @@ const STATUS_LISTING_PATHS = [
   "/status/trees",
 ];
 
-function revalidateSeedStatusPaths(seedId: string) {
+function revalidateProjectPaths(projectId: string) {
   revalidatePath("/admin");
   revalidatePath("/");
-  revalidatePath(`/seeds/${seedId}`);
+  revalidatePath(`/seeds/${projectId}`);
   for (const p of STATUS_LISTING_PATHS) revalidatePath(p);
 }
 
@@ -59,94 +60,92 @@ async function requireAdmin() {
   return session;
 }
 
-async function updateSeedStatus(
-  seedId: string,
-  status:
-    | "pending"
-    | "approved"
-    | "in_progress"
-    | "in_maintenance"
-    | "archived",
-) {
+async function updateProjectStage(projectId: string, stage: ProjectStage) {
   await requireAdmin();
 
   await db
-    .update(seeds)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
+    .update(projects)
+    .set({ stage, updatedAt: new Date() })
+    .where(eq(projects.id, projectId));
 
-  revalidateSeedStatusPaths(seedId);
+  revalidateProjectPaths(projectId);
   return { success: true };
 }
 
-export async function approveSeed(seedId: string) {
+async function updateApprovalState(
+  projectId: string,
+  approvalState: ApprovalState,
+) {
+  await requireAdmin();
+  await db
+    .update(projects)
+    .set({ approvalState, updatedAt: new Date() })
+    .where(eq(projects.id, projectId));
+  revalidateProjectPaths(projectId);
+  return { success: true };
+}
+
+export async function approveProject(projectId: string) {
   const session = await requireAdmin();
 
   await db.batch([
     db
-      .update(seeds)
-      .set({ status: "approved", updatedAt: new Date() })
-      .where(eq(seeds.id, seedId)),
-    db.insert(seedApprovals).values({
-      seedId,
+      .update(projects)
+      .set({ approvalState: "approved", updatedAt: new Date() })
+      .where(eq(projects.id, projectId)),
+    db.insert(projectApprovals).values({
+      projectId,
       approvedBy: session.user.id,
     }),
   ]);
 
-  revalidateSeedStatusPaths(seedId);
+  revalidateProjectPaths(projectId);
   return { success: true };
 }
 
-export async function archiveSeed(seedId: string) {
+export async function archiveProject(projectId: string) {
   await requireAdmin();
 
-  // Archive only from the seed stage (pending/approved). Otherwise unarchiving
-  // would silently demote a sprout/tree back to pending — admin must revert
-  // through the lifecycle first.
-  const current = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
-    columns: { status: true },
-  });
-  if (current?.status !== "pending" && current?.status !== "approved") {
-    throw new Error(
-      "Seeds in progress or maintenance must be reverted to Seed before archiving",
-    );
-  }
-
   await db
-    .update(seeds)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
+    .update(projects)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(eq(projects.id, projectId));
 
-  revalidateSeedStatusPaths(seedId);
+  revalidateProjectPaths(projectId);
   return { success: true };
 }
 
-export async function unarchiveSeed(seedId: string) {
-  return updateSeedStatus(seedId, "pending");
+export async function unarchiveProject(projectId: string) {
+  await requireAdmin();
+  await db
+    .update(projects)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(eq(projects.id, projectId));
+  revalidateProjectPaths(projectId);
+  return { success: true };
 }
 
-export async function unapproveSeed(seedId: string) {
-  return updateSeedStatus(seedId, "pending");
+export async function unapproveProject(projectId: string) {
+  return updateApprovalState(projectId, "pending");
 }
 
-export async function advanceToInProgress(seedId: string) {
-  return updateSeedStatus(seedId, "in_progress");
+export async function advanceToSprout(projectId: string) {
+  return updateProjectStage(projectId, "sprout");
 }
 
-export async function advanceToMaintenance(seedId: string) {
-  return updateSeedStatus(seedId, "in_maintenance");
+export async function advanceToTree(projectId: string) {
+  return updateProjectStage(projectId, "tree");
 }
 
-export async function revertToApproved(seedId: string) {
-  return updateSeedStatus(seedId, "approved");
+export async function revertToSeed(projectId: string) {
+  return updateProjectStage(projectId, "seed");
 }
 
-export async function revertToInProgress(seedId: string) {
-  return updateSeedStatus(seedId, "in_progress");
+export async function revertToSprout(projectId: string) {
+  return updateProjectStage(projectId, "sprout");
 }
 
-export async function setSeedBadges(seedId: string, badges: BadgeKey[]) {
+export async function setProjectBadges(projectId: string, badges: BadgeKey[]) {
   await requireAdmin();
 
   // Defensive re-check against the known keys — the client-side toggle uses
@@ -156,11 +155,11 @@ export async function setSeedBadges(seedId: string, badges: BadgeKey[]) {
   );
 
   await db
-    .update(seeds)
+    .update(projects)
     .set({ badges: cleaned, updatedAt: new Date() })
-    .where(eq(seeds.id, seedId));
+    .where(eq(projects.id, projectId));
 
-  revalidateSeedStatusPaths(seedId);
+  revalidateProjectPaths(projectId);
   return { success: true };
 }
 

@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { deleteUpdate } from "@/lib/actions/updates";
+import { deleteProjectUpdate } from "@/lib/actions/project-updates";
 
 export function DeleteUpdateButton({ updateId }: { updateId: string }) {
   const [isPending, startTransition] = useTransition();
@@ -45,7 +45,7 @@ export function DeleteUpdateButton({ updateId }: { updateId: string }) {
             onClick={() =>
               startTransition(async () => {
                 setError(null);
-                const result = await deleteUpdate(updateId);
+                const result = await deleteProjectUpdate(updateId);
                 if (result?.error) {
                   setError(result.error);
                 } else {

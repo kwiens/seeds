@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/select";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
-import { teamRoleKeys, teamRoleLabels, type TeamRole } from "@/lib/team-roles";
+import {
+  teamRoleKeys,
+  teamRoleLabels,
+  type TeamRole,
+} from "@/lib/participant-roles";
 
 const ROLE_DESCRIPTIONS: { label: string; description: string }[] = [
   {
@@ -141,10 +145,10 @@ function RosterRow({
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const isGardener = member.roleLabel === "Gardener";
+  const isGardener = member.roleLabels.includes("Gardener");
   const canRemove =
     !isGardener &&
-    (member.roleLabel === teamRoleLabels.steward ? isAdmin : canManage);
+    (member.roleLabels.includes(teamRoleLabels.steward) ? isAdmin : canManage);
 
   function handleRemove() {
     setError(null);
@@ -165,7 +169,7 @@ function RosterRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{member.name}</p>
         <p className="text-muted-foreground truncate text-xs">
-          {member.roleLabel}
+          {member.roleLabels.join(", ")}
           {member.addedByName && ` · added by ${member.addedByName}`}
         </p>
       </div>

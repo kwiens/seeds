@@ -7,7 +7,9 @@ const mockUserSeeds = [
     id: "seed-1",
     name: "Community Garden",
     category: "daily_access" as const,
-    status: "approved",
+    stage: "seed" as const,
+    approvalState: "approved" as const,
+    archivedAt: null,
     supportCount: 5,
     createdAt: new Date("2024-06-01"),
   },
@@ -15,7 +17,9 @@ const mockUserSeeds = [
     id: "seed-2",
     name: "Trail Cleanup",
     category: "outdoor_play" as const,
-    status: "pending",
+    stage: "seed" as const,
+    approvalState: "pending" as const,
+    archivedAt: null,
     supportCount: 2,
     createdAt: new Date("2024-07-01"),
   },
@@ -28,6 +32,9 @@ const mockSupportedSeeds = [
     summary: "Restoring the riverbanks.",
     category: "respect" as const,
     imageUrl: "https://example.com/river.jpg",
+    coverPhotoUrl: null,
+    stage: "sprout" as const,
+    approvalState: "approved" as const,
     supportCount: 12,
   },
   {
@@ -36,6 +43,9 @@ const mockSupportedSeeds = [
     summary: "Adding bike lanes downtown.",
     category: "connected_communities" as const,
     imageUrl: null,
+    coverPhotoUrl: null,
+    stage: "seed" as const,
+    approvalState: "approved" as const,
     supportCount: 8,
   },
 ];
@@ -48,6 +58,7 @@ const mockSprouts = [
     lastActivityAt: new Date("2024-08-01"),
     unreadCount: 2,
     role: "Gardener",
+    stage: "sprout" as const,
   },
 ];
 
@@ -91,7 +102,7 @@ describe("DashboardContent", () => {
         userSeeds={[
           {
             ...mockUserSeeds[0],
-            status: "archived",
+            archivedAt: new Date("2024-08-01"),
           },
         ]}
         supportedSeeds={mockSupportedSeeds}
@@ -111,7 +122,7 @@ describe("DashboardContent", () => {
       />,
     );
 
-    selectTab(/my seeds/i);
+    selectTab(/my projects/i);
     expect(screen.getByText("Community Garden")).toBeInTheDocument();
 
     selectTab(/supporting/i);
@@ -145,7 +156,7 @@ describe("DashboardContent", () => {
       />,
     );
 
-    selectTab(/my seeds/i);
+    selectTab(/my projects/i);
 
     expect(
       screen.getByText("You haven't planted any seeds yet."),
@@ -165,9 +176,11 @@ describe("DashboardContent", () => {
     );
 
     expect(
-      screen.getByRole("tab", { name: /my sprouts/i }),
+      screen.getByRole("tab", { name: /team workspaces/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /my seeds/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: /my projects/i }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: /supporting/i }),
     ).toBeInTheDocument();

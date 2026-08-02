@@ -59,7 +59,7 @@ export function ImageUpload({
     let current = images;
     try {
       for (const file of toUpload) {
-        const blob = await upload("seeds/photos/photo", file, {
+        const blob = await upload("projects/photos/photo", file, {
           access: "public",
           handleUploadUrl: "/api/upload",
         });

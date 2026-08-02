@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 import { auth } from "@/auth";
-import { canAccessTeamUpdates, canEditSeed } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace, canManageProject } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { BudgetEditor } from "@/components/seeds/budget-editor";
 import { CategoryBadge } from "@/components/seeds/category-badge";
@@ -12,11 +12,12 @@ import { TeamRoster } from "@/components/seeds/team-roster";
 import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { UpcomingEvents } from "@/components/seeds/upcoming-events";
 import { getBudgets } from "@/lib/db/queries/budgets";
-import { getSeedDocuments } from "@/lib/db/queries/documents";
-import { getSeedById } from "@/lib/db/queries/seeds";
+import { getProjectDocuments } from "@/lib/db/queries/documents";
+import { getProjectById } from "@/lib/db/queries/projects";
 import { getTeamMembers } from "@/lib/db/queries/team-roster";
 import { getUpcomingEvents } from "@/lib/db/queries/team-events";
-import { getTeamUpdatesBySeed } from "@/lib/db/queries/team-updates";
+import { getTeamProjectUpdates } from "@/lib/db/queries/project-updates";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 
 export default async function SproutTeamPage(props: {
   params: Promise<{ id: string }>;
@@ -28,12 +29,12 @@ export default async function SproutTeamPage(props: {
     redirect("/api/auth/signin");
   }
 
-  const seed = await getSeedById(params.id);
+  const seed = await getProjectById(params.id);
   if (!seed) notFound();
 
-  if (seed.status !== "in_progress") notFound();
+  if (!hasTeamWorkspace(seed.stage)) notFound();
 
-  if (!(await canAccessTeamUpdates(session, seed))) {
+  if (!(await canAccessTeamWorkspace(session, seed))) {
     redirect(`/seeds/${seed.id}`);
   }
 
@@ -42,15 +43,15 @@ export default async function SproutTeamPage(props: {
   const readThrough = new Date().toISOString();
   const [teamUpdates, members, budgets, documents, upcomingEvents] =
     await Promise.all([
-      getTeamUpdatesBySeed(seed.id),
+      getTeamProjectUpdates(seed.id),
       getTeamMembers(seed.id),
       getBudgets(seed.id),
-      getSeedDocuments(seed.id),
+      getProjectDocuments(seed.id),
       getUpcomingEvents(seed.id),
     ]);
 
   const rolesByUserId: Record<string, string> = Object.fromEntries(
-    members.map((m) => [m.userId, m.roleLabel]),
+    members.map((member) => [member.userId, member.roleLabels.join(", ")]),
   );
   // Council members can post here without being on the roster -- label them
   // by their site-wide role instead of leaving their name unbadged.
@@ -66,7 +67,7 @@ export default async function SproutTeamPage(props: {
   }
 
   const isAdmin = session.user.role === "admin";
-  const canManage = canEditSeed(session, seed);
+  const canManage = await canManageProject(session, seed);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -88,7 +89,7 @@ export default async function SproutTeamPage(props: {
 
       <h1 className="mb-1 text-2xl font-bold tracking-tight">{seed.name}</h1>
       <p className="text-muted-foreground mb-8 text-sm">
-        Visible only to this Sprout&apos;s team — not part of the public page.
+        Visible only to this project&apos;s team — not part of the public page.
       </p>
 
       <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">

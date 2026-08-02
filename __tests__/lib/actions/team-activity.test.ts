@@ -10,8 +10,8 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
-      seeds: { findFirst: vi.fn() },
-      seedTeamMembers: { findFirst: vi.fn() },
+      projects: { findFirst: vi.fn() },
+      projectParticipants: { findFirst: vi.fn() },
     },
     insert: vi.fn(),
   },
@@ -19,18 +19,18 @@ vi.mock("@/lib/db", () => ({
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { markSproutActivityRead } from "@/lib/actions/team-activity";
+import { markProjectActivityRead } from "@/lib/actions/team-activity";
 
 function mockSproutSeed(overrides?: Record<string, unknown>) {
   return {
     id: "seed-1",
     createdBy: "user-1",
-    status: "in_progress",
+    stage: "sprout",
     ...overrides,
   };
 }
 
-describe("markSproutActivityRead", () => {
+describe("markProjectActivityRead", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -38,7 +38,7 @@ describe("markSproutActivityRead", () => {
   it("does nothing when signed out", async () => {
     setAuthMock(auth, null);
 
-    await markSproutActivityRead("seed-1", new Date().toISOString());
+    await markProjectActivityRead("seed-1", new Date().toISOString());
 
     expect(db.insert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -46,9 +46,9 @@ describe("markSproutActivityRead", () => {
 
   it("does nothing when the seed does not exist", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(undefined);
 
-    await markSproutActivityRead("nonexistent", new Date().toISOString());
+    await markProjectActivityRead("nonexistent", new Date().toISOString());
 
     expect(db.insert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -56,12 +56,14 @@ describe("markSproutActivityRead", () => {
 
   it("does nothing when the caller has no team access to the seed", async () => {
     setAuthMock(auth, mockSession({ id: "other-user" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSproutSeed() as any,
     );
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
+    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue(
+      undefined,
+    );
 
-    await markSproutActivityRead("seed-1", new Date().toISOString());
+    await markProjectActivityRead("seed-1", new Date().toISOString());
 
     expect(db.insert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -69,18 +71,21 @@ describe("markSproutActivityRead", () => {
 
   it("upserts the read marker and revalidates", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSproutSeed() as any,
     );
+    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue({
+      id: "participant-1",
+    } as any);
     const chain = mockDbInsertOnConflictChain();
     vi.mocked(db.insert).mockReturnValue(chain as any);
     const readThrough = "2026-07-26T20:00:00.000Z";
 
-    await markSproutActivityRead("seed-1", readThrough);
+    await markProjectActivityRead("seed-1", readThrough);
 
     expect(chain.values).toHaveBeenCalledWith(
       expect.objectContaining({
-        seedId: "seed-1",
+        projectId: "seed-1",
         userId: "user-1",
         lastReadAt: new Date(readThrough),
       }),
@@ -92,14 +97,16 @@ describe("markSproutActivityRead", () => {
 
   it("does not write a marker for someone without Team access", async () => {
     setAuthMock(auth, mockSession({ id: "other-user" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue({
       id: "seed-1",
       createdBy: "user-1",
-      status: "in_progress",
+      stage: "sprout",
     } as any);
-    vi.mocked(db.query.seedTeamMembers.findFirst).mockResolvedValue(undefined);
+    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue(
+      undefined,
+    );
 
-    await markSproutActivityRead("seed-1", new Date().toISOString());
+    await markProjectActivityRead("seed-1", new Date().toISOString());
 
     expect(db.insert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -107,13 +114,13 @@ describe("markSproutActivityRead", () => {
 
   it("does not write a marker before a Seed becomes a Sprout", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue({
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue({
       id: "seed-1",
       createdBy: "user-1",
-      status: "approved",
+      stage: "seed",
     } as any);
 
-    await markSproutActivityRead("seed-1", new Date().toISOString());
+    await markProjectActivityRead("seed-1", new Date().toISOString());
 
     expect(db.insert).not.toHaveBeenCalled();
   });

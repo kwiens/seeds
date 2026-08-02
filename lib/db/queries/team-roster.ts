@@ -1,52 +1,51 @@
-import { eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seedTeamMembers, seeds } from "@/lib/db/schema";
-import type { TeamRole } from "@/lib/team-roles";
-import { teamRoleLabels } from "@/lib/team-roles";
+import { projectParticipants } from "@/lib/db/schema";
+import { participantRoleLabels } from "@/lib/participant-roles";
 
 export interface RosterMember {
   userId: string;
   name: string;
   image: string | null;
-  roleLabel: string;
+  roleLabels: string[];
   addedByName: string | null;
-  joinedAt: Date | null;
+  joinedAt: Date;
 }
 
-export async function getTeamMembers(seedId: string): Promise<RosterMember[]> {
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
-    columns: { id: true },
-    with: { creator: { columns: { id: true, name: true, image: true } } },
-  });
-  if (!seed) return [];
-
-  const memberRows = await db.query.seedTeamMembers.findMany({
-    where: eq(seedTeamMembers.seedId, seedId),
+export async function getTeamMembers(
+  projectId: string,
+): Promise<RosterMember[]> {
+  const rows = await db.query.projectParticipants.findMany({
+    where: and(
+      eq(projectParticipants.projectId, projectId),
+      eq(projectParticipants.state, "active"),
+      ne(projectParticipants.role, "supporter"),
+    ),
     with: {
       user: { columns: { id: true, name: true, image: true } },
       addedByUser: { columns: { name: true } },
     },
-    orderBy: (t, { asc }) => asc(t.createdAt),
+    orderBy: asc(projectParticipants.createdAt),
   });
 
-  const gardener: RosterMember = {
-    userId: seed.creator.id,
-    name: seed.creator.name,
-    image: seed.creator.image,
-    roleLabel: "Gardener",
-    addedByName: null,
-    joinedAt: null,
-  };
-
-  const members: RosterMember[] = memberRows.map((row) => ({
-    userId: row.user.id,
-    name: row.user.name,
-    image: row.user.image,
-    roleLabel: teamRoleLabels[row.role as TeamRole],
-    addedByName: row.addedByUser.name,
-    joinedAt: row.createdAt,
-  }));
-
-  return [gardener, ...members];
+  const members = new Map<string, RosterMember>();
+  for (const row of rows) {
+    if (!row.user) continue;
+    const existing = members.get(row.user.id);
+    const roleLabel = participantRoleLabels[row.role];
+    if (existing) {
+      if (!existing.roleLabels.includes(roleLabel))
+        existing.roleLabels.push(roleLabel);
+      continue;
+    }
+    members.set(row.user.id, {
+      userId: row.user.id,
+      name: row.user.name,
+      image: row.user.image,
+      roleLabels: [roleLabel],
+      addedByName: row.addedByUser?.name ?? null,
+      joinedAt: row.createdAt,
+    });
+  }
+  return [...members.values()];
 }

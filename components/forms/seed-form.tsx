@@ -23,27 +23,13 @@ import { LocationPicker } from "@/components/forms/location-picker";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { badges, badgeKeys } from "@/lib/badges";
 import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
-import { createSeed, updateSeed } from "@/lib/actions/seeds";
-import type { Seed } from "@/lib/db/types";
+import { createProject, updateProject } from "@/lib/actions/projects";
+import type { Project, ProjectParticipant } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 
 interface RootItem {
   name: string;
   committed: boolean;
-}
-
-function parseRoots(raw: unknown): RootItem[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
-    if (typeof item === "string") return { name: item, committed: false };
-    if (typeof item === "object" && item && "name" in item) {
-      return {
-        name: String((item as RootItem).name),
-        committed: Boolean((item as RootItem).committed),
-      };
-    }
-    return { name: String(item), committed: false };
-  });
 }
 
 function FieldInfoLink({ anchor }: { anchor: string }) {
@@ -61,52 +47,71 @@ function FieldInfoLink({ anchor }: { anchor: string }) {
 }
 
 interface SeedFormProps {
-  seed?: Seed;
+  project?: Project & { participants: ProjectParticipant[] };
   planterName?: string;
 }
 
-export function SeedForm({ seed, planterName }: SeedFormProps) {
+export function SeedForm({ project, planterName }: SeedFormProps) {
   const { data: session } = useSession();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState(seed?.name ?? "");
-  const [summary, setSummary] = useState(seed?.summary ?? "");
+  const [name, setName] = useState(project?.name ?? "");
+  const [summary, setSummary] = useState(project?.summary ?? "");
   const [gardeners, setGardeners] = useState<string[]>(
-    seed?.gardeners ?? (planterName ? [planterName] : []),
+    project
+      ? participantNames(project.participants, "gardener")
+      : planterName
+        ? [planterName]
+        : [],
   );
   const [locationAddress, setLocationAddress] = useState(
-    seed?.locationAddress ?? "",
+    project?.locationAddress ?? "",
   );
   const [locationLat, setLocationLat] = useState<number | null>(
-    seed?.locationLat ?? null,
+    project?.locationLat ?? null,
   );
   const [locationLng, setLocationLng] = useState<number | null>(
-    seed?.locationLng ?? null,
+    project?.locationLng ?? null,
   );
   const [category, setCategory] = useState<CategoryKey | "">(
-    (seed?.category as CategoryKey) ?? "",
+    (project?.category as CategoryKey) ?? "",
   );
-  const [roots, setRoots] = useState<RootItem[]>(parseRoots(seed?.roots));
+  const [roots, setRoots] = useState<RootItem[]>(
+    project
+      ? project.participants
+          .filter((participant) => participant.role === "roots")
+          .map((participant) => ({
+            name: participant.displayName,
+            committed: participant.state === "active",
+          }))
+      : [],
+  );
   const [supportPeople, setSupportPeople] = useState<string[]>(
-    seed?.supportPeople ?? [],
+    project ? participantNames(project.participants, "guide") : [],
   );
-  const [waterHave, setWaterHave] = useState<string[]>(seed?.waterHave ?? []);
-  const [waterNeed, setWaterNeed] = useState<string[]>(seed?.waterNeed ?? []);
+  const [waterHave, setWaterHave] = useState<string[]>(
+    project?.waterHave ?? [],
+  );
+  const [waterNeed, setWaterNeed] = useState<string[]>(
+    project?.waterNeed ?? [],
+  );
   const [locationDescription, setLocationDescription] = useState(
-    seed?.locationDescription ?? "",
+    project?.locationDescription ?? "",
   );
-  const [budget, setBudget] = useState(seed?.budget ?? "");
-  const [obstacles, setObstacles] = useState(seed?.obstacles ?? "");
+  const [budgetEstimate, setBudgetEstimate] = useState(
+    project?.budgetEstimate ?? "",
+  );
+  const [obstacles, setObstacles] = useState(project?.obstacles ?? "");
   const [imageUrl, setImageUrl] = useState<string | null>(
-    seed?.imageUrl ?? null,
+    project?.imageUrl ?? null,
   );
-  const [photos, setPhotos] = useState<string[]>(seed?.photos ?? []);
+  const [photos, setPhotos] = useState<string[]>(project?.photos ?? []);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(
-    seed?.coverPhotoUrl ?? null,
+    project?.coverPhotoUrl ?? null,
   );
   const [selectedBadges, setSelectedBadges] = useState<string[]>(
-    seed?.badges ?? [],
+    project?.badges ?? [],
   );
 
   const isSignedIn = !!session?.user;
@@ -133,7 +138,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       supportPeople,
       waterHave,
       waterNeed,
-      budget: budget || undefined,
+      budgetEstimate: budgetEstimate || undefined,
       obstacles: obstacles || undefined,
       photos,
       coverPhotoUrl: coverPhotoUrl ?? null,
@@ -141,9 +146,9 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
     };
 
     startTransition(async () => {
-      const result = seed
-        ? await updateSeed(seed.id, formData)
-        : await createSeed(formData);
+      const result = project
+        ? await updateProject(project.id, formData)
+        : await createProject(formData);
 
       if (result?.error) {
         setError(result.error);
@@ -320,8 +325,8 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         <div className="space-y-2">
           <Input
             id="budget"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
+            value={budgetEstimate}
+            onChange={(e) => setBudgetEstimate(e.target.value)}
             maxLength={500}
             placeholder="How much money do you think you need?"
           />
@@ -385,7 +390,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         />
 
         {/* Illustration (edit mode only) */}
-        {seed && (
+        {project && (
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <SeedIcon name="harvest" />
@@ -406,7 +411,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
               >
                 <Image
                   src={imageUrl}
-                  alt={seed.name}
+                  alt={project.name}
                   width={320}
                   height={320}
                   className="h-auto w-full"
@@ -419,7 +424,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
               </p>
             )}
             <RegenerateImageButton
-              seedId={seed.id}
+              seedId={project.id}
               hasImage={!!imageUrl}
               onImageGenerated={setImageUrl}
             />
@@ -427,11 +432,27 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         )}
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Planting..." : seed ? "Update Seed" : "Plant This Seed"}
+          {isPending
+            ? "Planting..."
+            : project
+              ? "Update Seed"
+              : "Plant This Seed"}
         </Button>
       </fieldset>
     </form>
   );
+}
+
+function participantNames(
+  participants: ProjectParticipant[],
+  role: ProjectParticipant["role"],
+) {
+  return participants
+    .filter(
+      (participant) =>
+        participant.role === role && participant.state !== "inactive",
+    )
+    .map((participant) => participant.displayName);
 }
 
 function RootsList({

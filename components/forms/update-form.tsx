@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { ImageUpload } from "@/components/forms/image-upload";
-import { createUpdate, editUpdate } from "@/lib/actions/updates";
+import {
+  createPublicProjectUpdate,
+  editPublicProjectUpdate,
+} from "@/lib/actions/project-updates";
 import { EMPTY_TIPTAP_DOC } from "@/lib/tiptap";
 
 interface UpdateFormProps {
@@ -39,8 +42,8 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
 
     startTransition(async () => {
       const result = update
-        ? await editUpdate(update.id, formData)
-        : await createUpdate(seedId, formData);
+        ? await editPublicProjectUpdate(update.id, formData)
+        : await createPublicProjectUpdate(seedId, formData);
 
       if (result?.error) {
         setError(result.error);

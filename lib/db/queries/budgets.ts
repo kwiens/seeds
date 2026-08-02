@@ -1,14 +1,22 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { seedBudgets } from "@/lib/db/schema";
+import { projectBudgets } from "@/lib/db/schema";
 
-export async function getBudgets(seedId: string) {
-  const rows = await db.query.seedBudgets.findMany({
-    where: eq(seedBudgets.seedId, seedId),
+export async function getBudgets(projectId: string) {
+  const rows = await db.query.projectBudgets.findMany({
+    where: eq(projectBudgets.projectId, projectId),
   });
-
   return {
-    proposed: rows.find((r) => r.status === "proposed") ?? null,
-    final: rows.find((r) => r.status === "final") ?? null,
+    proposed: rows.find((row) => row.status === "proposed") ?? null,
+    final: rows.find((row) => row.status === "final") ?? null,
   };
+}
+
+export async function getPublicBudgets(projectId: string) {
+  return db.query.projectBudgets.findMany({
+    where: and(
+      eq(projectBudgets.projectId, projectId),
+      eq(projectBudgets.isPublic, true),
+    ),
+  });
 }

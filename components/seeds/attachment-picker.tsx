@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { discardTeamAttachment } from "@/lib/actions/team-updates";
+import { discardTeamAttachment } from "@/lib/actions/project-updates";
 import {
   TEAM_ATTACHMENT_MAX_FILES,
   TEAM_ATTACHMENT_MAX_SIZE,
@@ -25,13 +25,13 @@ export function AttachmentPicker({
   attachments,
   onChange,
   onBusyChange,
-  seedId,
+  projectId,
   disabled,
 }: {
   attachments: Attachment[];
   onChange: (attachments: Attachment[]) => void;
   onBusyChange?: (busy: boolean) => void;
-  seedId: string;
+  projectId: string;
   disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,12 +64,12 @@ export function AttachmentPicker({
     try {
       for (const file of toUpload) {
         const blob = await upload(
-          `seeds/${seedId}/attachments/${encodeURIComponent(file.name)}`,
+          `projects/${projectId}/attachments/${encodeURIComponent(file.name)}`,
           file,
           {
             access: "private",
             handleUploadUrl: "/api/upload",
-            clientPayload: JSON.stringify({ seedId }),
+            clientPayload: JSON.stringify({ projectId }),
           },
         );
         current = [
@@ -93,7 +93,7 @@ export function AttachmentPicker({
     setDeleting(true);
     onBusyChange?.(true);
     try {
-      const result = await discardTeamAttachment(seedId, attachment);
+      const result = await discardTeamAttachment(projectId, attachment);
       if (result.error) {
         setError(result.error);
         return;

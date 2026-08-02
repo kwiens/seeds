@@ -28,7 +28,7 @@ import {
   deleteEvent,
   updateEvent,
 } from "@/lib/actions/team-events";
-import type { TeamEvent } from "@/lib/db/types";
+import type { ProjectEvent } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 
 const MONTH_NAMES = [
@@ -230,7 +230,7 @@ function EventForm({
   onDone,
 }: {
   seedId: string;
-  editingEvent: TeamEvent | null;
+  editingEvent: ProjectEvent | null;
   onDone: () => void;
 }) {
   const [title, setTitle] = useState(editingEvent?.title ?? "");
@@ -331,7 +331,7 @@ function EventRow({
   canManage,
   onEdit,
 }: {
-  event: TeamEvent;
+  event: ProjectEvent;
   canManage: boolean;
   onEdit: () => void;
 }) {
@@ -426,10 +426,10 @@ export function UpcomingEvents({
   canManage,
 }: {
   seedId: string;
-  events: TeamEvent[];
+  events: ProjectEvent[];
   canManage: boolean;
 }) {
-  const [formState, setFormState] = useState<"closed" | "add" | TeamEvent>(
+  const [formState, setFormState] = useState<"closed" | "add" | ProjectEvent>(
     "closed",
   );
 

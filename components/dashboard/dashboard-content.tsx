@@ -9,7 +9,8 @@ import { DashboardSeedList } from "@/components/dashboard/seed-list-table";
 import { SeedListView } from "@/components/seeds/seed-list-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CategoryKey } from "@/lib/categories";
-import type { MySprout } from "@/lib/db/queries/sprouts";
+import type { MyProject } from "@/lib/db/queries/my-projects";
+import { projectStages } from "@/lib/project-stages";
 import { formatRelativeTime } from "@/lib/format";
 
 export type DashboardTab = "my-sprouts" | "my-seeds" | "supporting";
@@ -18,7 +19,9 @@ interface DashboardSeed {
   id: string;
   name: string;
   category: CategoryKey;
-  status: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
+  archivedAt: Date | null;
   supportCount: number;
   createdAt: Date;
 }
@@ -29,6 +32,9 @@ interface SupportedSeed {
   summary: string;
   category: CategoryKey;
   imageUrl: string | null;
+  coverPhotoUrl: string | null;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
   supportCount: number;
 }
 
@@ -38,12 +44,12 @@ export function DashboardContent({
   supportedSeeds,
   initialTab,
 }: {
-  sprouts: MySprout[];
+  sprouts: MyProject[];
   userSeeds: DashboardSeed[];
   supportedSeeds: SupportedSeed[];
   initialTab?: DashboardTab;
 }) {
-  const hasActiveSeeds = userSeeds.some((seed) => seed.status !== "archived");
+  const hasActiveSeeds = userSeeds.some((seed) => !seed.archivedAt);
   const defaultTab: DashboardTab =
     initialTab ??
     (sprouts.length > 0
@@ -65,7 +71,7 @@ export function DashboardContent({
           onClick={() => setActiveTab("my-sprouts")}
         >
           <Leaf className="size-4" />
-          My Sprouts
+          Team Workspaces
         </TabsTrigger>
         <TabsTrigger
           value="my-seeds"
@@ -73,7 +79,7 @@ export function DashboardContent({
           onClick={() => setActiveTab("my-seeds")}
         >
           <Sprout className="size-4" />
-          My Seeds
+          My Projects
         </TabsTrigger>
         <TabsTrigger
           value="supporting"
@@ -89,8 +95,8 @@ export function DashboardContent({
         {sprouts.length === 0 ? (
           <div className="rounded-lg border border-dashed py-16 text-center">
             <p className="text-muted-foreground">
-              No Sprouts yet — once one of your Seeds is advanced to a Sprout,
-              it&apos;ll show up here.
+              No team workspaces yet — they become available when a project
+              reaches the Sprout stage.
             </p>
           </div>
         ) : (
@@ -108,6 +114,9 @@ export function DashboardContent({
                   <p className="truncate font-semibold">{sprout.name}</p>
                   <div className="mt-1">
                     <CategoryBadge category={sprout.category} />
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      {projectStages[sprout.stage].label}
+                    </span>
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
