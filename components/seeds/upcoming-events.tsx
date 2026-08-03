@@ -70,6 +70,18 @@ for (let h = 7; h <= 20; h++) {
   }
 }
 
+function toTimeValue(d: Date) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// The picker offers half-hour slots from 07:00–20:30, but an event may hold
+// any time (imported data, past edits). Include the current value so the
+// Select never renders empty and saving doesn't silently shift the time.
+export function timeOptionsWith(time: string) {
+  if (TIME_OPTIONS.includes(time)) return TIME_OPTIONS;
+  return [...TIME_OPTIONS, time].sort();
+}
+
 function formatTimeLabel(hhmm: string) {
   const [h, m] = hhmm.split(":").map(Number);
   return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", {
@@ -246,13 +258,10 @@ function EventForm({
   const [date, setDate] = useState<Date | null>(
     editingEvent ? new Date(editingEvent.startsAt) : null,
   );
-  const [time, setTime] = useState(() => {
-    if (!editingEvent) return "18:00";
-    const d = new Date(editingEvent.startsAt);
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = d.getMinutes() < 30 ? "00" : "30";
-    return `${h}:${m}`;
-  });
+  const [time, setTime] = useState(() =>
+    editingEvent ? toTimeValue(new Date(editingEvent.startsAt)) : "18:00",
+  );
+  const [timeOptions] = useState(() => timeOptionsWith(time));
   const [location, setLocation] = useState(editingEvent?.location ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -309,7 +318,7 @@ function EventForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TIME_OPTIONS.map((t) => (
+            {timeOptions.map((t) => (
               <SelectItem key={t} value={t}>
                 {formatTimeLabel(t)}
               </SelectItem>

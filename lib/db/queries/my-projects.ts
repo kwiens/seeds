@@ -19,6 +19,10 @@ export interface MyProject {
   role: string;
 }
 
+export function hasSitewideMyProjectsAccess(viewerRole: string): boolean {
+  return viewerRole === "council";
+}
+
 const lastActivitySql = sql<string>`greatest(
   ${projects.updatedAt},
   coalesce((select max(updated_at) from project_updates where project_id = projects.id), ${projects.updatedAt}),
@@ -53,7 +57,7 @@ export async function getMyProjects(
   userId: string,
   viewerRole: string,
 ): Promise<MyProject[]> {
-  const seesAll = viewerRole === "admin" || viewerRole === "council";
+  const seesAll = hasSitewideMyProjectsAccess(viewerRole);
   const unreadCount = unreadCountSql(userId);
   const participantRole = viewerRoleSql(userId);
   const accessExists = sql`exists (
