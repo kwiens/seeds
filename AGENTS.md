@@ -178,7 +178,7 @@ Code should read like a narrative, flowing from high-level abstractions to low-l
 Read [docs/agents/design.md](docs/agents/design.md) before building or changing any UI. The essentials:
 
 - **shadcn/ui is the design system.** Build on the primitives in `components/ui/` (add new ones via the shadcn CLI) and customize with Tailwind utilities. Never hand-roll a dialog, popover, tab strip, sheet, or menu — the Radix-based primitives carry the keyboard and screen-reader behavior for free.
-- **Impeccable is the design reviewer.** Use `/impeccable` commands for design work (`shape` to plan, `audit`/`critique` to evaluate, `adapt` for responsiveness, `polish` before shipping). A detector hook scans UI files after every edit — act on its findings.
+- **Impeccable is the design reviewer.** It is installed on demand, not committed — run `pnpm skills:install` before design work, then use `/impeccable` commands (`shape` to plan, `audit`/`critique` to evaluate, `adapt` for responsiveness, `polish` before shipping). A detector hook scans UI files after every edit — act on its findings.
 - **Mobile-first, always.** Design for a 320px viewport with touch input first and scale up. Comfortable touch targets, 16px inputs on mobile, no hover-only affordances, and every control labeled for assistive tech. The full floor lives in the design guide.
 
 ### Environment Variables

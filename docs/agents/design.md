@@ -5,7 +5,15 @@ For agents building or changing UI. The goal: every surface works beautifully on
 ## Workflow
 
 1. **Start from shadcn/ui.** Use the primitives in `components/ui/`; add missing ones with the shadcn CLI (`pnpm dlx shadcn@latest add <component>`). Compose and restyle with Tailwind utilities instead of building parallel components. The Radix primitives supply focus management, ARIA state, and keyboard behavior — keep them intact when customizing.
-2. **Use Impeccable.** The skill is vendored in `.claude/skills/impeccable` (and `.github/skills/` for Copilot). Reach for it by task: `/impeccable shape` to plan a new surface, `audit` or `critique` to evaluate, `adapt` for device/responsive work, `layout`, `clarify`, `harden` for targeted refinement, `polish` before shipping. A detector hook scans UI files after every edit and on stop — fix what it reports.
+2. **Use Impeccable.** The skill is **not committed** — install it into your working tree before design work (idempotent, takes a few seconds, safe to re-run):
+
+   ```bash
+   pnpm skills:install
+   ```
+
+   It installs for whichever harnesses it detects (`.claude/skills/`, `.github/skills/`), all of which are gitignored. Then reach for it by task: `/impeccable shape` to plan a new surface, `audit` or `critique` to evaluate, `adapt` for device/responsive work, `layout`, `clarify`, `harden` for targeted refinement, `polish` before shipping.
+
+   The detector hook is wired up in the committed `.claude/settings.json` and scans UI files after every edit and on stop — fix what it reports. The hook is guarded, so it silently no-ops when the skill isn't installed; if you never see detector output during UI work, you skipped the install step.
 3. **Verify at mobile widths.** Check new UI at 320px and 390px (browser devtools or the chrome-devtools tooling) before calling it done: no horizontal page scroll, nothing unreachable, nothing unreadable.
 
 ## Mobile-first floor

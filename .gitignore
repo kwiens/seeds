@@ -45,3 +45,9 @@ next-env.d.ts
 
 # Claude Code local settings (personal permissions)
 .claude/settings.local.json
+
+# Vendored AI-agent skill bundles — installed on demand, never committed.
+# Run `pnpm skills:install` to (re)install. See docs/agents/design.md.
+.claude/skills/
+.github/skills/
+.github/hooks/
