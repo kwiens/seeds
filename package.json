@@ -4,8 +4,8 @@
   "private": true,
   "packageManager": "pnpm@10.17.1",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "pnpm env:check && next dev",
+    "build": "pnpm env:check && next build",
     "start": "next start",
     "lint": "eslint && biome format",
     "lint:fix": "eslint --fix && biome format --write",
@@ -13,11 +13,15 @@
     "skills:install": "npx -y impeccable install",
     "test": "vitest",
     "test:run": "vitest run",
+    "env:setup": "tsx scripts/setup-local-environment.ts",
+    "env:check": "tsx scripts/check-environment.ts --app",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx scripts/populate.ts",
+    "db:migrate": "tsx scripts/check-environment.ts --write && drizzle-kit migrate",
+    "db:push": "tsx scripts/check-environment.ts --write && drizzle-kit push",
+    "db:studio": "tsx scripts/check-environment.ts --write && drizzle-kit studio",
+    "db:seed": "tsx scripts/check-environment.ts --write && tsx scripts/populate.ts",
+    "db:sanitize": "tsx scripts/check-environment.ts --write && tsx scripts/sanitize-nonproduction.ts",
+    "vercel-build": "pnpm db:migrate && pnpm build",
     "prepare": "husky"
   },
   "dependencies": {
@@ -68,6 +72,7 @@
     "lint-staged": "^16.4.0",
     "shadcn": "^4.1.0",
     "tailwindcss": "^4.2.2",
+    "tsx": "^4.21.0",
     "tw-animate-css": "^1.4.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.1"

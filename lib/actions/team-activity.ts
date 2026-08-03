@@ -1,7 +1,6 @@
 "use server";
 
 import { eq, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
@@ -50,7 +49,4 @@ export async function markProjectActivityRead(
         lastReadAt: sql`greatest(${projectActivityReads.lastReadAt}, ${effectiveReadThrough})`,
       },
     });
-
-  revalidatePath("/", "layout");
-  revalidatePath("/dashboard");
 }

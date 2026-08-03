@@ -31,6 +31,11 @@ const lastActivitySql = sql<string>`greatest(
   coalesce((select max(updated_at) from project_participants where project_id = projects.id), ${projects.updatedAt})
 )`.as("last_activity");
 
+const teamAccessRolesSql = sql`array[${sql.join(
+  teamAccessRoles.map((role) => sql`${role}::participant_role`),
+  sql`, `,
+)}]`;
+
 function unreadCountSql(userId: string) {
   return sql<number>`(
     select count(*)::int from project_updates
@@ -47,7 +52,7 @@ function viewerRoleSql(userId: string) {
     where project_id = projects.id
       and user_id = ${userId}
       and state = 'active'
-      and role = any(${teamAccessRoles}::participant_role[])
+      and role = any(${teamAccessRolesSql})
     order by case role when 'gardener' then 0 when 'co_gardener' then 1 else 2 end
     limit 1
   )`.as("participant_role");
@@ -65,7 +70,7 @@ export async function getMyProjects(
     where project_id = projects.id
       and user_id = ${userId}
       and state = 'active'
-      and role = any(${teamAccessRoles}::participant_role[])
+      and role = any(${teamAccessRolesSql})
   )`;
 
   const rows = await db

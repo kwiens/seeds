@@ -80,7 +80,7 @@ export function MobileNav({
               onClick={() => setOpen(false)}
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 py-2 text-sm transition-colors"
             >
-              Mine
+              My Projects
               {unreadSproutCount > 0 && (
                 <span className="bg-primary text-primary-foreground inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
                   {unreadSproutCount}

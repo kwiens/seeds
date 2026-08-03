@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, Download, Plus, Trash2 } from "lucide-react";
+import { Download, Plus, Trash2 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -84,72 +90,72 @@ export function BudgetEditor({
   const finalTotal = totalOf(final);
 
   return (
-    <details className="group rounded-lg border p-4">
-      <summary className="flex items-center gap-2 text-sm font-semibold">
-        <span className="flex-1">Budget</span>
-        <span className="text-muted-foreground text-xs font-normal">
-          {proposedTotal === null && finalTotal === null ? (
-            "Not started"
-          ) : (
-            <>
-              {proposedTotal !== null && (
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value="budget" className="rounded-lg border last:border-b">
+        <AccordionTrigger className="px-4 hover:no-underline">
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-3 pr-2">
+            <span>Budget</span>
+            <span className="text-muted-foreground text-right text-xs font-normal">
+              {proposedTotal === null && finalTotal === null ? (
+                "Not started"
+              ) : (
                 <>
-                  Proposed{" "}
-                  <span className="text-foreground font-bold">
-                    {formatCurrency(proposedTotal)}
-                  </span>
+                  {proposedTotal !== null && (
+                    <>
+                      Proposed{" "}
+                      <span className="text-foreground font-bold">
+                        {formatCurrency(proposedTotal)}
+                      </span>
+                    </>
+                  )}
+                  {proposedTotal !== null && finalTotal !== null && " · "}
+                  {finalTotal !== null && (
+                    <>
+                      Final{" "}
+                      <span className="text-foreground font-bold">
+                        {formatCurrency(finalTotal)}
+                      </span>
+                    </>
+                  )}
                 </>
               )}
-              {proposedTotal !== null && finalTotal !== null && " · "}
-              {finalTotal !== null && (
-                <>
-                  Final{" "}
-                  <span className="text-foreground font-bold">
-                    {formatCurrency(finalTotal)}
-                  </span>
-                </>
-              )}
-            </>
-          )}
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className="text-muted-foreground size-4 shrink-0 transition-transform group-open:rotate-180"
-        />
-      </summary>
-      <div className="mt-3">
-        <Tabs defaultValue="proposed">
-          <TabsList>
-            <TabsTrigger value="proposed">Proposed</TabsTrigger>
-            <TabsTrigger value="final">Final</TabsTrigger>
-          </TabsList>
-          <TabsContent value="proposed">
-            <BudgetStageEditor
-              seedId={seedId}
-              seedName={seedName}
-              status="proposed"
-              budget={proposed}
-              compareTotal={null}
-              canManage={canManage}
-              description="What this Sprout expects to spend."
-              emphasize
-            />
-          </TabsContent>
-          <TabsContent value="final">
-            <BudgetStageEditor
-              seedId={seedId}
-              seedName={seedName}
-              status="final"
-              budget={final}
-              compareTotal={proposedTotal}
-              canManage={canManage}
-              description="What this Sprout actually spent, once wrapped up."
-              copyFrom={proposed?.lineItems ?? null}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </details>
+            </span>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="px-4">
+          <Tabs defaultValue="proposed">
+            <TabsList>
+              <TabsTrigger value="proposed">Proposed</TabsTrigger>
+              <TabsTrigger value="final">Final</TabsTrigger>
+            </TabsList>
+            <TabsContent value="proposed">
+              <BudgetStageEditor
+                seedId={seedId}
+                seedName={seedName}
+                status="proposed"
+                budget={proposed}
+                compareTotal={null}
+                canManage={canManage}
+                description="What this Sprout expects to spend."
+                emphasize
+              />
+            </TabsContent>
+            <TabsContent value="final">
+              <BudgetStageEditor
+                seedId={seedId}
+                seedName={seedName}
+                status="final"
+                budget={final}
+                compareTotal={proposedTotal}
+                canManage={canManage}
+                description="What this Sprout actually spent, once wrapped up."
+                copyFrom={proposed?.lineItems ?? null}
+              />
+            </TabsContent>
+          </Tabs>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 

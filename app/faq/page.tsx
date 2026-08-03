@@ -114,7 +114,7 @@ const faqSections: {
       {
         question: "Can I edit my Seed after submitting?",
         answer:
-          "Yes. Go to Mine and open the My Seeds tab. You'll find an edit option for each of your Seeds and can update details at any time.",
+          "Yes. Go to My Projects and open the My Seeds tab. You'll find an edit option for each of your Seeds and can update details at any time.",
       },
       {
         question: "How do I see Seeds I've supported?",

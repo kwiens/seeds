@@ -301,7 +301,7 @@ ALTER TABLE "project_update_file_deletions" RENAME CONSTRAINT "seed_team_file_de
 ALTER INDEX "seed_budgets_unique" RENAME TO "project_budgets_unique";--> statement-breakpoint
 DROP INDEX "seed_team_activity_reads_unique";--> statement-breakpoint
 CREATE UNIQUE INDEX "project_activity_reads_unique" ON "project_activity_reads" ("project_id", "user_id", "visibility");--> statement-breakpoint
-ALTER INDEX "idx_seed_team_events_seed_starts" RENAME TO "idx_project_events_project_starts";--> statement-breakpoint
+ALTER INDEX IF EXISTS "idx_seed_team_events_seed_starts" RENAME TO "idx_project_events_project_starts";--> statement-breakpoint
 ALTER INDEX "idx_seeds_badges" RENAME TO "idx_projects_badges";--> statement-breakpoint
 CREATE INDEX "idx_projects_stage_approval" ON "projects" ("stage", "approval_state");--> statement-breakpoint
 
