@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".claude/**",
   ]),
   // Relax strict typing in test files — mock chains require type casts
   {

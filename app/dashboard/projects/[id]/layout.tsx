@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Lock } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { ProjectWorkspaceNav } from "@/components/dashboard/project-workspace-nav";
 import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
 import { CategoryBadge } from "@/components/seeds/category-badge";
@@ -38,10 +38,6 @@ export default async function ProjectWorkspaceLayout({
               approvalState={project.approvalState}
               archivedAt={project.archivedAt}
             />
-            <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium">
-              <Lock className="size-3" />
-              Private workspace
-            </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             {project.name}
