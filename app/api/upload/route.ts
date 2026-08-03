@@ -70,9 +70,6 @@ export async function POST(request: NextRequest) {
           tokenPayload: JSON.stringify({ userId: session.user.id }),
         };
       },
-      onUploadCompleted: async () => {
-        // No-op: photos are saved to the seed record on form submit
-      },
     });
 
     return NextResponse.json(jsonResponse);

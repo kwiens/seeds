@@ -69,7 +69,7 @@ describe("markProjectActivityRead", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("upserts the read marker and revalidates", async () => {
+  it("upserts the read marker without revalidating the active workspace", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
     vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSproutSeed() as any,
@@ -91,8 +91,7 @@ describe("markProjectActivityRead", () => {
       }),
     );
     expect(chain._onConflictDoUpdate).toHaveBeenCalled();
-    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
-    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("does not write a marker for someone without Team access", async () => {

@@ -25,7 +25,7 @@ export default async function ProjectWorkspaceLayout({
       <Button variant="ghost" size="sm" asChild className="mb-4">
         <Link href={`/dashboard?tab=${mineTab}`}>
           <ArrowLeft className="mr-1.5 size-3.5" />
-          Back to Mine
+          Back to My Projects
         </Link>
       </Button>
 

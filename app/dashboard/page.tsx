@@ -13,7 +13,7 @@ import { getMyProjects } from "@/lib/db/queries/my-projects";
 import type { DashboardTab } from "@/components/dashboard/dashboard-content";
 
 export const metadata: Metadata = {
-  title: "Mine | Seeds",
+  title: "My Projects | Seeds",
 };
 
 const dashboardTabs: DashboardTab[] = ["my-sprouts", "my-seeds", "supporting"];
@@ -42,7 +42,7 @@ export default async function DashboardPage({
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mine</h1>
+          <h1 className="text-3xl font-bold tracking-tight">My Projects</h1>
           <p className="text-muted-foreground mt-1">
             Grow your projects and follow the ideas you support.
           </p>

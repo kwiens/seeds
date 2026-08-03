@@ -61,7 +61,7 @@ export async function Header() {
               href="/dashboard"
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             >
-              Mine
+              My Projects
               {unreadSproutCount > 0 && (
                 <span className="bg-primary text-primary-foreground inline-flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
                   {unreadSproutCount}
