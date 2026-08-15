@@ -1,0 +1,111 @@
+"use client";
+
+import { useRef, useState, useTransition } from "react";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { demoteFromCouncil, promoteToCouncil } from "@/lib/actions/council";
+
+type CouncilMember = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export function CouncilList({ members }: { members: CouncilMember[] }) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleAdd(formData: FormData) {
+    const email = formData.get("email") as string;
+    if (!email) return;
+    setError(null);
+    setStatus(null);
+    startTransition(async () => {
+      const result = await promoteToCouncil(email);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setStatus("Added to Council");
+      formRef.current?.reset();
+    });
+  }
+
+  function handleRemove(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await demoteFromCouncil(id);
+      if (result.error) setError(result.error);
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <form
+        ref={formRef}
+        action={handleAdd}
+        className="flex flex-col gap-2 sm:flex-row"
+      >
+        <Input
+          name="email"
+          type="email"
+          placeholder="email@example.com"
+          required
+          disabled={isPending}
+          aria-label="Email of user to promote"
+          className="max-w-sm"
+        />
+        <Button type="submit" disabled={isPending}>
+          Promote to Council
+        </Button>
+      </form>
+
+      <span aria-live="polite" className="sr-only">
+        {status}
+      </span>
+
+      {error && (
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+        >
+          {error}
+        </p>
+      )}
+
+      {members.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No Council members yet.</p>
+      ) : (
+        <ul className="divide-y">
+          {members.map((member) => (
+            <li
+              key={member.id}
+              className="flex items-center justify-between py-2"
+            >
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-medium">
+                  {member.name}
+                </span>
+                <span className="text-muted-foreground block truncate text-xs">
+                  {member.email}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={isPending}
+                onClick={() => handleRemove(member.id)}
+                aria-label={`Remove ${member.name} from Council`}
+              >
+                <Trash2 className="text-destructive size-4" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

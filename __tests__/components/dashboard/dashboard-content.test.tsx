@@ -7,7 +7,9 @@ const mockUserSeeds = [
     id: "seed-1",
     name: "Community Garden",
     category: "daily_access" as const,
-    status: "approved",
+    stage: "seed" as const,
+    approvalState: "approved" as const,
+    archivedAt: null,
     supportCount: 5,
     createdAt: new Date("2024-06-01"),
   },
@@ -15,7 +17,9 @@ const mockUserSeeds = [
     id: "seed-2",
     name: "Trail Cleanup",
     category: "outdoor_play" as const,
-    status: "pending",
+    stage: "seed" as const,
+    approvalState: "pending" as const,
+    archivedAt: null,
     supportCount: 2,
     createdAt: new Date("2024-07-01"),
   },
@@ -28,6 +32,9 @@ const mockSupportedSeeds = [
     summary: "Restoring the riverbanks.",
     category: "respect" as const,
     imageUrl: "https://example.com/river.jpg",
+    coverPhotoUrl: null,
+    stage: "sprout" as const,
+    approvalState: "approved" as const,
     supportCount: 12,
   },
   {
@@ -36,56 +43,101 @@ const mockSupportedSeeds = [
     summary: "Adding bike lanes downtown.",
     category: "connected_communities" as const,
     imageUrl: null,
+    coverPhotoUrl: null,
+    stage: "seed" as const,
+    approvalState: "approved" as const,
     supportCount: 8,
   },
 ];
 
+const mockSprouts = [
+  {
+    id: "sprout-1",
+    name: "Neighborhood Orchard",
+    category: "balanced_growth" as const,
+    lastActivityAt: new Date("2024-08-01"),
+    unreadCount: 2,
+    role: "Gardener",
+    stage: "sprout" as const,
+  },
+];
+
+function selectTab(name: RegExp) {
+  fireEvent.click(screen.getByRole("tab", { name }));
+}
+
 describe("DashboardContent", () => {
-  it("shows Supporting tab by default", () => {
+  it("shows My Sprouts by default when the user has active Sprouts", () => {
     render(
       <DashboardContent
+        sprouts={mockSprouts}
         userSeeds={mockUserSeeds}
         supportedSeeds={mockSupportedSeeds}
       />,
     );
 
-    expect(screen.getByText("River Restoration")).toBeInTheDocument();
-    expect(screen.getByText("Bike Lane Project")).toBeInTheDocument();
+    expect(screen.getByText("Neighborhood Orchard")).toBeInTheDocument();
     expect(screen.queryByText("Community Garden")).not.toBeInTheDocument();
+    expect(screen.queryByText("River Restoration")).not.toBeInTheDocument();
   });
 
-  it("switches to My Seeds tab on click", async () => {
+  it("defaults to My Seeds when there are active Seeds but no Sprouts", () => {
     render(
       <DashboardContent
+        sprouts={[]}
         userSeeds={mockUserSeeds}
         supportedSeeds={mockSupportedSeeds}
       />,
     );
-
-    fireEvent.click(screen.getByRole("button", { name: /my seeds/i }));
 
     expect(screen.getByText("Community Garden")).toBeInTheDocument();
     expect(screen.getByText("Trail Cleanup")).toBeInTheDocument();
     expect(screen.queryByText("River Restoration")).not.toBeInTheDocument();
   });
 
-  it("switches back to Supporting tab", async () => {
+  it("defaults to Supporting when there are no Sprouts or active Seeds", () => {
     render(
       <DashboardContent
-        userSeeds={mockUserSeeds}
+        sprouts={[]}
+        userSeeds={[
+          {
+            ...mockUserSeeds[0],
+            archivedAt: new Date("2024-08-01"),
+          },
+        ]}
         supportedSeeds={mockSupportedSeeds}
       />,
     );
-
-    fireEvent.click(screen.getByRole("button", { name: /my seeds/i }));
-    fireEvent.click(screen.getByRole("button", { name: /supporting/i }));
 
     expect(screen.getByText("River Restoration")).toBeInTheDocument();
     expect(screen.queryByText("Community Garden")).not.toBeInTheDocument();
   });
 
+  it("switches among all three tabs", () => {
+    render(
+      <DashboardContent
+        sprouts={mockSprouts}
+        userSeeds={mockUserSeeds}
+        supportedSeeds={mockSupportedSeeds}
+      />,
+    );
+
+    selectTab(/my seeds/i);
+    expect(screen.getByText("Community Garden")).toBeInTheDocument();
+
+    selectTab(/supporting/i);
+    expect(screen.getByText("River Restoration")).toBeInTheDocument();
+  });
+
   it("shows empty state when no supported seeds", () => {
-    render(<DashboardContent userSeeds={mockUserSeeds} supportedSeeds={[]} />);
+    render(
+      <DashboardContent
+        sprouts={[]}
+        userSeeds={mockUserSeeds}
+        supportedSeeds={[]}
+        initialTab="supporting"
+      />,
+    );
 
     expect(
       screen.getByText("You haven't supported any seeds yet."),
@@ -97,10 +149,14 @@ describe("DashboardContent", () => {
 
   it("shows empty state when no user seeds", async () => {
     render(
-      <DashboardContent userSeeds={[]} supportedSeeds={mockSupportedSeeds} />,
+      <DashboardContent
+        sprouts={[]}
+        userSeeds={[]}
+        supportedSeeds={mockSupportedSeeds}
+      />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /my seeds/i }));
+    selectTab(/my seeds/i);
 
     expect(
       screen.getByText("You haven't planted any seeds yet."),
@@ -110,19 +166,21 @@ describe("DashboardContent", () => {
     ).toHaveAttribute("href", "/seeds/new");
   });
 
-  it("renders both tab buttons", () => {
+  it("renders all three tabs", () => {
     render(
       <DashboardContent
+        sprouts={mockSprouts}
         userSeeds={mockUserSeeds}
         supportedSeeds={mockSupportedSeeds}
       />,
     );
 
     expect(
-      screen.getByRole("button", { name: /supporting/i }),
+      screen.getByRole("tab", { name: /my sprouts/i }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /my seeds/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /my seeds/i }),
+      screen.getByRole("tab", { name: /supporting/i }),
     ).toBeInTheDocument();
   });
 });

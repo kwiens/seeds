@@ -65,6 +65,7 @@ export function SeedMap({
         mapStyle="mapbox://styles/kwiens/cm6au0n48006h01s28k1p0faz"
         mapboxAccessToken={MAPBOX_TOKEN}
         interactive={interactive}
+        cooperativeGestures
       >
         <NavigationControl position="top-left" showCompass={false} />
 
@@ -89,11 +90,13 @@ export function SeedMap({
                 handleMarkerClick(seed);
               }}
             >
-              <div
-                className={`flex size-8 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br shadow-lg transition-transform hover:scale-110 ${info.gradient}`}
+              <button
+                type="button"
+                aria-label={seed.name}
+                className={`flex size-8 items-center justify-center rounded-full bg-gradient-to-br shadow-lg transition-transform hover:scale-110 ${info.gradient}`}
               >
                 <Sprout className="size-4 text-white" />
-              </div>
+              </button>
             </Marker>
           );
         })}

@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { FileText, Mail, Pencil, QrCode, Sun } from "lucide-react";
+import { Mail, QrCode, Settings2, Sun, Users } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace, canManageProject } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,17 @@ import { ExpandableText } from "@/components/seeds/expandable-text";
 import { SeedDetailTabs } from "@/components/seeds/seed-detail-tabs";
 import { PhotoGrid } from "@/components/photo-grid";
 import { SeedDetailMap } from "./seed-detail-map";
-import { getCommentsBySeed } from "@/lib/db/queries/comments";
-import { getUpdatesBySeed } from "@/lib/db/queries/updates";
+import { getCommentsByProject } from "@/lib/db/queries/comments";
+import { getPublicBudgets } from "@/lib/db/queries/budgets";
+import { getPublicProjectUpdates } from "@/lib/db/queries/project-updates";
 import {
-  getSeedById,
-  getSeedSupportCount,
-  getSeedSupporters,
+  getProjectById,
+  getProjectSupportCount,
+  getProjectSupporters,
   hasUserSupported,
-} from "@/lib/db/queries/seeds";
+} from "@/lib/db/queries/projects";
+import type { ProjectParticipant } from "@/lib/db/types";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 import { formatDisplayName } from "@/lib/format";
 import { buildImagePrompt } from "@/lib/image-prompt";
 
@@ -41,10 +44,10 @@ function DetailList({
   if (items.length === 0) return null;
   return (
     <div>
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
         <SeedIcon name={seedIcon} />
         {label}
-      </h3>
+      </h2>
       <ul className="space-y-1">
         {items.map((item, i) => (
           <li key={i} className="text-muted-foreground text-sm">
@@ -64,10 +67,10 @@ function RootsDetailList({
   if (roots.length === 0) return null;
   return (
     <div>
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
         <SeedIcon name="roots" />
         Roots
-      </h3>
+      </h2>
       <ul className="space-y-1">
         {roots.map((root, i) => (
           <li key={i} className="text-muted-foreground text-sm">
@@ -82,25 +85,23 @@ function RootsDetailList({
   );
 }
 
-function parseRoots(raw: unknown): { name: string; committed: boolean }[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
-    if (typeof item === "string") return { name: item, committed: false };
-    if (typeof item === "object" && item && "name" in item) {
-      return {
-        name: String((item as { name: string }).name),
-        committed: Boolean((item as { committed: boolean }).committed),
-      };
-    }
-    return { name: String(item), committed: false };
-  });
+function participantNames(
+  participants: ProjectParticipant[],
+  role: ProjectParticipant["role"],
+) {
+  return participants
+    .filter(
+      (participant) =>
+        participant.role === role && participant.state !== "inactive",
+    )
+    .map((participant) => participant.displayName);
 }
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>;
 }) {
   const params = await props.params;
-  const seed = await getSeedById(params.id);
+  const seed = await getProjectById(params.id);
   if (!seed) return { title: "Seed Not Found" };
   const ogImage = seed.coverPhotoUrl ?? seed.imageUrl;
   return {
@@ -130,27 +131,38 @@ export default async function SeedPage(props: {
   const params = await props.params;
   const session = await auth();
 
-  const seed = await getSeedById(params.id);
+  const seed = await getProjectById(params.id);
   if (!seed) notFound();
 
-  const canEdit = canEditSeed(session, seed);
+  const canEdit = await canManageProject(session, seed);
+  const hasTeamAccess =
+    !seed.archivedAt && hasTeamWorkspace(seed.stage)
+      ? await canAccessTeamWorkspace(session, seed)
+      : false;
 
   // Pending seeds are intentionally public so creators can share links
   // before approval. Only archived seeds are restricted to owner/admin.
-  if (seed.status === "archived" && !canEdit) {
+  if (seed.archivedAt && !canEdit) {
     notFound();
   }
 
-  const [supportCount, supporters, userHasSupported, comments, updates] =
-    await Promise.all([
-      getSeedSupportCount(seed.id),
-      getSeedSupporters(seed.id, { includeEmail: canEdit }),
-      session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
-      getCommentsBySeed(seed.id),
-      getUpdatesBySeed(seed.id),
-    ]);
+  const [
+    supportCount,
+    supporters,
+    userHasSupported,
+    comments,
+    updates,
+    publicBudgets,
+  ] = await Promise.all([
+    getProjectSupportCount(seed.id),
+    getProjectSupporters(seed.id, { includeEmail: canEdit }),
+    session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
+    getCommentsByProject(seed.id),
+    getPublicProjectUpdates(seed.id),
+    getPublicBudgets(seed.id),
+  ]);
 
-  const hasLocation = seed.locationLat && seed.locationLng;
+  const hasLocation = seed.locationLat !== null && seed.locationLng !== null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -158,30 +170,37 @@ export default async function SeedPage(props: {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <CategoryBadge category={seed.category} className="mb-2" />
-          <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
-          {seed.status !== "approved" && (
+          <h1 className="break-words text-3xl font-bold tracking-tight">
+            {seed.name}
+          </h1>
+          {(seed.stage !== "seed" ||
+            seed.approvalState !== "approved" ||
+            seed.archivedAt) && (
             <div className="mt-2">
-              <SeedStatusBadge status={seed.status} />
+              <SeedStatusBadge
+                stage={seed.stage}
+                approvalState={seed.approvalState}
+                archivedAt={seed.archivedAt}
+              />
             </div>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {canEdit && (
+          {canEdit ? (
             <Button variant="outline" asChild>
-              <Link href={`/seeds/${seed.id}/edit`}>
-                <Pencil className="mr-1.5 size-3.5" />
-                Edit
+              <Link href={`/dashboard/projects/${seed.id}`}>
+                <Settings2 className="mr-1.5 size-3.5" />
+                Manage project
               </Link>
             </Button>
-          )}
-          {canEdit && (
+          ) : hasTeamAccess ? (
             <Button variant="outline" asChild>
-              <Link href={`/seeds/${seed.id}/updates`}>
-                <FileText className="mr-1.5 size-3.5" />
-                {updates.length > 0 ? "Manage Updates" : "Post Update"}
+              <Link href={`/dashboard/projects/${seed.id}/team`}>
+                <Users className="mr-1.5 size-3.5" />
+                Team workspace
               </Link>
             </Button>
-          )}
+          ) : null}
           <SupportButton
             seedId={seed.id}
             supportCount={supportCount}
@@ -244,7 +263,7 @@ export default async function SeedPage(props: {
         if (displayPhotos.length === 0) return null;
         return (
           <div className="mb-8">
-            <h3 className="mb-3 text-sm font-semibold">Photos</h3>
+            <h2 className="mb-3 text-sm font-semibold">Photos</h2>
             <PhotoGrid photos={displayPhotos} alt={seed.name} />
           </div>
         );
@@ -275,13 +294,24 @@ export default async function SeedPage(props: {
             {/* Details grid */}
             <div className="grid gap-8 sm:grid-cols-2">
               <DetailList
-                items={seed.gardeners}
+                items={participantNames(seed.participants, "gardener")}
                 seedIcon="gardeners"
                 label="Gardeners"
               />
-              <RootsDetailList roots={parseRoots(seed.roots)} />
+              <RootsDetailList
+                roots={seed.participants
+                  .filter(
+                    (participant) =>
+                      participant.role === "roots" &&
+                      participant.state !== "inactive",
+                  )
+                  .map((participant) => ({
+                    name: participant.displayName,
+                    committed: participant.state === "active",
+                  }))}
+              />
               <DetailList
-                items={seed.supportPeople}
+                items={participantNames(seed.participants, "guide")}
                 seedIcon="support"
                 label="Guides"
               />
@@ -298,17 +328,51 @@ export default async function SeedPage(props: {
             </div>
 
             {/* Budget */}
-            {seed.budget && (
+            {seed.budgetEstimate && (
               <div className="mt-8">
-                <h3 className="mb-2 text-sm font-semibold">Budget</h3>
-                <p className="text-muted-foreground text-sm">{seed.budget}</p>
+                <h2 className="mb-2 text-sm font-semibold">Budget estimate</h2>
+                <p className="text-muted-foreground text-sm">
+                  {seed.budgetEstimate}
+                </p>
               </div>
             )}
+
+            {publicBudgets.map((budget) => (
+              <div key={budget.id} className="mt-8">
+                <h2 className="mb-2 text-sm font-semibold capitalize">
+                  {budget.status} detailed budget
+                </h2>
+                <ul className="space-y-1 text-sm">
+                  {budget.lineItems.map((item, index) => (
+                    <li
+                      key={`${budget.id}-${index}`}
+                      className="flex justify-between gap-4"
+                    >
+                      <span className="text-muted-foreground min-w-0 break-words">
+                        {item.label}
+                      </span>
+                      <span className="shrink-0 tabular-nums">
+                        {item.amount.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                          maximumFractionDigits: 0,
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {budget.notes && (
+                  <p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">
+                    {budget.notes}
+                  </p>
+                )}
+              </div>
+            ))}
 
             {/* Obstacles */}
             {seed.obstacles && (
               <div className="mt-8">
-                <h3 className="mb-2 text-sm font-semibold">Obstacles</h3>
+                <h2 className="mb-2 text-sm font-semibold">Obstacles</h2>
                 <p className="text-muted-foreground whitespace-pre-wrap text-sm">
                   {seed.obstacles}
                 </p>
@@ -328,11 +392,11 @@ export default async function SeedPage(props: {
             {/* Supporters */}
             {supporters.length > 0 && (
               <div className="mt-8">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
                   <SeedIcon name="sunlight" />
                   Sunlight ({supportCount}{" "}
                   {supportCount === 1 ? "supporter" : "supporters"})
-                </h3>
+                </h2>
                 <div className="flex flex-wrap gap-2">
                   {supporters.map((s) =>
                     canEdit ? (
@@ -354,7 +418,7 @@ export default async function SeedPage(props: {
                 {canEdit && (
                   <div className="mt-3 flex gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/seeds/${seed.id}`}>
+                      <Link href={`/dashboard/projects/${seed.id}/supporters`}>
                         <Sun className="mr-1.5 size-3.5" />
                         View Supporters
                       </Link>

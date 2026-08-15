@@ -6,14 +6,14 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { SeedExplorer } from "@/components/seeds/seed-explorer";
 import {
-  getSeedsByStatus,
-  getAllSeedsForMap,
+  getProjectsByStage,
+  getAllProjectsForMap,
   type SortOption,
-} from "@/lib/db/queries/seeds";
-import { statuses, slugToStatusKey } from "@/lib/statuses";
+} from "@/lib/db/queries/projects";
+import { projectStages, slugToProjectStage } from "@/lib/project-stages";
 
 export async function generateStaticParams() {
-  return Object.values(statuses).map((info) => ({ slug: info.slug }));
+  return Object.values(projectStages).map((info) => ({ slug: info.slug }));
 }
 
 export async function generateMetadata({
@@ -22,9 +22,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const statusKey = slugToStatusKey(slug);
-  if (!statusKey) return {};
-  const info = statuses[statusKey];
+  const stage = slugToProjectStage(slug);
+  if (!stage) return {};
+  const info = projectStages[stage];
   return {
     title: info.pluralLabel,
     description: info.description,
@@ -44,10 +44,10 @@ export default async function StatusPage({
   }>;
 }) {
   const { slug } = await params;
-  const statusKey = slugToStatusKey(slug);
-  if (!statusKey) notFound();
+  const stage = slugToProjectStage(slug);
+  if (!stage) notFound();
 
-  const info = statuses[statusKey];
+  const info = projectStages[stage];
   const Icon = info.icon;
 
   const sp = await searchParams;
@@ -64,16 +64,16 @@ export default async function StatusPage({
         : "newest";
 
   const [seedResult, mapSeeds] = await Promise.all([
-    getSeedsByStatus({
-      status: statusKey,
+    getProjectsByStage({
+      stage,
       badges: badgesParam.length > 0 ? badgesParam : undefined,
       page,
       sort,
       userId: session?.user?.id,
       search,
     }),
-    getAllSeedsForMap({
-      status: statusKey,
+    getAllProjectsForMap({
+      stage,
       badges: badgesParam.length > 0 ? badgesParam : undefined,
       userId: session?.user?.id,
       search,
@@ -102,7 +102,7 @@ export default async function StatusPage({
 
       <Suspense fallback={<div className="py-8 text-center">Loading...</div>}>
         <SeedExplorer
-          seeds={seedResult.seeds}
+          seeds={seedResult.projects}
           mapSeeds={mapSeeds}
           currentPage={seedResult.currentPage}
           totalPages={seedResult.totalPages}

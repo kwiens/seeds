@@ -1,19 +1,21 @@
 import { db } from "@/lib/db";
-import { seeds } from "@/lib/db/schema";
-import { and, ne } from "drizzle-orm";
+import { projects } from "@/lib/db/schema";
+import { and, isNull, ne } from "drizzle-orm";
 
 export async function GET() {
   const allSeeds = await db
     .select({
-      name: seeds.name,
-      summary: seeds.summary,
-      category: seeds.category,
-      locationLat: seeds.locationLat,
-      locationLng: seeds.locationLng,
-      locationDescription: seeds.locationDescription,
+      name: projects.name,
+      summary: projects.summary,
+      category: projects.category,
+      locationLat: projects.locationLat,
+      locationLng: projects.locationLng,
+      locationDescription: projects.locationDescription,
     })
-    .from(seeds)
-    .where(and(ne(seeds.status, "draft"), ne(seeds.status, "archived")));
+    .from(projects)
+    .where(
+      and(ne(projects.approvalState, "draft"), isNull(projects.archivedAt)),
+    );
 
   const waypoints = allSeeds
     .filter((s) => s.locationLat != null && s.locationLng != null)

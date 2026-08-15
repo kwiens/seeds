@@ -114,7 +114,7 @@ const faqSections: {
       {
         question: "Can I edit my Seed after submitting?",
         answer:
-          "Yes. Go to your dashboard (My Seeds) and you'll find an edit option for each of your Seeds. You can update details at any time.",
+          "Yes. Go to My Projects and open the My Seeds tab. You'll find an edit option for each of your Seeds and can update details at any time.",
       },
       {
         question: "How do I see Seeds I've supported?",
@@ -180,7 +180,7 @@ export default function FaqPage() {
               </div>
             ))}
           </div>
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#74BB23]">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#9BD84A]">
             From Seeds to Sprouts
           </p>
           <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl">

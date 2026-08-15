@@ -25,7 +25,10 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button
+          aria-label="Account menu"
+          className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <Avatar className="size-8">
             <AvatarImage
               src={session.user.image ?? undefined}
@@ -42,7 +45,7 @@ export function UserMenu() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">My Seeds</Link>
+          <Link href="/dashboard">My Projects</Link>
         </DropdownMenuItem>
         {session.user.role === "admin" && (
           <DropdownMenuItem asChild>

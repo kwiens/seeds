@@ -29,11 +29,15 @@ A community platform for proposing and supporting local projects ("seeds") that 
 # Install dependencies
 pnpm install
 
-# Pull environment variables from Vercel
-vercel env pull
+# Link the canonical project, then configure isolated local credentials
+vercel link --yes --scope chattanooga-seeds --project seeds
+pnpm env:setup
 
-# Push DB schema (first time)
-pnpm db:push
+# Confirm the database and storage targets are non-production
+pnpm env:check
+
+# Apply committed migrations
+pnpm db:migrate
 
 # Start dev server
 pnpm dev
@@ -48,13 +52,29 @@ Copy `.env.example` and fill in the values:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | Neon PostgreSQL connection string |
-| `AUTH_SECRET` | NextAuth secret (`openssl rand -base64 32`) |
+| `AUTH_SECRET` | Machine/environment-specific NextAuth secret (`env:setup` generates the local value) |
 | `AUTH_GOOGLE_ID` | Google OAuth client ID |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox public access token |
 | `ADMIN_EMAILS` | Comma-separated admin emails (auto-promoted on sign-in) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini API key |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token |
+| `BLOB_READ_WRITE_TOKEN` | Environment-specific public image Blob token |
+| `TEAM_FILES_BLOB_READ_WRITE_TOKEN` | Environment-specific private Team file Blob token |
+| `ALLOW_PRODUCTION_DATABASE` | Owner-only break-glass override; never enable normally |
+
+## Environment Isolation
+
+- **Production** uses the live Neon database and Production-only Blob stores.
+- **Development** uses a persistent sanitized database clone and dedicated Blob
+  stores.
+- **Preview** uses an automatic copy-on-write Neon branch for each deployment
+  plus Preview-only Blob stores.
+
+The application refuses to use the Production database or Blob stores outside a
+Vercel Production deployment. Never pull Production environment variables
+locally or copy another developer's `.env.local`. See
+[AGENTS.md](./AGENTS.md) for the full resource map, database workflow, and
+break-glass policy.
 
 ## Scripts
 
@@ -65,10 +85,13 @@ Copy `.env.example` and fill in the values:
 | `pnpm lint` | Run ESLint |
 | `pnpm test` | Run tests in watch mode |
 | `pnpm test:run` | Run tests once |
-| `pnpm db:push` | Push schema changes to Neon |
+| `pnpm env:setup` | Pull Development variables and create a machine-only Auth secret |
+| `pnpm env:check` | Verify required variables and safe database target |
+| `pnpm db:push` | Push schema only to an explicitly disposable Development DB |
 | `pnpm db:generate` | Generate migration files |
-| `pnpm db:migrate` | Run migrations |
+| `pnpm db:migrate` | Safely apply committed migrations |
 | `pnpm db:studio` | Open Drizzle Studio |
+| `pnpm db:sanitize` | Remove private data from a new non-production clone |
 
 ## Seed Categories
 

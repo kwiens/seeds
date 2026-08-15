@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 import { GoogleGenAI } from "@google/genai";
 import { put } from "@vercel/blob";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { seeds } from "@/lib/db/schema";
+import { projects } from "@/lib/db/schema";
 import { buildImagePrompt } from "@/lib/image-prompt";
 
 // In-memory rate limiter: 10 requests per 10 minutes per user
@@ -28,7 +28,7 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-async function callGeminiAndUpload(seed: {
+async function callGeminiAndUpload(project: {
   id: string;
   name: string;
   summary: string;
@@ -41,7 +41,7 @@ async function callGeminiAndUpload(seed: {
     return { error: "Image generation is not configured." };
   }
 
-  const prompt = buildImagePrompt(seed);
+  const prompt = buildImagePrompt(project);
 
   const ai = new GoogleGenAI({ apiKey });
 
@@ -72,7 +72,7 @@ async function callGeminiAndUpload(seed: {
   const mimeType = imagePart.inlineData.mimeType ?? "image/png";
   const extension = mimeType === "image/jpeg" ? "jpg" : "png";
 
-  const blob = await put(`seeds/${seed.id}.${extension}`, imageBuffer, {
+  const blob = await put(`projects/${project.id}.${extension}`, imageBuffer, {
     access: "public",
     contentType: mimeType,
     addRandomSuffix: true,
@@ -83,38 +83,38 @@ async function callGeminiAndUpload(seed: {
   }
 
   await db
-    .update(seeds)
+    .update(projects)
     .set({ imageUrl: blob.url, updatedAt: new Date() })
-    .where(eq(seeds.id, seed.id));
+    .where(eq(projects.id, project.id));
 
-  revalidatePath(`/seeds/${seed.id}`);
+  revalidatePath(`/seeds/${project.id}`);
   revalidatePath("/");
 
   return { imageUrl: blob.url };
 }
 
-export async function generateSeedImage(seedId: string) {
+export async function generateProjectImage(projectId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "You must be signed in." };
   }
 
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
   });
 
-  if (!seed) {
-    return { error: "Seed not found." };
+  if (!project) {
+    return { error: "Project not found." };
   }
 
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, project))) {
     return {
       error: "You don't have permission to generate an image for this seed.",
     };
   }
 
-  if (seed.imageUrl) {
-    return { imageUrl: seed.imageUrl };
+  if (project.imageUrl) {
+    return { imageUrl: project.imageUrl };
   }
 
   if (!checkRateLimit(session.user.id)) {
@@ -122,28 +122,28 @@ export async function generateSeedImage(seedId: string) {
   }
 
   try {
-    return await callGeminiAndUpload(seed);
+    return await callGeminiAndUpload(project);
   } catch (error) {
     console.error("Failed to generate seed image:", error);
     return { error: "Failed to generate image. Please try again later." };
   }
 }
 
-export async function regenerateSeedImage(seedId: string) {
+export async function regenerateProjectImage(projectId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "You must be signed in." };
   }
 
-  const seed = await db.query.seeds.findFirst({
-    where: eq(seeds.id, seedId),
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
   });
 
-  if (!seed) {
-    return { error: "Seed not found." };
+  if (!project) {
+    return { error: "Project not found." };
   }
 
-  if (!canEditSeed(session, seed)) {
+  if (!(await canManageProject(session, project))) {
     return { error: "You don't have permission to regenerate this image." };
   }
 
@@ -152,7 +152,7 @@ export async function regenerateSeedImage(seedId: string) {
   }
 
   try {
-    return await callGeminiAndUpload(seed);
+    return await callGeminiAndUpload(project);
   } catch (error) {
     console.error("Failed to regenerate seed image:", error);
     return { error: "Failed to generate image. Please try again later." };

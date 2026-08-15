@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { GripVertical, Info, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Info, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { Input } from "@/components/ui/input";
@@ -23,27 +23,13 @@ import { LocationPicker } from "@/components/forms/location-picker";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { badges, badgeKeys } from "@/lib/badges";
 import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
-import { createSeed, updateSeed } from "@/lib/actions/seeds";
-import type { Seed } from "@/lib/db/types";
+import { createProject, updateProject } from "@/lib/actions/projects";
+import type { Project, ProjectParticipant } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 
 interface RootItem {
   name: string;
   committed: boolean;
-}
-
-function parseRoots(raw: unknown): RootItem[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
-    if (typeof item === "string") return { name: item, committed: false };
-    if (typeof item === "object" && item && "name" in item) {
-      return {
-        name: String((item as RootItem).name),
-        committed: Boolean((item as RootItem).committed),
-      };
-    }
-    return { name: String(item), committed: false };
-  });
 }
 
 function FieldInfoLink({ anchor }: { anchor: string }) {
@@ -54,6 +40,7 @@ function FieldInfoLink({ anchor }: { anchor: string }) {
       rel="noopener noreferrer"
       className="text-muted-foreground hover:text-foreground"
       title="Learn more"
+      aria-label="Learn more about this field (opens in new tab)"
     >
       <Info className="size-3.5" />
     </a>
@@ -61,52 +48,78 @@ function FieldInfoLink({ anchor }: { anchor: string }) {
 }
 
 interface SeedFormProps {
-  seed?: Seed;
+  project?: Project & { participants: ProjectParticipant[] };
   planterName?: string;
 }
 
-export function SeedForm({ seed, planterName }: SeedFormProps) {
+export function SeedForm({ project, planterName }: SeedFormProps) {
   const { data: session } = useSession();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
-  const [name, setName] = useState(seed?.name ?? "");
-  const [summary, setSummary] = useState(seed?.summary ?? "");
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
+
+  const [name, setName] = useState(project?.name ?? "");
+  const [summary, setSummary] = useState(project?.summary ?? "");
   const [gardeners, setGardeners] = useState<string[]>(
-    seed?.gardeners ?? (planterName ? [planterName] : []),
+    project
+      ? participantNames(project.participants, "gardener")
+      : planterName
+        ? [planterName]
+        : [],
   );
   const [locationAddress, setLocationAddress] = useState(
-    seed?.locationAddress ?? "",
+    project?.locationAddress ?? "",
   );
   const [locationLat, setLocationLat] = useState<number | null>(
-    seed?.locationLat ?? null,
+    project?.locationLat ?? null,
   );
   const [locationLng, setLocationLng] = useState<number | null>(
-    seed?.locationLng ?? null,
+    project?.locationLng ?? null,
   );
   const [category, setCategory] = useState<CategoryKey | "">(
-    (seed?.category as CategoryKey) ?? "",
+    (project?.category as CategoryKey) ?? "",
   );
-  const [roots, setRoots] = useState<RootItem[]>(parseRoots(seed?.roots));
+  const [roots, setRoots] = useState<RootItem[]>(
+    project
+      ? project.participants
+          .filter((participant) => participant.role === "roots")
+          .map((participant) => ({
+            name: participant.displayName,
+            committed: participant.state === "active",
+          }))
+      : [],
+  );
   const [supportPeople, setSupportPeople] = useState<string[]>(
-    seed?.supportPeople ?? [],
+    project ? participantNames(project.participants, "guide") : [],
   );
-  const [waterHave, setWaterHave] = useState<string[]>(seed?.waterHave ?? []);
-  const [waterNeed, setWaterNeed] = useState<string[]>(seed?.waterNeed ?? []);
+  const [waterHave, setWaterHave] = useState<string[]>(
+    project?.waterHave ?? [],
+  );
+  const [waterNeed, setWaterNeed] = useState<string[]>(
+    project?.waterNeed ?? [],
+  );
   const [locationDescription, setLocationDescription] = useState(
-    seed?.locationDescription ?? "",
+    project?.locationDescription ?? "",
   );
-  const [budget, setBudget] = useState(seed?.budget ?? "");
-  const [obstacles, setObstacles] = useState(seed?.obstacles ?? "");
+  const [budgetEstimate, setBudgetEstimate] = useState(
+    project?.budgetEstimate ?? "",
+  );
+  const [obstacles, setObstacles] = useState(project?.obstacles ?? "");
   const [imageUrl, setImageUrl] = useState<string | null>(
-    seed?.imageUrl ?? null,
+    project?.imageUrl ?? null,
   );
-  const [photos, setPhotos] = useState<string[]>(seed?.photos ?? []);
+  const [photos, setPhotos] = useState<string[]>(project?.photos ?? []);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(
-    seed?.coverPhotoUrl ?? null,
+    project?.coverPhotoUrl ?? null,
   );
   const [selectedBadges, setSelectedBadges] = useState<string[]>(
-    seed?.badges ?? [],
+    project?.badges ?? [],
   );
 
   const isSignedIn = !!session?.user;
@@ -133,7 +146,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       supportPeople,
       waterHave,
       waterNeed,
-      budget: budget || undefined,
+      budgetEstimate: budgetEstimate || undefined,
       obstacles: obstacles || undefined,
       photos,
       coverPhotoUrl: coverPhotoUrl ?? null,
@@ -141,9 +154,9 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
     };
 
     startTransition(async () => {
-      const result = seed
-        ? await updateSeed(seed.id, formData)
-        : await createSeed(formData);
+      const result = project
+        ? await updateProject(project.id, formData)
+        : await createProject(formData);
 
       if (result?.error) {
         setError(result.error);
@@ -163,7 +176,11 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
       )}
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          ref={errorRef}
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -208,12 +225,12 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
 
         {/* Category */}
         <div className="space-y-2">
-          <Label>Category</Label>
+          <Label htmlFor="category">Category</Label>
           <Select
             value={category}
             onValueChange={(val) => setCategory(val as CategoryKey)}
           >
-            <SelectTrigger>
+            <SelectTrigger id="category">
               <SelectValue placeholder="Select a category..." />
             </SelectTrigger>
             <SelectContent>
@@ -261,6 +278,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
 
         {/* Location Description */}
         <div className="space-y-2">
+          <Label htmlFor="locationDescription">Location Description</Label>
           <Textarea
             id="locationDescription"
             value={locationDescription}
@@ -318,10 +336,11 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
 
         {/* Budget */}
         <div className="space-y-2">
+          <Label htmlFor="budget">Budget</Label>
           <Input
             id="budget"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
+            value={budgetEstimate}
+            onChange={(e) => setBudgetEstimate(e.target.value)}
             maxLength={500}
             placeholder="How much money do you think you need?"
           />
@@ -344,11 +363,15 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
 
         {/* Badges */}
         <div className="space-y-2">
-          <Label>Badges</Label>
+          <Label id="badges-label">Badges</Label>
           <p className="text-muted-foreground text-xs">
             Select any badges that apply to this seed.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-labelledby="badges-label"
+            className="flex flex-wrap gap-2"
+          >
             {badgeKeys.map((key) => {
               const info = badges[key];
               const Icon = info.icon;
@@ -360,6 +383,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
                   variant={isActive ? "secondary" : "outline"}
                   size="sm"
                   className="gap-1.5"
+                  aria-pressed={isActive}
                   onClick={() => {
                     setSelectedBadges((prev) =>
                       prev.includes(key)
@@ -385,7 +409,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         />
 
         {/* Illustration (edit mode only) */}
-        {seed && (
+        {project && (
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <SeedIcon name="harvest" />
@@ -406,7 +430,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
               >
                 <Image
                   src={imageUrl}
-                  alt={seed.name}
+                  alt={project.name}
                   width={320}
                   height={320}
                   className="h-auto w-full"
@@ -419,7 +443,7 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
               </p>
             )}
             <RegenerateImageButton
-              seedId={seed.id}
+              seedId={project.id}
               hasImage={!!imageUrl}
               onImageGenerated={setImageUrl}
             />
@@ -427,11 +451,27 @@ export function SeedForm({ seed, planterName }: SeedFormProps) {
         )}
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Planting..." : seed ? "Update Seed" : "Plant This Seed"}
+          {isPending
+            ? "Planting..."
+            : project
+              ? "Update Seed"
+              : "Plant This Seed"}
         </Button>
       </fieldset>
     </form>
   );
+}
+
+function participantNames(
+  participants: ProjectParticipant[],
+  role: ProjectParticipant["role"],
+) {
+  return participants
+    .filter(
+      (participant) =>
+        participant.role === role && participant.state !== "inactive",
+    )
+    .map((participant) => participant.displayName);
 }
 
 function RootsList({
@@ -453,6 +493,14 @@ function RootsList({
 
   function removeRoot(index: number) {
     onRootsChange(roots.filter((_, i) => i !== index));
+  }
+
+  function moveRoot(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= roots.length) return;
+    const updated = [...roots];
+    [updated[index], updated[target]] = [updated[target], updated[index]];
+    onRootsChange(updated);
   }
 
   function toggleCommitted(index: number) {
@@ -505,6 +553,28 @@ function RootsList({
             >
               <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
               <span className="flex-1">{root.name}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Move ${root.name} up`}
+                disabled={index === 0}
+                onClick={() => moveRoot(index, -1)}
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Move ${root.name} down`}
+                disabled={index === roots.length - 1}
+                onClick={() => moveRoot(index, 1)}
+              >
+                <ArrowDown className="size-4" />
+              </Button>
               <button
                 type="button"
                 onClick={() => toggleCommitted(index)}
@@ -520,7 +590,8 @@ function RootsList({
               <button
                 type="button"
                 onClick={() => removeRoot(index)}
-                className="shrink-0 text-muted-foreground hover:text-destructive"
+                aria-label={`Remove ${root.name}`}
+                className="-m-1 shrink-0 p-1 text-muted-foreground hover:text-destructive"
               >
                 <X className="size-4" />
               </button>
@@ -540,7 +611,13 @@ function RootsList({
             }
           }}
         />
-        <Button type="button" variant="outline" size="icon" onClick={addRoot}>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Add organization"
+          onClick={addRoot}
+        >
           <Plus className="size-4" />
         </Button>
       </div>

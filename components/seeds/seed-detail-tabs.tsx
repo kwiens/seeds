@@ -5,7 +5,7 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UpdatesList } from "@/components/seeds/updates-list";
-import type { SeedUpdateWithAuthor } from "@/lib/db/queries/updates";
+import type { PublicProjectUpdateWithAuthor } from "@/lib/db/queries/project-updates";
 
 export function SeedDetailTabs({
   projectContent,
@@ -14,7 +14,7 @@ export function SeedDetailTabs({
   canEdit,
 }: {
   projectContent: React.ReactNode;
-  updates: SeedUpdateWithAuthor[];
+  updates: PublicProjectUpdateWithAuthor[];
   seedId: string;
   canEdit: boolean;
 }) {
@@ -30,7 +30,7 @@ export function SeedDetailTabs({
           {canEdit && (
             <div className="mb-6 flex justify-end">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/seeds/${seedId}/updates`}>
+                <Link href={`/dashboard/projects/${seedId}/updates`}>
                   <Pencil className="mr-1.5 size-3.5" />
                   Manage Updates
                 </Link>

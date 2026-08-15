@@ -1,1 +1,4 @@
 export const COMMENT_MAX_LENGTH = 1000;
+export const TEAM_UPDATE_MAX_LENGTH = 2000;
+export const TEAM_ATTACHMENT_MAX_FILES = 5;
+export const TEAM_ATTACHMENT_MAX_SIZE = 20 * 1024 * 1024;

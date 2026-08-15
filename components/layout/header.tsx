@@ -4,9 +4,19 @@ import { auth } from "@/auth";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { getMyProjects } from "@/lib/db/queries/my-projects";
 
 export async function Header() {
   const session = await auth();
+  const isAdmin = session?.user?.role === "admin";
+  // Admins always have access and don't need an unread badge, so avoid the
+  // platform-wide query. Council members do use it for cross-Sprout unread
+  // counts because their site-wide access is part of their working view.
+  const sprouts =
+    session?.user?.id && !isAdmin
+      ? await getMyProjects(session.user.id, session.user.role)
+      : [];
+  const unreadSproutCount = sprouts.filter((s) => s.unreadCount > 0).length;
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -49,16 +59,25 @@ export async function Header() {
           {session && (
             <Link
               href="/dashboard"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             >
-              My Seeds
+              My Projects
+              {unreadSproutCount > 0 && (
+                <span className="bg-primary text-primary-foreground inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
+                  {unreadSproutCount}
+                  <span className="sr-only">unread</span>
+                </span>
+              )}
             </Link>
           )}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
           {session ? <UserMenu /> : <SignInButton />}
-          <MobileNav isLoggedIn={!!session} />
+          <MobileNav
+            isLoggedIn={!!session}
+            unreadSproutCount={unreadSproutCount}
+          />
         </div>
       </div>
     </header>

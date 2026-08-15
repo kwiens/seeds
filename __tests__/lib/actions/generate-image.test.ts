@@ -16,9 +16,16 @@ const { mockGenerateContent, mockPut } = vi.hoisted(() => ({
 
 // Mock external services
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/auth-utils", () => ({
+  canManageProject: vi.fn(
+    async (session, project) =>
+      session?.user?.role === "admin" ||
+      session?.user?.id === project.createdBy,
+  ),
+}));
 vi.mock("@/lib/db", () => ({
   db: {
-    query: { seeds: { findFirst: vi.fn() } },
+    query: { projects: { findFirst: vi.fn() } },
     update: vi.fn(),
   },
 }));
@@ -34,8 +41,8 @@ vi.mock("@vercel/blob", () => ({
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
-  generateSeedImage,
-  regenerateSeedImage,
+  generateProjectImage,
+  regenerateProjectImage,
 } from "@/lib/actions/generate-image";
 
 // Set API key for all tests
@@ -59,11 +66,11 @@ function setupGeminiMock() {
     ],
   });
   mockPut.mockResolvedValue({
-    url: "https://blob.example.com/seeds/seed-1.png",
+    url: "https://blob.example.com/projects/seed-1.png",
   });
 }
 
-describe("generateSeedImage", () => {
+describe("generateProjectImage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-api-key";
@@ -76,25 +83,25 @@ describe("generateSeedImage", () => {
   it("requires authentication", async () => {
     setAuthMock(auth, null);
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
     expect(result).toEqual({ error: "You must be signed in." });
   });
 
   it("returns error when seed not found", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(undefined);
 
-    const result = await generateSeedImage("nonexistent");
-    expect(result).toEqual({ error: "Seed not found." });
+    const result = await generateProjectImage("nonexistent");
+    expect(result).toEqual({ error: "Project not found." });
   });
 
   it("returns existing image URL without regenerating", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: "https://existing.com/image.png" }) as any,
     );
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
 
     expect(result).toEqual({ imageUrl: "https://existing.com/image.png" });
     expect(mockGenerateContent).not.toHaveBeenCalled();
@@ -102,27 +109,27 @@ describe("generateSeedImage", () => {
 
   it("generates image when seed has no image", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
     setupGeminiMock();
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
 
     expect(result).toEqual({
-      imageUrl: "https://blob.example.com/seeds/seed-1.png",
+      imageUrl: "https://blob.example.com/projects/seed-1.png",
     });
     expect(mockGenerateContent).toHaveBeenCalled();
     expect(mockPut).toHaveBeenCalledWith(
-      expect.stringContaining("seeds/seed-1"),
-      expect.any(Buffer),
+      expect.stringContaining("projects/seed-1"),
+      expect.anything(),
       expect.objectContaining({ access: "public" }),
     );
     expect(chain.set).toHaveBeenCalledWith(
       expect.objectContaining({
-        imageUrl: "https://blob.example.com/seeds/seed-1.png",
+        imageUrl: "https://blob.example.com/projects/seed-1.png",
       }),
     );
   });
@@ -130,46 +137,46 @@ describe("generateSeedImage", () => {
   it("returns error when API key is missing", async () => {
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
     expect(result).toEqual({ error: "Image generation is not configured." });
   });
 
   it("returns error when Gemini returns no candidates", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
     mockGenerateContent.mockResolvedValue({ candidates: [] });
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
     expect(result).toEqual({ error: "No image was generated." });
   });
 
   it("returns error when Gemini returns no image data", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
     mockGenerateContent.mockResolvedValue({
       candidates: [{ content: { parts: [{ text: "Some text" }] } }],
     });
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
     expect(result).toEqual({ error: "No image data in response." });
   });
 
   it("handles Gemini API errors gracefully", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
     mockGenerateContent.mockRejectedValue(new Error("API quota exceeded"));
 
-    const result = await generateSeedImage("seed-1");
+    const result = await generateProjectImage("seed-1");
     expect(result).toEqual({
       error: "Failed to generate image. Please try again later.",
     });
@@ -177,21 +184,21 @@ describe("generateSeedImage", () => {
 
   it("revalidates paths after successful generation", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ imageUrl: null }) as any,
     );
     setupGeminiMock();
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    await generateSeedImage("seed-1");
+    await generateProjectImage("seed-1");
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
     expect(revalidatePath).toHaveBeenCalledWith("/");
   });
 });
 
-describe("regenerateSeedImage", () => {
+describe("regenerateProjectImage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-api-key";
@@ -204,25 +211,25 @@ describe("regenerateSeedImage", () => {
   it("requires authentication", async () => {
     setAuthMock(auth, null);
 
-    const result = await regenerateSeedImage("seed-1");
+    const result = await regenerateProjectImage("seed-1");
     expect(result).toEqual({ error: "You must be signed in." });
   });
 
   it("returns error when seed not found", async () => {
     setAuthMock(auth, mockSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(undefined);
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(undefined);
 
-    const result = await regenerateSeedImage("nonexistent");
-    expect(result).toEqual({ error: "Seed not found." });
+    const result = await regenerateProjectImage("nonexistent");
+    expect(result).toEqual({ error: "Project not found." });
   });
 
   it("rejects regeneration by non-owner non-admin", async () => {
     setAuthMock(auth, mockSession({ id: "other-user" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
 
-    const result = await regenerateSeedImage("seed-1");
+    const result = await regenerateProjectImage("seed-1");
     expect(result).toEqual({
       error: "You don't have permission to regenerate this image.",
     });
@@ -230,7 +237,7 @@ describe("regenerateSeedImage", () => {
 
   it("allows owner to regenerate", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({
         createdBy: "user-1",
         imageUrl: "https://old.com/img.png",
@@ -240,38 +247,38 @@ describe("regenerateSeedImage", () => {
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    const result = await regenerateSeedImage("seed-1");
+    const result = await regenerateProjectImage("seed-1");
 
     expect(result).toEqual({
-      imageUrl: "https://blob.example.com/seeds/seed-1.png",
+      imageUrl: "https://blob.example.com/projects/seed-1.png",
     });
     expect(mockGenerateContent).toHaveBeenCalled();
   });
 
   it("allows admin to regenerate any seed image", async () => {
     setAuthMock(auth, mockAdminSession());
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "someone-else" }) as any,
     );
     setupGeminiMock();
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    const result = await regenerateSeedImage("seed-1");
+    const result = await regenerateProjectImage("seed-1");
 
     expect(result).toEqual({
-      imageUrl: "https://blob.example.com/seeds/seed-1.png",
+      imageUrl: "https://blob.example.com/projects/seed-1.png",
     });
   });
 
   it("handles Gemini API errors gracefully", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
     mockGenerateContent.mockRejectedValue(new Error("Service unavailable"));
 
-    const result = await regenerateSeedImage("seed-1");
+    const result = await regenerateProjectImage("seed-1");
     expect(result).toEqual({
       error: "Failed to generate image. Please try again later.",
     });
@@ -280,17 +287,17 @@ describe("regenerateSeedImage", () => {
   it("returns error when API key is missing", async () => {
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({ createdBy: "user-1" }) as any,
     );
 
-    const result = await regenerateSeedImage("seed-1");
+    const result = await regenerateProjectImage("seed-1");
     expect(result).toEqual({ error: "Image generation is not configured." });
   });
 
   it("revalidates paths after successful regeneration", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.seeds.findFirst).mockResolvedValue(
+    vi.mocked(db.query.projects.findFirst).mockResolvedValue(
       mockSeed({
         createdBy: "user-1",
         imageUrl: "https://old.com/img.png",
@@ -300,7 +307,7 @@ describe("regenerateSeedImage", () => {
     const chain = mockDbUpdateChain();
     vi.mocked(db.update).mockReturnValue(chain as any);
 
-    await regenerateSeedImage("seed-1");
+    await regenerateProjectImage("seed-1");
 
     expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
     expect(revalidatePath).toHaveBeenCalledWith("/");

@@ -6,7 +6,7 @@ import {
   type MapSeedRow,
 } from "@/components/seeds/seed-explorer";
 import type { CategoryKey } from "@/lib/categories";
-import type { SortOption } from "@/lib/db/queries/seeds";
+import type { SortOption } from "@/lib/db/queries/projects";
 
 export function HomeContent({
   seeds,

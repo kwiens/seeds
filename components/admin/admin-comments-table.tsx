@@ -21,8 +21,8 @@ interface AdminComment {
   parentId: string | null;
   createdAt: Date;
   archivedAt: Date | null;
-  seedId: string;
-  seedName: string;
+  projectId: string;
+  projectName: string;
   userName: string;
 }
 
@@ -45,7 +45,6 @@ function ActionButton({ comment }: { comment: AdminComment }) {
       size="sm"
       onClick={handleToggle}
       disabled={isPending}
-      className="h-auto px-2 py-1"
     >
       {comment.archivedAt ? (
         <>
@@ -93,11 +92,11 @@ export function AdminCommentsTable({ comments }: { comments: AdminComment[] }) {
             >
               <TableCell>
                 <Link
-                  href={`/seeds/${comment.seedId}`}
+                  href={`/seeds/${comment.projectId}`}
                   className="block max-w-[400px] truncate text-sm font-medium hover:underline"
-                  title={comment.seedName}
+                  title={comment.projectName}
                 >
-                  {comment.seedName}
+                  {comment.projectName}
                 </Link>
               </TableCell>
               <TableCell className="text-sm">{comment.userName}</TableCell>

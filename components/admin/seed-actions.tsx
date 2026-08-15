@@ -28,27 +28,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  approveSeed,
-  archiveSeed,
-  unapproveSeed,
-  unarchiveSeed,
-  advanceToInProgress,
-  advanceToMaintenance,
-  revertToApproved,
-  revertToInProgress,
-  setSeedBadges,
+  approveProject,
+  archiveProject,
+  unapproveProject,
+  unarchiveProject,
+  advanceToSprout,
+  advanceToTree,
+  revertToSeed,
+  revertToSprout,
+  setProjectBadges,
 } from "@/lib/actions/admin";
 import { badges, badgeKeys, type BadgeKey } from "@/lib/badges";
 
 export function SeedActions({
-  seedId,
-  status,
+  projectId,
+  stage,
+  approvalState,
+  archived,
   badges: activeBadges,
   creatorEmail,
   supporterEmails,
 }: {
-  seedId: string;
-  status: string;
+  projectId: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
+  archived: boolean;
   badges: string[];
   creatorEmail: string;
   supporterEmails?: string[];
@@ -65,24 +69,29 @@ export function SeedActions({
           key,
         ];
     startTransition(async () => {
-      await setSeedBadges(seedId, next as BadgeKey[]);
+      await setProjectBadges(projectId, next as BadgeKey[]);
     });
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" disabled={isPending}>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={isPending}
+          aria-label="Seed actions"
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {/* Forward transitions */}
-        {status === "pending" && (
+        {stage === "seed" && approvalState === "pending" && !archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await approveSeed(seedId);
+                await approveProject(projectId);
               })
             }
           >
@@ -90,11 +99,11 @@ export function SeedActions({
             Approve
           </DropdownMenuItem>
         )}
-        {status === "approved" && (
+        {stage === "seed" && approvalState === "approved" && !archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await advanceToInProgress(seedId);
+                await advanceToSprout(projectId);
               })
             }
           >
@@ -102,11 +111,11 @@ export function SeedActions({
             Advance to Sprout
           </DropdownMenuItem>
         )}
-        {status === "in_progress" && (
+        {stage === "sprout" && !archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await advanceToMaintenance(seedId);
+                await advanceToTree(projectId);
               })
             }
           >
@@ -119,14 +128,14 @@ export function SeedActions({
 
         {/* Standard actions */}
         <DropdownMenuItem asChild>
-          <Link href={`/seeds/${seedId}/edit`}>
+          <Link href={`/dashboard/projects/${projectId}/edit`}>
             <Pencil className="mr-2 size-4" />
             Edit
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a
-            href={`/seeds/${seedId}/qr`}
+            href={`/seeds/${projectId}/qr`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -174,11 +183,11 @@ export function SeedActions({
         <DropdownMenuSeparator />
 
         {/* Backward transitions */}
-        {status === "approved" && (
+        {approvalState === "approved" && !archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await unapproveSeed(seedId);
+                await unapproveProject(projectId);
               })
             }
           >
@@ -186,11 +195,11 @@ export function SeedActions({
             Unapprove
           </DropdownMenuItem>
         )}
-        {status === "in_progress" && (
+        {stage === "sprout" && !archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await revertToApproved(seedId);
+                await revertToSeed(projectId);
               })
             }
           >
@@ -198,11 +207,11 @@ export function SeedActions({
             Revert to Seed
           </DropdownMenuItem>
         )}
-        {status === "in_maintenance" && (
+        {stage === "tree" && !archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await revertToInProgress(seedId);
+                await revertToSprout(projectId);
               })
             }
           >
@@ -211,13 +220,11 @@ export function SeedActions({
           </DropdownMenuItem>
         )}
 
-        {/* Archive/Unarchive — archive only from seed stage to keep unarchive
-            lossless. Revert sprouts/trees back to Seed first if needed. */}
-        {(status === "pending" || status === "approved") && (
+        {!archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await archiveSeed(seedId);
+                await archiveProject(projectId);
               })
             }
           >
@@ -225,11 +232,11 @@ export function SeedActions({
             Archive
           </DropdownMenuItem>
         )}
-        {status === "archived" && (
+        {archived && (
           <DropdownMenuItem
             onClick={() =>
               startTransition(async () => {
-                await unarchiveSeed(seedId);
+                await unarchiveProject(projectId);
               })
             }
           >

@@ -1,10 +1,10 @@
 import { StatusSection } from "@/components/seeds/status-section";
-import type { StatusKey } from "@/lib/statuses";
 import type { CategoryKey } from "@/lib/categories";
+import type { ProjectStage } from "@/lib/project-stages";
 
-interface StatusPreview {
-  status: StatusKey;
-  seeds: {
+interface StagePreview {
+  stage: ProjectStage;
+  projects: {
     id: string;
     name: string;
     summary: string;
@@ -12,15 +12,14 @@ interface StatusPreview {
     supportCount: number;
     imageUrl: string | null;
     coverPhotoUrl: string | null;
-    status: string;
+    stage: ProjectStage;
+    approvalState: "draft" | "pending" | "approved";
   }[];
   totalCount: number;
 }
 
-export function HomePhase2({ previews }: { previews: StatusPreview[] }) {
-  const hasAnySeeds = previews.some((p) => p.totalCount > 0);
-
-  if (!hasAnySeeds) {
+export function HomePhase2({ previews }: { previews: StagePreview[] }) {
+  if (!previews.some((preview) => preview.totalCount > 0)) {
     return (
       <div className="py-16 text-center">
         <p className="text-muted-foreground text-lg">
@@ -34,9 +33,9 @@ export function HomePhase2({ previews }: { previews: StatusPreview[] }) {
     <div>
       {previews.map((preview) => (
         <StatusSection
-          key={preview.status}
-          statusKey={preview.status}
-          seeds={preview.seeds}
+          key={preview.stage}
+          stage={preview.stage}
+          seeds={preview.projects}
           totalCount={preview.totalCount}
         />
       ))}

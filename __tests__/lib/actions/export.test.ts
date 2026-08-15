@@ -52,18 +52,13 @@ describe("exportSeedsCsv", () => {
         name: "Test Seed",
         summary: "A test summary",
         category: "daily_access",
-        status: "approved",
-        gardeners: ["Alice", "Bob"],
+        stage: "seed",
+        approvalState: "approved",
         locationAddress: "123 Main St",
         locationDescription: "Near the park",
-        roots: [
-          { name: "Org A", committed: true },
-          { name: "Org B", committed: false },
-        ],
-        supportPeople: ["Charlie"],
         waterHave: ["Tools"],
         waterNeed: ["Funding"],
-        budget: "$500",
+        budgetEstimate: "$500",
         obstacles: null,
         createdAt: new Date("2024-06-01T00:00:00Z"),
         creatorName: "Test User",
@@ -75,20 +70,51 @@ describe("exportSeedsCsv", () => {
     // exportSeedsCsv builds a subquery with db.select().from().groupBy().as()
     const subqueryChain: Record<string, any> = {};
     subqueryChain.from = vi.fn().mockReturnValue(subqueryChain);
+    subqueryChain.where = vi.fn().mockReturnValue(subqueryChain);
     subqueryChain.groupBy = vi.fn().mockReturnValue(subqueryChain);
     subqueryChain.as = vi.fn().mockReturnValue("support_counts_subquery");
 
     const mainChain = mockSelectChain(mockRows);
+    const participantChain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([
+        {
+          projectId: "seed-1",
+          displayName: "Alice",
+          role: "gardener",
+          state: "active",
+        },
+        {
+          projectId: "seed-1",
+          displayName: "Bob",
+          role: "gardener",
+          state: "active",
+        },
+        {
+          projectId: "seed-1",
+          displayName: "Org A",
+          role: "roots",
+          state: "active",
+        },
+        {
+          projectId: "seed-1",
+          displayName: "Org B",
+          role: "roots",
+          state: "prospective",
+        },
+      ]),
+    };
 
     vi.mocked(db.select)
       .mockReturnValueOnce(subqueryChain as any) // subquery
-      .mockReturnValueOnce(mainChain as any); // main query
+      .mockReturnValueOnce(mainChain as any) // main query
+      .mockReturnValueOnce(participantChain as any); // participant roles
 
     const csv = await exportSeedsCsv();
     const lines = csv.split("\n");
 
     expect(lines[0]).toBe(
-      "ID,Name,Category,Status,Summary,Gardeners,Location,Location Description,Roots,Guides,Fertilizer (Have),Water (Need),Budget,Obstacles,URL,Created At,Supporters,Creator Name,Creator Email",
+      "ID,Name,Category,Stage,Approval State,Summary,Gardeners,Location,Location Description,Roots,Guides,Fertilizer (Have),Water (Need),Budget Estimate,Obstacles,URL,Created At,Supporters,Creator Name,Creator Email",
     );
 
     expect(lines[1]).toContain("seed-1");
@@ -109,15 +135,13 @@ describe("exportSeedsCsv", () => {
         name: "Minimal Seed",
         summary: "Bare minimum",
         category: "respect",
-        status: "pending",
-        gardeners: null,
+        stage: "seed",
+        approvalState: "pending",
         locationAddress: null,
         locationDescription: null,
-        roots: null,
-        supportPeople: [],
-        waterHave: null,
+        waterHave: [],
         waterNeed: [],
-        budget: null,
+        budgetEstimate: null,
         obstacles: null,
         createdAt: new Date("2024-06-01T00:00:00Z"),
         creatorName: "User",
@@ -128,14 +152,20 @@ describe("exportSeedsCsv", () => {
 
     const subqueryChain: Record<string, any> = {};
     subqueryChain.from = vi.fn().mockReturnValue(subqueryChain);
+    subqueryChain.where = vi.fn().mockReturnValue(subqueryChain);
     subqueryChain.groupBy = vi.fn().mockReturnValue(subqueryChain);
     subqueryChain.as = vi.fn().mockReturnValue("support_counts_subquery");
 
     const mainChain = mockSelectChain(mockRows);
+    const participantChain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([]),
+    };
 
     vi.mocked(db.select)
       .mockReturnValueOnce(subqueryChain as any)
-      .mockReturnValueOnce(mainChain as any);
+      .mockReturnValueOnce(mainChain as any)
+      .mockReturnValueOnce(participantChain as any);
 
     // Should not throw
     const csv = await exportSeedsCsv();

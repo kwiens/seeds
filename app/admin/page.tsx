@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
 import { BannerSettings } from "@/components/admin/banner-settings";
+import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
@@ -11,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
 import {
   getAdminEmails,
-  getAllSeeds,
+  getAllProjects,
+  getCouncilMembers,
   getSupporterEmailsMap,
 } from "@/lib/db/queries/admin";
 import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
@@ -35,13 +37,15 @@ export default async function AdminPage() {
     allSeeds,
     supporterEmailsMap,
     adminEmails,
+    councilMembers,
     allComments,
     homepagePhase,
     bannerConfig,
   ] = await Promise.all([
-    getAllSeeds(),
+    getAllProjects(),
     getSupporterEmailsMap(),
     getAdminEmails(),
+    getCouncilMembers(),
     getAllComments(),
     getHomepagePhase(),
     getBannerConfig(),
@@ -126,6 +130,22 @@ export default async function AdminPage() {
                 </p>
               </div>
               <AdminEmailList dbEmails={adminEmails} envEmails={envEmails} />
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Council</h2>
+                <p className="text-muted-foreground text-sm">
+                  Council members can view every Sprout&apos;s team page and
+                  post updates there, even on Sprouts they&apos;re not
+                  personally part of — a trusted, cross-project role, not
+                  site-wide admin powers. This is separate from being a
+                  City/County Steward on a specific Sprout: granting Council
+                  here doesn&apos;t make someone a Steward anywhere, and being a
+                  Steward doesn&apos;t make someone Council. Grant this
+                  deliberately.
+                </p>
+              </div>
+              <CouncilList members={councilMembers} />
             </div>
           </div>
         </TabsContent>

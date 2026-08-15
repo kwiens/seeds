@@ -95,7 +95,7 @@ async function generateImage(seed: {
   const mimeType = imagePart.inlineData.mimeType ?? "image/png";
   const extension = mimeType === "image/jpeg" ? "jpg" : "png";
 
-  const blob = await put(`seeds/${seed.id}.${extension}`, imageBuffer, {
+  const blob = await put(`projects/${seed.id}.${extension}`, imageBuffer, {
     access: "public",
     contentType: mimeType,
     addRandomSuffix: true,
@@ -1295,10 +1295,10 @@ async function main() {
       where: eq(schema.users.email, SEED_BOT_EMAIL),
     });
     if (seedUser) {
-      // Delete seeds created by the seed bot (cascades to approvals and supports)
+      // Delete projects created by the seed bot (cascades to related records)
       await db
-        .delete(schema.seeds)
-        .where(eq(schema.seeds.createdBy, seedUser.id));
+        .delete(schema.projects)
+        .where(eq(schema.projects.createdBy, seedUser.id));
       // Delete fake supporter users
       await db
         .delete(schema.users)
@@ -1334,7 +1334,7 @@ async function main() {
 
   // Create supporter users for random sunlight counts
   const supporterCount = 20;
-  const supporters: { id: string }[] = [];
+  const supporters: { id: string; name: string }[] = [];
 
   for (let i = 0; i < supporterCount; i++) {
     const email = `supporter-${i}@seeds.example.com`;
@@ -1351,7 +1351,7 @@ async function main() {
         .returning();
       supporter = created;
     }
-    supporters.push({ id: supporter.id });
+    supporters.push({ id: supporter.id, name: supporter.name });
   }
   console.log(`Ensured ${supporterCount} supporter users exist.`);
 
@@ -1359,8 +1359,8 @@ async function main() {
   let inserted = 0;
   for (const seedData of SEEDS) {
     // Check if seed already exists by name
-    const existing = await db.query.seeds.findFirst({
-      where: eq(schema.seeds.name, seedData.name),
+    const existing = await db.query.projects.findFirst({
+      where: eq(schema.projects.name, seedData.name),
     });
     if (existing) {
       console.log(`  Skipping (exists): ${seedData.name}`);
@@ -1368,7 +1368,7 @@ async function main() {
     }
 
     const [seed] = await db
-      .insert(schema.seeds)
+      .insert(schema.projects)
       .values({
         name: seedData.name,
         summary: seedData.summary,
@@ -1376,28 +1376,56 @@ async function main() {
         locationLat: seedData.lat,
         locationLng: seedData.lng,
         locationAddress: seedData.address,
-        gardeners: seedData.gardeners,
-        roots: seedData.roots.map((name) => ({ name, committed: false })),
         waterHave: seedData.waterHave,
         waterNeed: seedData.waterNeed,
-        status: "approved",
+        stage: "seed",
+        approvalState: "approved",
         createdBy: seedUser.id,
       })
       .returning();
 
     // Create approval record
-    await db.insert(schema.seedApprovals).values({
-      seedId: seed.id,
+    await db.insert(schema.projectApprovals).values({
+      projectId: seed.id,
       approvedBy: seedUser.id,
     });
+
+    await db.insert(schema.projectParticipants).values([
+      {
+        projectId: seed.id,
+        userId: seedUser.id,
+        displayName: seedUser.name,
+        role: "co_gardener",
+        state: "active",
+        addedBy: seedUser.id,
+      },
+      ...seedData.gardeners.map((displayName) => ({
+        projectId: seed.id,
+        displayName,
+        role: "gardener" as const,
+        state: "active" as const,
+        addedBy: seedUser.id,
+      })),
+      ...seedData.roots.map((displayName) => ({
+        projectId: seed.id,
+        displayName,
+        role: "roots" as const,
+        state: "prospective" as const,
+        addedBy: seedUser.id,
+      })),
+    ]);
 
     // Add random supports (1-12 supporters per seed)
     const numSupports = randInt(1, 12);
     const selectedSupporters = pick(supporters, numSupports);
     for (const supporter of selectedSupporters) {
-      await db.insert(schema.seedSupports).values({
-        seedId: seed.id,
+      await db.insert(schema.projectParticipants).values({
+        projectId: seed.id,
         userId: supporter.id,
+        displayName: supporter.name,
+        role: "supporter",
+        state: "active",
+        addedBy: seedUser.id,
       });
     }
 
@@ -1426,7 +1454,7 @@ async function main() {
     }
 
     // Find all seeds created by seed bot that lack images
-    const seedsWithoutImages = await db.query.seeds.findMany({
+    const seedsWithoutImages = await db.query.projects.findMany({
       where: (s, { eq: e, and }) =>
         and(e(s.createdBy, seedUser.id), isNull(s.imageUrl)),
     });
@@ -1455,9 +1483,9 @@ async function main() {
         }
 
         await db
-          .update(schema.seeds)
+          .update(schema.projects)
           .set({ imageUrl: result.imageUrl, updatedAt: new Date() })
-          .where(eq(schema.seeds.id, seed.id));
+          .where(eq(schema.projects.id, seed.id));
 
         console.log("OK");
       } catch (err) {

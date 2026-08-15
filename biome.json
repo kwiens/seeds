@@ -1,7 +1,12 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
   "files": {
-    "includes": ["**"],
+    "includes": [
+      "**",
+      "!.claude/**",
+      "!.github/skills/**",
+      "!.github/hooks/**"
+    ],
     "ignoreUnknown": true
   },
   "vcs": {

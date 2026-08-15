@@ -3,13 +3,13 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { canEditSeed } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { seedComments } from "@/lib/db/schema";
+import { projectComments } from "@/lib/db/schema";
 
 export async function addComment(
-  seedId: string,
+  projectId: string,
   content: string,
   parentId?: string,
 ) {
@@ -26,65 +26,57 @@ export async function addComment(
   }
 
   if (parentId) {
-    const parent = await db.query.seedComments.findFirst({
-      where: eq(seedComments.id, parentId),
-      with: { seed: { columns: { id: true, createdBy: true } } },
+    const parent = await db.query.projectComments.findFirst({
+      where: eq(projectComments.id, parentId),
+      with: { project: { columns: { id: true } } },
     });
-    if (!parent || parent.seed.id !== seedId) {
+    if (!parent || parent.project.id !== projectId) {
       return { error: "Parent comment not found." };
     }
     if (parent.parentId !== null) {
       return { error: "Replies to replies are not supported." };
     }
-    if (!canEditSeed(session, { createdBy: parent.seed.createdBy })) {
-      return { error: "Only the seed creator or admins can reply." };
+    if (!(await canManageProject(session, parent.project))) {
+      return { error: "Only project Gardeners or admins can reply." };
     }
   }
 
-  await db.insert(seedComments).values({
-    seedId,
+  await db.insert(projectComments).values({
+    projectId,
     userId: session.user.id,
     content: trimmed,
     parentId: parentId ?? null,
   });
-
-  revalidatePath(`/seeds/${seedId}`);
+  revalidatePath(`/seeds/${projectId}`);
   return { success: true };
 }
 
 export async function archiveComment(commentId: string) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
+  if (!session?.user?.id) return { error: "You must be signed in." };
 
-  const comment = await db.query.seedComments.findFirst({
-    where: eq(seedComments.id, commentId),
-    with: { seed: { columns: { id: true, createdBy: true } } },
+  const comment = await db.query.projectComments.findFirst({
+    where: eq(projectComments.id, commentId),
+    with: { project: { columns: { id: true } } },
   });
-
   if (!comment) return { error: "Comment not found." };
-
-  if (!canEditSeed(session, { createdBy: comment.seed.createdBy })) {
+  if (!(await canManageProject(session, comment.project))) {
     return { error: "You do not have permission to remove this insight." };
   }
 
   const now = new Date();
-
-  // If archiving a top-level comment, also archive its replies
   if (comment.parentId === null) {
     await db
-      .update(seedComments)
+      .update(projectComments)
       .set({ archivedAt: now })
-      .where(eq(seedComments.parentId, commentId));
+      .where(eq(projectComments.parentId, commentId));
   }
-
   await db
-    .update(seedComments)
+    .update(projectComments)
     .set({ archivedAt: now })
-    .where(eq(seedComments.id, commentId));
+    .where(eq(projectComments.id, commentId));
 
-  revalidatePath(`/seeds/${comment.seed.id}`);
+  revalidatePath(`/seeds/${comment.project.id}`);
   revalidatePath("/admin");
   return { success: true };
 }
@@ -94,20 +86,17 @@ export async function unarchiveComment(commentId: string) {
   if (!session?.user?.id || session.user.role !== "admin") {
     return { error: "Only admins can restore archived insights." };
   }
-
-  const comment = await db.query.seedComments.findFirst({
-    where: eq(seedComments.id, commentId),
-    with: { seed: { columns: { id: true } } },
+  const comment = await db.query.projectComments.findFirst({
+    where: eq(projectComments.id, commentId),
+    with: { project: { columns: { id: true } } },
   });
-
   if (!comment) return { error: "Comment not found." };
 
   await db
-    .update(seedComments)
+    .update(projectComments)
     .set({ archivedAt: null })
-    .where(eq(seedComments.id, commentId));
-
-  revalidatePath(`/seeds/${comment.seed.id}`);
+    .where(eq(projectComments.id, commentId));
+  revalidatePath(`/seeds/${comment.project.id}`);
   revalidatePath("/admin");
   return { success: true };
 }

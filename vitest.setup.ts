@@ -1,6 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
+// Database clients are created when query modules are imported. Point them at
+// an intentionally unreachable local address so an incompletely mocked test
+// can never fall through to a shared environment.
+process.env.DATABASE_URL ??=
+  "postgresql://test:test@127.0.0.1:1/seeds_test?sslmode=disable";
+
 // Mock next/cache — used by all server actions
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),

@@ -39,25 +39,29 @@ export function mockAdminSession() {
   });
 }
 
-// --- Mock seed data ---
+// --- Mock project data ---
 
-export function mockSeed(overrides?: Record<string, unknown>) {
+export function mockProject(overrides?: Record<string, unknown>) {
   return {
     id: "seed-1",
     name: "Community Garden",
     summary: "A garden for the neighborhood.",
-    gardeners: ["Alice"],
     locationAddress: "123 Main St",
+    locationDescription: null,
     locationLat: 35.0456,
     locationLng: -85.3097,
     category: "daily_access",
-    roots: [{ name: "Org A", committed: false }],
-    supportPeople: ["Bob"],
     waterHave: ["Tools"],
     waterNeed: ["Seeds"],
+    budgetEstimate: null,
     obstacles: null,
     imageUrl: null,
-    status: "pending" as const,
+    photos: [],
+    coverPhotoUrl: null,
+    badges: [],
+    stage: "seed" as const,
+    approvalState: "pending" as const,
+    archivedAt: null,
     createdBy: "user-1",
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
@@ -69,11 +73,26 @@ export function mockSeed(overrides?: Record<string, unknown>) {
       role: "user",
       createdAt: new Date("2024-01-01"),
     },
+    participants: [
+      {
+        id: "participant-1",
+        projectId: "seed-1",
+        userId: "user-1",
+        displayName: "Test User",
+        role: "gardener" as const,
+        state: "active" as const,
+        addedBy: "user-1",
+        createdAt: new Date("2024-01-01"),
+        updatedAt: new Date("2024-01-01"),
+      },
+    ],
     ...overrides,
   };
 }
 
-export function validSeedFormData(overrides?: Record<string, unknown>) {
+export const mockSeed = mockProject;
+
+export function validProjectFormData(overrides?: Record<string, unknown>) {
   return {
     name: "Community Garden",
     summary: "A garden for the neighborhood.",
@@ -87,6 +106,8 @@ export function validSeedFormData(overrides?: Record<string, unknown>) {
     ...overrides,
   };
 }
+
+export const validSeedFormData = validProjectFormData;
 
 // --- DB chain mocking helpers ---
 

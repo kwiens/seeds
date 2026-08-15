@@ -10,7 +10,7 @@ import { SeedMapView } from "@/components/seeds/seed-map-view";
 import { SortFilter } from "@/components/seeds/sort-filter";
 import { ViewToggle } from "@/components/seeds/view-toggle";
 import type { CategoryKey } from "@/lib/categories";
-import type { SortOption } from "@/lib/db/queries/seeds";
+import type { SortOption } from "@/lib/db/queries/projects";
 
 export interface SeedRow {
   id: string;
@@ -21,7 +21,9 @@ export interface SeedRow {
   coverPhotoUrl: string | null;
   locationLat: number | null;
   locationLng: number | null;
-  status: string;
+  stage: "seed" | "sprout" | "tree";
+  approvalState: "draft" | "pending" | "approved";
+  archivedAt: Date | null;
   createdBy: string;
   createdAt: Date;
   supportCount: number;

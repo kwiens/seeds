@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { ImageUpload } from "@/components/forms/image-upload";
-import { createUpdate, editUpdate } from "@/lib/actions/updates";
+import {
+  createPublicProjectUpdate,
+  editPublicProjectUpdate,
+} from "@/lib/actions/project-updates";
+import { projectWorkspacePath } from "@/lib/project-workspace-navigation";
 import { EMPTY_TIPTAP_DOC } from "@/lib/tiptap";
 
 interface UpdateFormProps {
@@ -23,6 +27,7 @@ interface UpdateFormProps {
 
 export function UpdateForm({ seedId, update }: UpdateFormProps) {
   const router = useRouter();
+  const updatesPath = projectWorkspacePath(seedId, "updates");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
@@ -39,13 +44,13 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
 
     startTransition(async () => {
       const result = update
-        ? await editUpdate(update.id, formData)
-        : await createUpdate(seedId, formData);
+        ? await editPublicProjectUpdate(update.id, formData)
+        : await createPublicProjectUpdate(seedId, formData);
 
       if (result?.error) {
         setError(result.error);
       } else {
-        router.push(`/seeds/${seedId}/updates`);
+        router.push(updatesPath);
       }
     });
   }
@@ -53,7 +58,10 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -81,6 +89,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
             onChange={setBody}
             placeholder="Share your progress, milestones, or news..."
             disabled={isPending}
+            aria-label="Body"
           />
         </div>
 
@@ -98,7 +107,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(`/seeds/${seedId}/updates`)}
+            onClick={() => router.push(updatesPath)}
           >
             Cancel
           </Button>

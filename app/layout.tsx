@@ -64,11 +64,19 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${archivo.variable} antialiased`}>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow"
+        >
+          Skip to content
+        </a>
         <Providers>
           <div className="flex min-h-svh flex-col">
             <EventBanner />
             <Header />
-            <main className="flex-1">{children}</main>
+            <main id="main" className="flex-1">
+              {children}
+            </main>
             <Footer />
           </div>
           <Toaster position="top-center" />
