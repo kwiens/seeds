@@ -27,9 +27,18 @@ function buildVisibilityFilter(options: {
     isNull(projects.archivedAt),
   );
 
+  // Creators also see their own draft/pending projects in listings, but
+  // archived projects stay hidden from Explore for everyone — including
+  // their creator, who still finds them in the dashboard.
   conditions.push(
     options.userId
-      ? or(publicFilter, eq(projects.createdBy, options.userId))
+      ? or(
+          publicFilter,
+          and(
+            eq(projects.createdBy, options.userId),
+            isNull(projects.archivedAt),
+          ),
+        )
       : publicFilter,
   );
 

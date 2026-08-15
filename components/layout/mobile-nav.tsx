@@ -45,7 +45,7 @@ export function MobileNav({
             Site navigation
           </SheetDescription>
         </SheetHeader>
-        <nav className="mt-6 flex flex-col gap-2">
+        <nav className="mt-6 flex flex-col gap-2 px-4">
           <Link
             href="/"
             onClick={() => setOpen(false)}

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { categories, type CategoryKey } from "@/lib/categories";
 import { db } from "@/lib/db";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
+import { getRequestOrigin } from "@/lib/site-url";
 
 function escapeCsvField(value: string): string {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
@@ -64,6 +65,7 @@ export async function exportContributorsCsv(): Promise<string> {
 
 export async function exportSeedsCsv(): Promise<string> {
   await requireAdmin();
+  const origin = await getRequestOrigin();
 
   const supportCounts = db
     .select({
@@ -182,7 +184,7 @@ export async function exportSeedsCsv(): Promise<string> {
       row.waterNeed.join("; "),
       row.budgetEstimate ?? "",
       row.obstacles ?? "",
-      `https://www.npcseeds.org/seeds/${row.id}`,
+      `${origin}/seeds/${row.id}`,
       row.createdAt.toISOString(),
       String(row.supportCount),
       row.creatorName,
