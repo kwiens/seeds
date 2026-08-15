@@ -63,8 +63,9 @@ export async function Header() {
             >
               My Projects
               {unreadSproutCount > 0 && (
-                <span className="bg-primary text-primary-foreground inline-flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
+                <span className="bg-primary text-primary-foreground inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
                   {unreadSproutCount}
+                  <span className="sr-only">unread</span>
                 </span>
               )}
             </Link>

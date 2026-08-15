@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -40,33 +41,36 @@ export function MobileNav({
               height={39}
             />
           </SheetTitle>
+          <SheetDescription className="sr-only">
+            Site navigation
+          </SheetDescription>
         </SheetHeader>
-        <nav className="mt-6 flex flex-col gap-4 px-4">
+        <nav className="mt-6 flex flex-col gap-2 px-4">
           <Link
             href="/"
             onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"
           >
             Explore
           </Link>
           <Link
             href="/about"
             onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"
           >
             About
           </Link>
           <Link
             href="/faq"
             onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"
           >
             FAQ
           </Link>
           <Link
             href="/seeds/new"
             onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"
           >
             Plant a Seed
           </Link>
@@ -74,12 +78,13 @@ export function MobileNav({
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 py-2 text-sm transition-colors"
             >
               My Projects
               {unreadSproutCount > 0 && (
-                <span className="bg-primary text-primary-foreground inline-flex size-4 items-center justify-center rounded-full text-[10px] font-semibold">
+                <span className="bg-primary text-primary-foreground inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
                   {unreadSproutCount}
+                  <span className="sr-only">unread</span>
                 </span>
               )}
             </Link>

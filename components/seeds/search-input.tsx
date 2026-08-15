@@ -39,6 +39,7 @@ export function SearchInput() {
       <Input
         type="text"
         placeholder="Search seeds..."
+        aria-label="Search seeds"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="pl-9 pr-9"
@@ -47,7 +48,7 @@ export function SearchInput() {
         <button
           type="button"
           onClick={() => setValue("")}
-          className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2"
+          className="text-muted-foreground hover:text-foreground absolute right-1 top-1/2 -translate-y-1/2 p-2"
         >
           <X className="size-4" />
           <span className="sr-only">Clear search</span>

@@ -65,7 +65,7 @@ export default async function ProjectUpdatesPage(props: {
             <TableBody>
               {updates.map((update) => (
                 <TableRow key={update.id}>
-                  <TableCell>
+                  <TableCell className="whitespace-normal break-words">
                     <Link
                       href={`/seeds/${project.id}/updates/${update.id}`}
                       className="font-medium hover:underline"

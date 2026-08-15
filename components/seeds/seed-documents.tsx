@@ -23,11 +23,8 @@ export function SeedDocuments({
 }) {
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem
-        value="files"
-        className="rounded-lg border px-4 last:border-b"
-      >
-        <AccordionTrigger className="hover:no-underline">
+      <AccordionItem value="files" className="rounded-lg border last:border-b">
+        <AccordionTrigger className="px-4 hover:no-underline">
           <span className="flex min-w-0 flex-1 items-center justify-between gap-3 pr-2">
             <span>Files</span>
             <span className="text-muted-foreground text-right text-xs font-normal">
@@ -37,32 +34,33 @@ export function SeedDocuments({
             </span>
           </span>
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent className="px-4">
           {documents.length === 0 ? (
             <p className="text-muted-foreground text-xs">
               Files shared in Team Updates show up here automatically.
             </p>
           ) : (
-            <div className="space-y-1">
+            <ul className="space-y-1">
               {documents.map((doc) => (
-                <a
-                  key={`${doc.updateId}-${doc.attachmentIndex}`}
-                  href={`/dashboard/projects/${seedId}/team#update-${doc.updateId}`}
-                  className="hover:bg-accent flex items-center gap-2 rounded-md p-1.5"
-                >
-                  <FileText className="text-muted-foreground size-4 shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
-                      {doc.name}
+                <li key={`${doc.updateId}-${doc.attachmentIndex}`}>
+                  <a
+                    href={`/dashboard/projects/${seedId}/team#update-${doc.updateId}`}
+                    className="hover:bg-accent flex items-center gap-2 rounded-md p-1.5"
+                  >
+                    <FileText className="text-muted-foreground size-4 shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">
+                        {doc.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {doc.posterName} · {formatRelativeTime(doc.createdAt)} ·{" "}
+                        {formatSize(doc.size)}
+                      </span>
                     </span>
-                    <span className="text-muted-foreground text-xs">
-                      {doc.posterName} · {formatRelativeTime(doc.createdAt)} ·{" "}
-                      {formatSize(doc.size)}
-                    </span>
-                  </span>
-                </a>
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </AccordionContent>
       </AccordionItem>

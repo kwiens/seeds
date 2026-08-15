@@ -2,6 +2,13 @@
 
 This file provides guidance for AI coding agents when working with code in this repository.
 
+## Focused Guides
+
+Read the guide for your focus area before starting work there; skip the others.
+
+- [docs/agents/design.md](docs/agents/design.md) — building or changing any UI: design workflow (shadcn/ui + Impeccable), mobile-first and accessibility floor
+- [docs/agents/database.md](docs/agents/database.md) — schema changes, migrations, Neon branches, seeding
+
 ## Commands
 
 ### Development
@@ -39,7 +46,7 @@ pnpm test:run
 ### Database
 
 ```bash
-# Push schema changes to Neon (dev)
+# Push schema changes to Neon (your own branch only — see docs/agents/database.md)
 pnpm db:push
 
 # Generate migration files
@@ -51,6 +58,8 @@ pnpm db:migrate
 # Open Drizzle Studio (DB GUI)
 pnpm db:studio
 ```
+
+The primary Neon database is live production. Never run `db:push` or migrations against it — work on a Neon branch (see [docs/agents/database.md](docs/agents/database.md)).
 
 ### Build & Deploy
 
@@ -181,40 +190,47 @@ These three checks match what CI runs. If any fail locally, they will fail in CI
 
 ```
 app/
-  page.tsx              # Home — seed list with grid/map toggle
-  home-content.tsx      # Client wrapper for view switching
-  admin/page.tsx        # Admin — seed management table
-  dashboard/            # User's seeds and supporters
+  page.tsx              # Home — project explorer with grid/map toggle
+  admin/page.tsx        # Admin — project management table
+  dashboard/            # "Mine" hub — user's projects and supported projects
+    projects/[id]/      # Private project workspace: layout + team, edit,
+                        # updates, supporters sections
   seeds/
-    new/page.tsx        # Create seed form
-    [id]/page.tsx       # Seed detail view
-    [id]/edit/page.tsx  # Edit seed form
+    new/page.tsx        # Create project form
+    [id]/page.tsx       # Public project detail view
   api/auth/             # NextAuth API routes
 
 auth.ts                 # NextAuth config (Google OAuth, user upsert)
 middleware.ts           # Route protection (dashboard, admin)
 
 components/
-  admin/                # Admin data table, actions
+  admin/                # Admin data table, actions, council list
   auth/                 # Sign-in, sign-out, user menu
-  dashboard/            # Seed list, status badges, supporters
-  forms/                # Seed form, sortable list, location picker
+  dashboard/            # Project lists, status badges, workspace nav
+  forms/                # Project form, update form, uploads, location picker
   layout/               # Header, footer, mobile nav
   map/                  # Reusable Mapbox wrapper
-  seeds/                # Seed card, list/map views, support button
+  seeds/                # Project cards, explorer, team workspace widgets
+                        # (updates, roster, budget, events, documents)
   ui/                   # shadcn/ui components
 
 lib/
-  actions/              # Server actions (seeds, support, admin, export)
-  categories.ts         # Category definitions (5 categories)
+  actions/              # Server actions (projects, updates, budgets,
+                        # team roster/events/activity, council, support)
+  project-stages.ts     # Seed → Sprout → Tree lifecycle model
+  participant-roles.ts  # Team role definitions
+  project-workspace.ts  # Workspace access rules (+ -navigation.ts for nav)
   db/
-    index.ts            # Neon + Drizzle connection
-    schema.ts           # Tables: users, seeds, seed_approvals, seed_supports
+    index.ts            # Neon + Drizzle connection (neon-http driver)
+    schema.ts           # users, projects, project_participants,
+                        # project_updates, project_budgets, project_events, …
     types.ts            # Inferred TypeScript types
     queries/            # Read-only query functions
     migrations/         # Drizzle migration files
-  validations/seed.ts   # Zod schema for seed form
+  validations/          # Zod schemas (project, project-update, budget, …)
 ```
+
+One data model serves the whole Seed → Sprout → Tree lifecycle: capabilities unlock by stage (`lib/project-stages.ts`, `lib/project-workspace.ts`) rather than by parallel tables or duplicated components. Extend that pattern — new stage-gated features should reuse the `projects` tables and shared components, not fork them.
 
 ### React Best Practices
 
@@ -232,13 +248,13 @@ Hooks should encapsulate their own dependencies when possible. This reduces nois
 
 Code should read like a narrative, flowing from high-level abstractions to low-level details. In React files, this means: main component → child components → hooks → helper functions.
 
-### UI Components
+### Design & UI
 
-Our design system components in `components/ui/` are based on shadcn/ui. Use shadcn/ui components as the foundation and customize with Tailwind utilities.
+Read [docs/agents/design.md](docs/agents/design.md) before building or changing any UI. The essentials:
 
-#### Cursor
-
-Tailwind does not set `cursor: pointer` on interactive elements by default. We override this globally in `app/globals.css` — all `<a>`, `<button>`, `[role="button"]`, `<select>`, and `<summary>` elements get `cursor: pointer` via a base layer rule. Do not add `cursor-pointer` classes manually; the global rule handles it.
+- **shadcn/ui is the design system.** Build on the primitives in `components/ui/` (add new ones via the shadcn CLI) and customize with Tailwind utilities. Never hand-roll a dialog, popover, tab strip, sheet, or menu — the Radix-based primitives carry the keyboard and screen-reader behavior for free.
+- **Impeccable is the design reviewer.** It is installed on demand, not committed — run `pnpm skills:install` before design work, then use `/impeccable` commands (`shape` to plan, `audit`/`critique` to evaluate, `adapt` for responsiveness, `polish` before shipping). A detector hook scans UI files after every edit — act on its findings.
+- **Mobile-first, always.** Design for a 320px viewport with touch input first and scale up. Comfortable touch targets, 16px inputs on mobile, no hover-only affordances, and every control labeled for assistive tech. The full floor lives in the design guide.
 
 ### Environment Variables
 

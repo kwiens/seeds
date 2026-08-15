@@ -16,19 +16,21 @@ export function ViewToggle({
         variant={view === "grid" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => onViewChange("grid")}
+        aria-pressed={view === "grid"}
         className="gap-1.5"
       >
         <LayoutGrid className="size-4" />
-        <span className="hidden sm:inline">Grid</span>
+        <span className="sr-only sm:not-sr-only">Grid</span>
       </Button>
       <Button
         variant={view === "map" ? "secondary" : "ghost"}
         size="sm"
         onClick={() => onViewChange("map")}
+        aria-pressed={view === "map"}
         className="gap-1.5"
       >
         <Map className="size-4" />
-        <span className="hidden sm:inline">Map</span>
+        <span className="sr-only sm:not-sr-only">Map</span>
       </Button>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type FormEvent, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -71,11 +71,13 @@ export function TeamRoster({
   return (
     <div className="rounded-lg border p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold">Team ({members.length})</h4>
+        <h3 className="text-sm font-semibold">Team ({members.length})</h3>
         <button
           type="button"
           onClick={() => setShowExplainer(!showExplainer)}
-          className="text-muted-foreground hover:text-foreground text-xs font-medium"
+          aria-expanded={showExplainer}
+          aria-controls="team-roles-explainer"
+          className="text-muted-foreground hover:text-foreground -my-1.5 py-1.5 text-xs font-medium"
         >
           What do these roles mean?
         </button>
@@ -110,7 +112,7 @@ export function TeamRoster({
         ))}
 
       {showExplainer && (
-        <div className="mt-4 space-y-3 border-t pt-3">
+        <div id="team-roles-explainer" className="mt-4 space-y-3 border-t pt-3">
           <p className="text-sm font-semibold">Team Roles</p>
           <p className="text-muted-foreground text-xs">
             Add someone here once they&apos;re actively helping this Sprout
@@ -161,7 +163,7 @@ function RosterRow({
   return (
     <div className="group flex flex-wrap items-center gap-3">
       <Avatar className="size-8 shrink-0">
-        <AvatarImage src={member.image ?? undefined} />
+        <AvatarImage src={member.image ?? undefined} alt="" />
         <AvatarFallback className="text-xs">
           {member.name.charAt(0).toUpperCase()}
         </AvatarFallback>
@@ -186,7 +188,9 @@ function RosterRow({
         </Button>
       )}
       {error && (
-        <p className="text-destructive w-full pl-11 text-xs">{error}</p>
+        <p role="alert" className="text-destructive w-full pl-11 text-xs">
+          {error}
+        </p>
       )}
     </div>
   );
@@ -210,7 +214,8 @@ function AddMemberForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleSubmit() {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     const targetEmail = email.trim();
     if (!targetEmail) return;
 
@@ -226,15 +231,21 @@ function AddMemberForm({
   }
 
   return (
-    <div className="mt-3 space-y-2 rounded-md border p-3">
+    <form
+      onSubmit={handleSubmit}
+      className="mt-3 space-y-2 rounded-md border p-3"
+    >
       {error && (
-        <p className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs">
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs"
+        >
           {error}
         </p>
       )}
 
       <Select value={role} onValueChange={(v) => setRole(v as TeamRole)}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full" aria-label="Team role">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -251,20 +262,17 @@ function AddMemberForm({
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="email@example.com"
+        aria-label="Email address of person to add"
       />
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onDone}>
+        <Button type="button" variant="outline" size="sm" onClick={onDone}>
           Cancel
         </Button>
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={isPending || !email.trim()}
-        >
+        <Button type="submit" size="sm" disabled={isPending || !email.trim()}>
           Add
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

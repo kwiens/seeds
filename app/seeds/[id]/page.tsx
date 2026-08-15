@@ -44,10 +44,10 @@ function DetailList({
   if (items.length === 0) return null;
   return (
     <div>
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
         <SeedIcon name={seedIcon} />
         {label}
-      </h3>
+      </h2>
       <ul className="space-y-1">
         {items.map((item, i) => (
           <li key={i} className="text-muted-foreground text-sm">
@@ -67,10 +67,10 @@ function RootsDetailList({
   if (roots.length === 0) return null;
   return (
     <div>
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
         <SeedIcon name="roots" />
         Roots
-      </h3>
+      </h2>
       <ul className="space-y-1">
         {roots.map((root, i) => (
           <li key={i} className="text-muted-foreground text-sm">
@@ -170,7 +170,9 @@ export default async function SeedPage(props: {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <CategoryBadge category={seed.category} className="mb-2" />
-          <h1 className="text-3xl font-bold tracking-tight">{seed.name}</h1>
+          <h1 className="break-words text-3xl font-bold tracking-tight">
+            {seed.name}
+          </h1>
           {(seed.stage !== "seed" ||
             seed.approvalState !== "approved" ||
             seed.archivedAt) && (
@@ -261,7 +263,7 @@ export default async function SeedPage(props: {
         if (displayPhotos.length === 0) return null;
         return (
           <div className="mb-8">
-            <h3 className="mb-3 text-sm font-semibold">Photos</h3>
+            <h2 className="mb-3 text-sm font-semibold">Photos</h2>
             <PhotoGrid photos={displayPhotos} alt={seed.name} />
           </div>
         );
@@ -328,7 +330,7 @@ export default async function SeedPage(props: {
             {/* Budget */}
             {seed.budgetEstimate && (
               <div className="mt-8">
-                <h3 className="mb-2 text-sm font-semibold">Budget estimate</h3>
+                <h2 className="mb-2 text-sm font-semibold">Budget estimate</h2>
                 <p className="text-muted-foreground text-sm">
                   {seed.budgetEstimate}
                 </p>
@@ -337,19 +339,19 @@ export default async function SeedPage(props: {
 
             {publicBudgets.map((budget) => (
               <div key={budget.id} className="mt-8">
-                <h3 className="mb-2 text-sm font-semibold capitalize">
+                <h2 className="mb-2 text-sm font-semibold capitalize">
                   {budget.status} detailed budget
-                </h3>
+                </h2>
                 <ul className="space-y-1 text-sm">
                   {budget.lineItems.map((item, index) => (
                     <li
                       key={`${budget.id}-${index}`}
                       className="flex justify-between gap-4"
                     >
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground min-w-0 break-words">
                         {item.label}
                       </span>
-                      <span>
+                      <span className="shrink-0 tabular-nums">
                         {item.amount.toLocaleString("en-US", {
                           style: "currency",
                           currency: "USD",
@@ -370,7 +372,7 @@ export default async function SeedPage(props: {
             {/* Obstacles */}
             {seed.obstacles && (
               <div className="mt-8">
-                <h3 className="mb-2 text-sm font-semibold">Obstacles</h3>
+                <h2 className="mb-2 text-sm font-semibold">Obstacles</h2>
                 <p className="text-muted-foreground whitespace-pre-wrap text-sm">
                   {seed.obstacles}
                 </p>
@@ -390,11 +392,11 @@ export default async function SeedPage(props: {
             {/* Supporters */}
             {supporters.length > 0 && (
               <div className="mt-8">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
                   <SeedIcon name="sunlight" />
                   Sunlight ({supportCount}{" "}
                   {supportCount === 1 ? "supporter" : "supporters"})
-                </h3>
+                </h2>
                 <div className="flex flex-wrap gap-2">
                   {supporters.map((s) =>
                     canEdit ? (

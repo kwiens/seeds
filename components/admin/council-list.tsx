@@ -15,18 +15,21 @@ type CouncilMember = {
 export function CouncilList({ members }: { members: CouncilMember[] }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleAdd(formData: FormData) {
     const email = formData.get("email") as string;
     if (!email) return;
     setError(null);
+    setStatus(null);
     startTransition(async () => {
       const result = await promoteToCouncil(email);
       if (result.error) {
         setError(result.error);
         return;
       }
+      setStatus("Added to Council");
       formRef.current?.reset();
     });
   }
@@ -41,13 +44,18 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
 
   return (
     <div className="space-y-4">
-      <form ref={formRef} action={handleAdd} className="flex gap-2">
+      <form
+        ref={formRef}
+        action={handleAdd}
+        className="flex flex-col gap-2 sm:flex-row"
+      >
         <Input
           name="email"
           type="email"
           placeholder="email@example.com"
           required
           disabled={isPending}
+          aria-label="Email of user to promote"
           className="max-w-sm"
         />
         <Button type="submit" disabled={isPending}>
@@ -55,8 +63,15 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
         </Button>
       </form>
 
+      <span aria-live="polite" className="sr-only">
+        {status}
+      </span>
+
       {error && (
-        <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+        >
           {error}
         </p>
       )}
@@ -70,9 +85,11 @@ export function CouncilList({ members }: { members: CouncilMember[] }) {
               key={member.id}
               className="flex items-center justify-between py-2"
             >
-              <div>
-                <span className="text-sm font-medium">{member.name}</span>
-                <span className="text-muted-foreground ml-2 text-xs">
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-medium">
+                  {member.name}
+                </span>
+                <span className="text-muted-foreground block truncate text-xs">
                   {member.email}
                 </span>
               </div>

@@ -53,7 +53,7 @@ export function ProjectWorkspaceNav({
               href={href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "text-muted-foreground hover:text-foreground relative inline-flex items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors",
+                "text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 relative inline-flex items-center gap-1.5 rounded-sm px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]",
                 isActive &&
                   "text-foreground after:bg-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5",
               )}

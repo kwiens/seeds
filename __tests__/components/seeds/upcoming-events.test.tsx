@@ -53,7 +53,9 @@ describe("UpcomingEvents", () => {
       screen.getByRole("button", { name: /edit sunrise site visit/i }),
     );
 
-    expect(screen.getByRole("combobox")).toHaveTextContent(/6:15\sAM/);
+    expect(
+      screen.getByRole("combobox", { name: "Start time" }),
+    ).toHaveTextContent(/6:15\sAM/);
   });
 
   it("keeps the out-of-range time when saving without changes", async () => {

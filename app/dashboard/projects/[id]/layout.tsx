@@ -62,7 +62,7 @@ export default async function ProjectWorkspaceLayout({
         canAccessTeam={canAccessTeam}
       />
 
-      <main className="pt-8">{children}</main>
+      <div className="pt-8">{children}</div>
     </div>
   );
 }

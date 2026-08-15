@@ -70,7 +70,7 @@ export function DashboardContent({
           className="gap-1.5"
           onClick={() => setActiveTab("my-sprouts")}
         >
-          <Leaf className="size-4" />
+          <Leaf className="hidden size-4 sm:block" />
           My Sprouts
         </TabsTrigger>
         <TabsTrigger
@@ -78,7 +78,7 @@ export function DashboardContent({
           className="gap-1.5"
           onClick={() => setActiveTab("my-seeds")}
         >
-          <Sprout className="size-4" />
+          <Sprout className="hidden size-4 sm:block" />
           My Seeds
         </TabsTrigger>
         <TabsTrigger
@@ -86,7 +86,7 @@ export function DashboardContent({
           className="gap-1.5"
           onClick={() => setActiveTab("supporting")}
         >
-          <Sun className="size-4" />
+          <Sun className="hidden size-4 sm:block" />
           Supporting
         </TabsTrigger>
       </TabsList>

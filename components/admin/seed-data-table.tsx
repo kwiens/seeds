@@ -93,10 +93,13 @@ export function AdminSeedTable({
               <TableHead className="hidden sm:table-cell">Category</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="hidden sm:table-cell">
-                <Sun className="inline size-4 text-amber-500" />
+                <Sun aria-hidden className="inline size-4 text-amber-500" />
+                <span className="sr-only">Supporters</span>
               </TableHead>
               <TableHead className="hidden lg:table-cell">Created</TableHead>
-              <TableHead className="w-12" />
+              <TableHead className="w-12">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

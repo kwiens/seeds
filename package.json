@@ -10,6 +10,7 @@
     "lint": "eslint && biome format",
     "lint:fix": "eslint --fix && biome format --write",
     "format": "biome format --write",
+    "skills:install": "npx -y impeccable install",
     "test": "vitest",
     "test:run": "vitest run",
     "env:setup": "tsx scripts/setup-local-environment.ts",

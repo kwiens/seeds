@@ -32,7 +32,7 @@ export function StatusSection({
   return (
     <section className="mb-12">
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-baseline gap-2 gap-y-1">
           <Icon className={`size-6 self-center ${info.textClass}`} />
           <h2 className="text-xl font-bold">{info.pluralLabel}</h2>
           <span className="text-muted-foreground text-sm font-normal uppercase tracking-wide">

@@ -26,11 +26,11 @@ export function DashboardSeedList({ seeds }: { seeds: DashboardSeed[] }) {
           key={seed.id}
           className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/seeds/${seed.id}`}
-                className="font-medium hover:underline"
+                className="font-medium break-words hover:underline"
               >
                 {seed.name}
               </Link>
@@ -43,8 +43,9 @@ export function DashboardSeedList({ seeds }: { seeds: DashboardSeed[] }) {
             <div className="flex items-center gap-3">
               <CategoryBadge category={seed.category} />
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Sun className="size-3.5 text-amber-500" />
+                <Sun className="size-3.5 text-amber-500" aria-hidden="true" />
                 {seed.supportCount}
+                <span className="sr-only">supporters</span>
               </span>
             </div>
           </div>

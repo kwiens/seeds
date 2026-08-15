@@ -91,11 +91,8 @@ export function BudgetEditor({
 
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem
-        value="budget"
-        className="rounded-lg border px-4 last:border-b"
-      >
-        <AccordionTrigger className="hover:no-underline">
+      <AccordionItem value="budget" className="rounded-lg border last:border-b">
+        <AccordionTrigger className="px-4 hover:no-underline">
           <span className="flex min-w-0 flex-1 items-center justify-between gap-3 pr-2">
             <span>Budget</span>
             <span className="text-muted-foreground text-right text-xs font-normal">
@@ -125,7 +122,7 @@ export function BudgetEditor({
             </span>
           </span>
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent className="px-4">
           <Tabs defaultValue="proposed">
             <TabsList>
               <TabsTrigger value="proposed">Proposed</TabsTrigger>
@@ -253,7 +250,7 @@ function BudgetStageEditor({
           <button
             type="button"
             onClick={copyFromProposed}
-            className="text-primary shrink-0 text-xs font-medium hover:underline"
+            className="text-primary -mx-2 -my-2 shrink-0 px-2 py-2 text-xs font-medium hover:underline"
           >
             Copy from Proposed
           </button>
@@ -261,7 +258,10 @@ function BudgetStageEditor({
       </div>
 
       {error && (
-        <p className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs">
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs"
+        >
           {error}
         </p>
       )}
@@ -275,11 +275,13 @@ function BudgetStageEditor({
               disabled={!canManage}
               onChange={(e) => updateItem(index, { label: e.target.value })}
               rows={1}
-              className="min-h-9 flex-1 resize-none py-2 text-sm"
+              aria-label={`Line item ${index + 1} description`}
+              className="min-h-9 flex-1 resize-none py-2"
             />
             <Input
               type="number"
               min={0}
+              inputMode="decimal"
               value={item.amount === 0 ? "" : item.amount}
               placeholder="0"
               disabled={!canManage}
@@ -287,6 +289,7 @@ function BudgetStageEditor({
               onChange={(e) =>
                 updateItem(index, { amount: parseFloat(e.target.value) || 0 })
               }
+              aria-label={`Line item ${index + 1} amount`}
               className="h-9 w-20 shrink-0 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
             {canManage && (
@@ -294,6 +297,7 @@ function BudgetStageEditor({
                 variant="ghost"
                 size="icon"
                 onClick={() => removeItem(index)}
+                aria-label={`Remove line item ${index + 1}`}
                 className="shrink-0"
               >
                 <Trash2 className="text-muted-foreground size-3.5" />
@@ -320,7 +324,7 @@ function BudgetStageEditor({
           onClick={() =>
             downloadBudgetCsv(seedName, status, lineItems, notes, total)
           }
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs font-medium"
+          className="text-muted-foreground hover:text-foreground -mx-2 -my-2 inline-flex items-center gap-1 px-2 py-2 text-xs font-medium"
         >
           <Download className="size-3" />
           Export CSV
@@ -353,20 +357,28 @@ function BudgetStageEditor({
       )}
 
       <div>
-        <p className="mb-1.5 text-xs font-semibold">Notes</p>
+        <label
+          htmlFor={`budget-notes-${status}`}
+          className="mb-1.5 block text-xs font-semibold"
+        >
+          Notes
+        </label>
         <Textarea
+          id={`budget-notes-${status}`}
           value={notes}
           disabled={!canManage}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="e.g. in-kind donations, funding uncertainty, cost changes..."
-          className="min-h-16 text-sm"
+          className="min-h-16"
         />
       </div>
 
       {canManage && (
         <div className="flex items-center justify-end gap-2">
           {saved && (
-            <span className="text-muted-foreground text-xs">Saved</span>
+            <span role="status" className="text-muted-foreground text-xs">
+              Saved
+            </span>
           )}
           <Button size="sm" onClick={handleSave} disabled={isPending}>
             Save {status === "proposed" ? "Proposed" : "Final"} Budget

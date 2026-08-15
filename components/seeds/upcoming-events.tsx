@@ -95,11 +95,8 @@ function isRemoteLocation(location: string) {
 }
 
 function formatWhen(date: Date) {
-  const day = date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  // The date badge beside the row already shows month + day.
+  const day = date.toLocaleDateString("en-US", { weekday: "short" });
   const time = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -158,19 +155,22 @@ function DatePicker({
       <PopoverTrigger asChild>
         <button
           type="button"
+          aria-label="Event date"
           className={cn(
-            "border-input flex h-9 w-full items-center gap-2 rounded-md border bg-transparent px-3 text-left text-sm",
+            "border-input flex h-9 w-full min-w-0 items-center gap-2 rounded-md border bg-transparent px-3 text-left text-sm",
             !value && "text-muted-foreground",
           )}
         >
           <CalendarIcon className="size-3.5 shrink-0" />
-          {value
-            ? value.toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })
-            : "Select date"}
+          <span className="truncate">
+            {value
+              ? value.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "Select date"}
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-3">
@@ -179,7 +179,7 @@ function DatePicker({
             type="button"
             aria-label="Previous month"
             onClick={() => setViewMonth(new Date(year, month - 1, 1))}
-            className="hover:bg-accent flex size-6 items-center justify-center rounded"
+            className="hover:bg-accent flex size-8 items-center justify-center rounded"
           >
             ‹
           </button>
@@ -190,7 +190,7 @@ function DatePicker({
             type="button"
             aria-label="Next month"
             onClick={() => setViewMonth(new Date(year, month + 1, 1))}
-            className="hover:bg-accent flex size-6 items-center justify-center rounded"
+            className="hover:bg-accent flex size-8 items-center justify-center rounded"
           >
             ›
           </button>
@@ -207,22 +207,31 @@ function DatePicker({
           {cells.map((cellDate, i) => {
             if (!cellDate) return <div key={i} />;
             const isPast = cellDate < today;
+            const isToday = sameDay(cellDate, today);
+            const isSelected = sameDay(cellDate, value);
             return (
               <button
                 key={cellDate.toISOString()}
                 type="button"
                 disabled={isPast}
+                aria-label={cellDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+                aria-pressed={isSelected}
+                aria-current={isToday ? "date" : undefined}
                 onClick={() => {
                   onChange(cellDate);
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex aspect-square items-center justify-center rounded text-sm tabular-nums",
+                  "flex size-9 items-center justify-center rounded text-sm tabular-nums",
                   isPast
                     ? "text-muted-foreground opacity-30"
                     : "hover:bg-accent",
-                  sameDay(cellDate, today) && "ring-primary ring-1 ring-inset",
-                  sameDay(cellDate, value) &&
+                  isToday && "ring-primary ring-1 ring-inset",
+                  isSelected &&
                     "bg-primary text-primary-foreground font-bold hover:bg-primary",
                 )}
               >
@@ -288,7 +297,10 @@ function EventForm({
   return (
     <div className="mt-3 space-y-2 rounded-md border p-3">
       {error && (
-        <p className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs">
+        <p
+          role="alert"
+          className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs"
+        >
           {error}
         </p>
       )}
@@ -297,11 +309,12 @@ function EventForm({
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Event title — e.g. Site visit"
         maxLength={200}
+        aria-label="Event title"
       />
       <div className="grid grid-cols-2 gap-2">
         <DatePicker value={date} onChange={setDate} />
         <Select value={time} onValueChange={setTime}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-label="Start time">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -318,6 +331,7 @@ function EventForm({
         onChange={setLocation}
         placeholder="Location — address, or a Zoom/Meet link"
         maxLength={300}
+        aria-label="Location"
       />
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onDone}>
@@ -371,14 +385,14 @@ function EventRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-1.5">
-          <p className="text-sm font-semibold">{event.title}</p>
+          <p className="text-sm font-semibold break-words">{event.title}</p>
           {canManage && (
-            <div className="flex shrink-0 gap-0.5">
+            <div className="flex shrink-0 gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label={`Edit ${event.title}`}
-                className="size-6"
+                className="size-8"
                 onClick={onEdit}
               >
                 <Pencil className="text-muted-foreground size-3" />
@@ -387,7 +401,7 @@ function EventRow({
                 variant="ghost"
                 size="icon"
                 aria-label={`Delete ${event.title}`}
-                className="size-6"
+                className="size-8"
                 disabled={isPending}
                 onClick={handleDelete}
               >
@@ -396,34 +410,44 @@ function EventRow({
             </div>
           )}
         </div>
-        <p className="text-muted-foreground text-xs">{formatWhen(start)}</p>
-        {location &&
-          (remote ? (
-            <a
-              href={location}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
-            >
-              <Video className="size-2.5" />
-              Join online
-            </a>
-          ) : (
-            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-              <MapPin className="size-2.5" />
-              {location}
-            </span>
-          ))}
-        <a
-          href={gcalLink(event.title, start, location)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary mt-1.5 flex items-center gap-1 text-xs font-medium hover:underline"
-        >
-          <CalendarIcon className="size-2.5" />
-          Add to Google Calendar
-        </a>
-        {error && <p className="text-destructive mt-1 text-xs">{error}</p>}
+        <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
+          <span className="shrink-0">{formatWhen(start)}</span>
+          {location &&
+            (remote ? (
+              <a
+                href={location}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary inline-flex shrink-0 items-center gap-1 hover:underline"
+              >
+                <Video className="size-3" aria-hidden="true" />
+                Join online
+                <span className="sr-only">(opens in new tab)</span>
+              </a>
+            ) : (
+              <span className="inline-flex max-w-full min-w-0 items-center gap-1">
+                <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                <span className="truncate" title={location}>
+                  {location}
+                </span>
+              </span>
+            ))}
+          <a
+            href={gcalLink(event.title, start, location)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary inline-flex shrink-0 items-center gap-1 font-medium hover:underline"
+          >
+            <CalendarIcon className="size-3" aria-hidden="true" />
+            Add to calendar
+            <span className="sr-only">(opens in new tab)</span>
+          </a>
+        </div>
+        {error && (
+          <p role="alert" className="text-destructive mt-1 text-xs">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -451,16 +475,17 @@ export function UpcomingEvents({
           No events scheduled yet.
         </p>
       ) : (
-        <div className="mb-3 space-y-2">
+        <ul className="mb-3 space-y-2">
           {events.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              canManage={canManage}
-              onEdit={() => setFormState(event)}
-            />
+            <li key={event.id}>
+              <EventRow
+                event={event}
+                canManage={canManage}
+                onEdit={() => setFormState(event)}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {canManage &&
