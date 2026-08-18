@@ -8,11 +8,13 @@ import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
+import { UserList } from "@/components/admin/user-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
 import {
   getAdminEmails,
   getAllProjects,
+  getAllUsers,
   getCouncilMembers,
   getSupporterEmailsMap,
 } from "@/lib/db/queries/admin";
@@ -38,6 +40,7 @@ export default async function AdminPage() {
     supporterEmailsMap,
     adminEmails,
     councilMembers,
+    allUsers,
     allComments,
     homepagePhase,
     bannerConfig,
@@ -46,6 +49,7 @@ export default async function AdminPage() {
     getSupporterEmailsMap(),
     getAdminEmails(),
     getCouncilMembers(),
+    getAllUsers(),
     getAllComments(),
     getHomepagePhase(),
     getBannerConfig(),
@@ -65,6 +69,7 @@ export default async function AdminPage() {
           <TabsTrigger value="seeds">Seeds</TabsTrigger>
           <TabsTrigger value="insights">Comments</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
+          <TabsTrigger value="users">People</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -96,6 +101,19 @@ export default async function AdminPage() {
               </p>
             </div>
             <ExportButtons />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <div className="mt-4 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">All People</h2>
+              <p className="text-muted-foreground text-sm">
+                Check whether someone already has an account before adding them
+                to a Sprout&apos;s team, roster, or Council.
+              </p>
+            </div>
+            <UserList users={allUsers} />
           </div>
         </TabsContent>
 

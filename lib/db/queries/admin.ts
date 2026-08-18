@@ -77,3 +77,16 @@ export async function getCouncilMembers() {
     .where(eq(users.role, "council"))
     .orderBy(desc(users.createdAt));
 }
+
+export async function getAllUsers() {
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt));
+}
