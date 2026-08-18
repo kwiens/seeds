@@ -8,6 +8,7 @@ import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
 import { UpcomingEvents } from "@/components/seeds/upcoming-events";
 import { getBudgets } from "@/lib/db/queries/budgets";
 import { getProjectDocuments } from "@/lib/db/queries/documents";
+import { getPendingInvites } from "@/lib/db/queries/invites";
 import { getTeamMembers } from "@/lib/db/queries/team-roster";
 import { getUpcomingEvents } from "@/lib/db/queries/team-events";
 import { getTeamProjectUpdates } from "@/lib/db/queries/project-updates";
@@ -39,14 +40,21 @@ export default async function ProjectTeamPage(props: {
   // Mark only activity that existed when this render began. Using the time the
   // client effect eventually runs could hide an update that was never rendered.
   const readThrough = new Date().toISOString();
-  const [teamUpdates, members, budgets, documents, upcomingEvents] =
-    await Promise.all([
-      getTeamProjectUpdates(project.id),
-      getTeamMembers(project.id),
-      getBudgets(project.id),
-      getProjectDocuments(project.id),
-      getUpcomingEvents(project.id),
-    ]);
+  const [
+    teamUpdates,
+    members,
+    budgets,
+    documents,
+    upcomingEvents,
+    pendingInvites,
+  ] = await Promise.all([
+    getTeamProjectUpdates(project.id),
+    getTeamMembers(project.id),
+    getBudgets(project.id),
+    getProjectDocuments(project.id),
+    getUpcomingEvents(project.id),
+    getPendingInvites(project.id),
+  ]);
 
   const rolesByUserId: Record<string, string> = Object.fromEntries(
     members.map((member) => [member.userId, member.roleLabels.join(", ")]),
@@ -88,6 +96,7 @@ export default async function ProjectTeamPage(props: {
           <TeamRoster
             seedId={project.id}
             members={members}
+            pendingInvites={pendingInvites}
             canManage={canManage}
             isAdmin={session.user.role === "admin"}
           />
