@@ -65,13 +65,15 @@ export default async function AdminPage() {
       </div>
 
       <Tabs defaultValue="seeds">
-        <TabsList>
-          <TabsTrigger value="seeds">Seeds</TabsTrigger>
-          <TabsTrigger value="insights">Comments</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
-          <TabsTrigger value="users">People</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto px-4 pb-1">
+          <TabsList className="min-w-max">
+            <TabsTrigger value="seeds">Seeds</TabsTrigger>
+            <TabsTrigger value="insights">Comments</TabsTrigger>
+            <TabsTrigger value="export">Export</TabsTrigger>
+            <TabsTrigger value="users">People</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="seeds">
           <AdminSeedTable

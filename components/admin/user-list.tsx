@@ -20,6 +20,13 @@ interface AdminUser {
   createdAt: Date;
 }
 
+const joinedDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "America/New_York",
+});
+
 function RoleBadge({ role }: { role: string }) {
   if (role === "admin") {
     return (
@@ -61,6 +68,7 @@ export function UserList({ users }: { users: AdminUser[] }) {
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
         <Input
+          aria-label="Search people by name or email"
           placeholder="Search by name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -97,11 +105,7 @@ export function UserList({ users }: { users: AdminUser[] }) {
                     <RoleBadge role={user.role} />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                    {user.createdAt.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                    {joinedDateFormatter.format(user.createdAt)}
                   </TableCell>
                 </TableRow>
               ))}
