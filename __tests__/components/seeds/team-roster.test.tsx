@@ -2,7 +2,11 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
-import { cancelInvite, createInvite } from "@/lib/actions/invites";
+import {
+  cancelInvite,
+  createInvite,
+  getInviteLink,
+} from "@/lib/actions/invites";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
 import type { PendingInvite } from "@/lib/db/queries/invites";
 
@@ -14,6 +18,7 @@ vi.mock("@/lib/actions/team-roster", () => ({
 vi.mock("@/lib/actions/invites", () => ({
   createInvite: vi.fn().mockResolvedValue({}),
   cancelInvite: vi.fn().mockResolvedValue({}),
+  getInviteLink: vi.fn().mockResolvedValue({}),
 }));
 
 // Radix Select needs these DOM APIs, which jsdom does not implement.
@@ -55,7 +60,6 @@ const allMembers = [gardener, teamMember, steward];
 
 const pendingGuideInvite: PendingInvite = {
   id: "invite-1",
-  token: "abc123",
   invitedName: "Priya Patel",
   role: "guide",
   roleLabel: "Guide",
@@ -105,6 +109,14 @@ describe("TeamRoster", () => {
       link: "https://npcseeds.com/invite/abc123",
     });
     vi.mocked(cancelInvite).mockClear().mockResolvedValue({ success: true });
+    vi.mocked(getInviteLink).mockClear().mockResolvedValue({
+      success: true,
+      link: "https://npcseeds.com/invite/abc123",
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
   });
 
   it("renders each member with name, roles, and who added them", () => {
@@ -328,6 +340,37 @@ describe("TeamRoster", () => {
     expect(screen.getByText("Guide · invited")).toBeInTheDocument();
   });
 
+  it("does not expose pending invite links to read-only team members", () => {
+    renderRoster({
+      pendingInvites: [pendingGuideInvite],
+      canManage: false,
+    });
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Copy invite link for Priya Patel",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("retrieves a pending invite link through the authorized server action", async () => {
+    renderRoster({
+      pendingInvites: [pendingGuideInvite],
+      canManage: true,
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy invite link for Priya Patel" }),
+    );
+
+    await waitFor(() =>
+      expect(getInviteLink).toHaveBeenCalledExactlyOnceWith("invite-1"),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledExactlyOnceWith(
+      "https://npcseeds.com/invite/abc123",
+    );
+  });
+
   it("hides the pending invites section when there are none", () => {
     renderRoster({ pendingInvites: [] });
     expect(screen.queryByText(/Pending invites/)).not.toBeInTheDocument();
@@ -348,7 +391,7 @@ describe("TeamRoster", () => {
     );
   });
 
-  it("only lets admins cancel a pending Steward invite", () => {
+  it("only lets admins copy or cancel a pending Steward invite", () => {
     const pendingStewardInvite: PendingInvite = {
       ...pendingGuideInvite,
       id: "invite-2",
@@ -367,6 +410,11 @@ describe("TeamRoster", () => {
         name: "Cancel invite for Sana Steward",
       }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: "Copy invite link for Sana Steward",
+      }),
+    ).not.toBeInTheDocument();
     unmount();
 
     renderRoster({
@@ -376,6 +424,11 @@ describe("TeamRoster", () => {
     });
     expect(
       screen.getByRole("button", { name: "Cancel invite for Sana Steward" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Copy invite link for Sana Steward",
+      }),
     ).toBeInTheDocument();
   });
 

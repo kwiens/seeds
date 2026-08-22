@@ -5,7 +5,6 @@ import { participantRoleLabels, type TeamRole } from "@/lib/participant-roles";
 
 export interface PendingInvite {
   id: string;
-  token: string;
   invitedName: string;
   role: TeamRole;
   roleLabel: string;
@@ -26,7 +25,6 @@ export async function getPendingInvites(
 
   return rows.map((row) => ({
     id: row.id,
-    token: row.token,
     invitedName: row.invitedName,
     role: row.role as TeamRole,
     roleLabel: participantRoleLabels[row.role],

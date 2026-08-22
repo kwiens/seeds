@@ -12,10 +12,11 @@ vi.mock("@/lib/db", () => ({
     query: {
       projects: { findFirst: vi.fn() },
       projectInvites: { findFirst: vi.fn() },
-      projectParticipants: { findFirst: vi.fn() },
     },
     insert: vi.fn(),
+    select: vi.fn(),
     update: vi.fn(),
+    batch: vi.fn(),
   },
 }));
 
@@ -26,6 +27,7 @@ import {
   acceptInvite,
   cancelInvite,
   createInvite,
+  getInviteLink,
 } from "@/lib/actions/invites";
 
 const sproutProject = {
@@ -35,12 +37,24 @@ const sproutProject = {
 };
 
 function insertChain() {
-  return { values: vi.fn().mockResolvedValue(undefined) };
+  const onConflictDoUpdate = vi.fn().mockReturnValue({ kind: "upsert" });
+  return {
+    values: vi.fn().mockResolvedValue(undefined),
+    select: vi.fn(() => ({ onConflictDoUpdate })),
+    onConflictDoUpdate,
+  };
 }
 
-function updateChain() {
-  const where = vi.fn().mockResolvedValue(undefined);
-  return { set: vi.fn(() => ({ where })), where };
+function updateChain(returningRows = [{ id: "invite-1" }]) {
+  const returning = vi.fn().mockResolvedValue(returningRows);
+  const where = vi.fn(() => ({ returning }));
+  return { set: vi.fn(() => ({ where })), where, returning };
+}
+
+function selectChain() {
+  const where = vi.fn().mockReturnValue({ kind: "participant-select" });
+  const from = vi.fn(() => ({ where }));
+  return { from, where };
 }
 
 describe("createInvite", () => {
@@ -200,6 +214,93 @@ describe("cancelInvite", () => {
       "/dashboard/projects/project-1/team",
     );
   });
+
+  it("does not cancel an invite that another request already claimed", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.update).mockReturnValue(updateChain([]) as never);
+
+    const result = await cancelInvite("invite-1");
+
+    expect(result).toEqual({ error: "This invite is no longer pending." });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("getInviteLink", () => {
+  const pendingInvite = {
+    id: "invite-1",
+    token: "abc123",
+    projectId: "project-1",
+    role: "guide",
+    acceptedAt: null,
+    canceledAt: null,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(canManageProject).mockResolvedValue(true);
+    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue(
+      pendingInvite as never,
+    );
+  });
+
+  it("does not expose a link to an unauthenticated user", async () => {
+    setAuthMock(auth, null);
+
+    const result = await getInviteLink("invite-1");
+
+    expect(result).toEqual({ error: "You must be signed in." });
+    expect(db.query.projectInvites.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("requires project management permission", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(canManageProject).mockResolvedValue(false);
+
+    const result = await getInviteLink("invite-1");
+
+    expect(result).toEqual({
+      error: "You do not have permission to manage this project's team.",
+    });
+    expect(result).not.toHaveProperty("link");
+  });
+
+  it("requires admin permission for Steward links", async () => {
+    setAuthMock(auth, mockSession({ role: "user" }));
+    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
+      ...pendingInvite,
+      role: "steward",
+    } as never);
+
+    const result = await getInviteLink("invite-1");
+
+    expect(result).toHaveProperty("error");
+    expect(result).not.toHaveProperty("link");
+  });
+
+  it("returns the link to an authorized project manager", async () => {
+    setAuthMock(auth, mockSession());
+
+    const result = await getInviteLink("invite-1");
+
+    expect(result).toEqual({
+      success: true,
+      link: "https://npcseeds.com/invite/abc123",
+    });
+  });
+
+  it("does not return a link after it is accepted or canceled", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
+      ...pendingInvite,
+      acceptedAt: new Date(),
+    } as never);
+
+    const result = await getInviteLink("invite-1");
+
+    expect(result).toEqual({ error: "This invite is no longer pending." });
+    expect(result).not.toHaveProperty("link");
+  });
 });
 
 describe("acceptInvite", () => {
@@ -220,11 +321,13 @@ describe("acceptInvite", () => {
     vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue(
       invite as never,
     );
-    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue(
-      undefined,
-    );
     vi.mocked(db.insert).mockReturnValue(insertChain() as never);
+    vi.mocked(db.select).mockReturnValue(selectChain() as never);
     vi.mocked(db.update).mockReturnValue(updateChain() as never);
+    vi.mocked(db.batch).mockResolvedValue([
+      [{ id: "invite-1" }],
+      { rows: [] },
+    ] as never);
   });
 
   it("requires authentication", async () => {
@@ -290,12 +393,14 @@ describe("acceptInvite", () => {
       projectId: "project-1",
       projectName: "Bike Share",
     });
-    expect(insert.values).toHaveBeenCalledWith(
+    expect(db.batch).toHaveBeenCalledOnce();
+    expect(insert.select).toHaveBeenCalledOnce();
+    expect(insert.onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        projectId: "project-1",
-        userId: "user-1",
-        role: "guide",
-        state: "active",
+        set: expect.objectContaining({
+          state: "active",
+          displayName: "Priya Patel",
+        }),
       }),
     );
     expect(update.set).toHaveBeenCalledWith(
@@ -309,31 +414,13 @@ describe("acceptInvite", () => {
     );
   });
 
-  it("reactivates an inactive existing role instead of duplicating it", async () => {
+  it("does not succeed when another request already claimed the invite", async () => {
     setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue({
-      id: "participant-1",
-      state: "inactive",
-    } as never);
-    const update = updateChain();
-    vi.mocked(db.update).mockReturnValue(update as never);
+    vi.mocked(db.batch).mockResolvedValueOnce([[], { rows: [] }] as never);
 
     const result = await acceptInvite("abc123");
 
-    expect(result).toHaveProperty("success", true);
-    expect(db.insert).not.toHaveBeenCalled();
-  });
-
-  it("does not duplicate an already-active role", async () => {
-    setAuthMock(auth, mockSession({ id: "user-1" }));
-    vi.mocked(db.query.projectParticipants.findFirst).mockResolvedValue({
-      id: "participant-1",
-      state: "active",
-    } as never);
-
-    const result = await acceptInvite("abc123");
-
-    expect(result).toHaveProperty("success", true);
-    expect(db.insert).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: "This invite is no longer available." });
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canManageProject } from "@/lib/auth-utils";
@@ -93,13 +93,60 @@ export async function cancelInvite(inviteId: string) {
     };
   }
 
-  await db
+  if (invite.acceptedAt || invite.canceledAt) {
+    return { error: "This invite is no longer pending." };
+  }
+
+  const canceledInvites = await db
     .update(projectInvites)
     .set({ canceledAt: new Date() })
-    .where(eq(projectInvites.id, inviteId));
+    .where(
+      and(
+        eq(projectInvites.id, inviteId),
+        isNull(projectInvites.acceptedAt),
+        isNull(projectInvites.canceledAt),
+      ),
+    )
+    .returning({ id: projectInvites.id });
+
+  if (canceledInvites.length === 0) {
+    return { error: "This invite is no longer pending." };
+  }
 
   revalidatePath(`/dashboard/projects/${invite.projectId}/team`);
   return { success: true };
+}
+
+export async function getInviteLink(inviteId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "You must be signed in." };
+
+  const invite = await db.query.projectInvites.findFirst({
+    where: eq(projectInvites.id, inviteId),
+  });
+  if (!invite) return { error: "Invite not found." };
+  if (invite.acceptedAt || invite.canceledAt) {
+    return { error: "This invite is no longer pending." };
+  }
+
+  if (invite.role === "steward") {
+    if (session.user.role !== "admin") {
+      return {
+        error: `Only Admins can copy a ${teamRoleLabels.steward} invite.`,
+      };
+    }
+  } else if (
+    !(await canManageProject(session, {
+      id: invite.projectId,
+    }))
+  ) {
+    return {
+      error: "You do not have permission to manage this project's team.",
+    };
+  }
+
+  const origin = await getRequestOrigin();
+  return { success: true, link: `${origin}/invite/${invite.token}` };
 }
 
 export async function acceptInvite(token: string) {
@@ -119,42 +166,68 @@ export async function acceptInvite(token: string) {
     return { error: "This project's team workspace is no longer available." };
   }
 
-  const teamRole = invite.role as TeamRole;
-  const existingRole = await db.query.projectParticipants.findFirst({
-    where: and(
-      eq(projectParticipants.projectId, invite.projectId),
-      eq(projectParticipants.userId, session.user.id),
-      eq(projectParticipants.role, teamRole),
-    ),
-  });
-
-  if (existingRole) {
-    if (existingRole.state !== "active") {
-      await db
-        .update(projectParticipants)
-        .set({
-          state: "active",
-          displayName: session.user.name ?? invite.invitedName,
-          addedBy: invite.createdBy,
-          updatedAt: new Date(),
-        })
-        .where(eq(projectParticipants.id, existingRole.id));
-    }
-  } else {
-    await db.insert(projectParticipants).values({
-      projectId: invite.projectId,
-      userId: session.user.id,
-      displayName: session.user.name ?? invite.invitedName,
-      role: teamRole,
-      state: "active",
-      addedBy: invite.createdBy,
-    });
-  }
-
-  await db
+  const acceptedAt = new Date();
+  const displayName = session.user.name ?? invite.invitedName;
+  const claimInvite = db
     .update(projectInvites)
-    .set({ acceptedAt: new Date(), acceptedBy: session.user.id })
-    .where(eq(projectInvites.id, invite.id));
+    .set({ acceptedAt, acceptedBy: session.user.id })
+    .where(
+      and(
+        eq(projectInvites.id, invite.id),
+        isNull(projectInvites.acceptedAt),
+        isNull(projectInvites.canceledAt),
+      ),
+    )
+    .returning({ id: projectInvites.id });
+
+  // neon-http cannot run interactive transactions, but its batch API sends
+  // these statements as one non-interactive transaction. The second query is
+  // tied to this exact claim, so it inserts nothing if another request won.
+  const activateParticipant = db
+    .insert(projectParticipants)
+    .select(
+      db
+        .select({
+          id: sql<string>`gen_random_uuid()`.as("id"),
+          projectId: projectInvites.projectId,
+          userId: sql<string>`${session.user.id}::uuid`.as("user_id"),
+          displayName: sql<string>`${displayName}`.as("display_name"),
+          role: projectInvites.role,
+          state: sql<"active">`'active'::participant_state`.as("state"),
+          addedBy: projectInvites.createdBy,
+          createdAt: sql<Date>`now()`.as("created_at"),
+          updatedAt: sql<Date>`now()`.as("updated_at"),
+        })
+        .from(projectInvites)
+        .where(
+          and(
+            eq(projectInvites.id, invite.id),
+            eq(projectInvites.acceptedAt, acceptedAt),
+            eq(projectInvites.acceptedBy, session.user.id),
+          ),
+        ),
+    )
+    .onConflictDoUpdate({
+      target: [
+        projectParticipants.projectId,
+        projectParticipants.userId,
+        projectParticipants.role,
+      ],
+      targetWhere: isNotNull(projectParticipants.userId),
+      set: {
+        state: "active",
+        displayName,
+        addedBy: invite.createdBy,
+        updatedAt: acceptedAt,
+      },
+      setWhere: ne(projectParticipants.state, "active"),
+    });
+
+  const [claimedInvites] = await db.batch([claimInvite, activateParticipant]);
+
+  if (claimedInvites.length === 0) {
+    return { error: "This invite is no longer available." };
+  }
 
   revalidatePath(`/dashboard/projects/${invite.projectId}/team`);
   revalidatePath("/dashboard");

@@ -13,7 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
-import { cancelInvite, createInvite } from "@/lib/actions/invites";
+import {
+  cancelInvite,
+  createInvite,
+  getInviteLink,
+} from "@/lib/actions/invites";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
 import type { PendingInvite } from "@/lib/db/queries/invites";
 import {
@@ -228,19 +232,27 @@ function PendingInviteRow({
   isAdmin: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isCopying, setIsCopying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const canCancel = invite.role === "steward" ? isAdmin : canManage;
+  const canManageInvite = invite.role === "steward" ? isAdmin : canManage;
 
   async function handleCopy() {
-    const link = `${window.location.origin}/invite/${invite.token}`;
+    setError(null);
+    setIsCopying(true);
     try {
-      await navigator.clipboard.writeText(link);
+      const result = await getInviteLink(invite.id);
+      if (!("link" in result) || !result.link) {
+        setError(result.error ?? "Could not retrieve the invite link.");
+        return;
+      }
+      await navigator.clipboard.writeText(result.link);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Clipboard access can be blocked in some browser contexts; the link
-      // is still visible to select and copy manually if this silently no-ops.
+      setError("Could not copy the invite link. Try again.");
+    } finally {
+      setIsCopying(false);
     }
   }
 
@@ -265,16 +277,19 @@ function PendingInviteRow({
           {invite.roleLabel} · invited
         </p>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={handleCopy}
-        aria-label={`Copy invite link for ${invite.invitedName}`}
-      >
-        <Copy className="text-muted-foreground size-3.5" />
-      </Button>
-      {canCancel && (
+      {canManageInvite && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={isCopying}
+          onClick={handleCopy}
+          aria-label={`Copy invite link for ${invite.invitedName}`}
+        >
+          <Copy className="text-muted-foreground size-3.5" />
+        </Button>
+      )}
+      {canManageInvite && (
         <Button
           type="button"
           variant="ghost"
