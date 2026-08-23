@@ -159,6 +159,38 @@ export const projectParticipants = pgTable(
   ],
 );
 
+// A shareable link for one role on one project, generated before the invitee
+// necessarily has an account. Not email-locked -- invitedName is a display
+// hint shown to whoever accepts, so they can sanity-check it's meant for them.
+// acceptedAt/canceledAt (not a state enum) mirrors how projects tracks
+// archivedAt as an independent axis rather than a combined status value.
+export const projectInvites = pgTable(
+  "project_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    token: text("token").notNull().unique(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    role: participantRoleEnum("role").notNull(),
+    invitedName: text("invited_name").notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedBy: uuid("accepted_by").references(() => users.id),
+    canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("idx_project_invites_project_pending")
+      .on(t.projectId)
+      .where(sql`${t.acceptedAt} is null and ${t.canceledAt} is null`),
+  ],
+);
+
 export const projectComments = pgTable("project_comments", {
   id: uuid("id").defaultRandom().primaryKey(),
   projectId: uuid("project_id")
@@ -340,6 +372,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   activityReads: many(projectActivityReads),
   budgetUpdates: many(projectBudgets),
   events: many(projectEvents),
+  createdInvites: many(projectInvites, { relationName: "inviteCreatedBy" }),
+  acceptedInvites: many(projectInvites, { relationName: "inviteAcceptedBy" }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -351,6 +385,24 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   activityReads: many(projectActivityReads),
   budgets: many(projectBudgets),
   events: many(projectEvents),
+  invites: many(projectInvites),
+}));
+
+export const projectInvitesRelations = relations(projectInvites, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectInvites.projectId],
+    references: [projects.id],
+  }),
+  creator: one(users, {
+    fields: [projectInvites.createdBy],
+    references: [users.id],
+    relationName: "inviteCreatedBy",
+  }),
+  accepter: one(users, {
+    fields: [projectInvites.acceptedBy],
+    references: [users.id],
+    relationName: "inviteAcceptedBy",
+  }),
 }));
 
 export const projectParticipantsRelations = relations(
