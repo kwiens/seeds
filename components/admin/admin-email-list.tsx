@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useTransition } from "react";
 import { Trash2 } from "lucide-react";
+import { useRef, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +47,11 @@ export function AdminEmailList({
 
   return (
     <div className="space-y-4">
-      <form ref={formRef} action={handleAdd} className="flex gap-2">
+      <form
+        ref={formRef}
+        action={handleAdd}
+        className="flex flex-col gap-2 sm:flex-row"
+      >
         <Input
           name="email"
           type="email"
@@ -56,30 +60,36 @@ export function AdminEmailList({
           disabled={isPending}
           className="max-w-sm"
         />
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending} className="self-start">
           Add
         </Button>
       </form>
 
       <ul className="divide-y">
         {envOnlyEmails.map((email) => (
-          <li
-            key={`env-${email}`}
-            className="flex items-center justify-between py-2"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm">{email}</span>
-              <Badge variant="secondary">env</Badge>
+          <li key={`env-${email}`} className="flex items-start gap-2 py-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="min-w-0 break-words text-sm">{email}</span>
+              <Badge variant="secondary" className="shrink-0">
+                env
+              </Badge>
             </div>
           </li>
         ))}
         {dbEmails.map((row) => (
-          <li key={row.id} className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">{row.email}</span>
-              <Badge variant="outline">db</Badge>
+          <li
+            key={row.id}
+            className="flex items-start justify-between gap-2 py-2"
+          >
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="min-w-0 break-words text-sm">{row.email}</span>
+              <Badge variant="outline" className="shrink-0">
+                db
+              </Badge>
               {envEmails.includes(row.email) && (
-                <Badge variant="secondary">env</Badge>
+                <Badge variant="secondary" className="shrink-0">
+                  env
+                </Badge>
               )}
             </div>
             {!envEmails.includes(row.email) && (
@@ -88,6 +98,7 @@ export function AdminEmailList({
                 size="icon"
                 disabled={isPending}
                 onClick={() => handleRemove(row.id)}
+                className="shrink-0"
               >
                 <Trash2 className="size-4 text-destructive" />
               </Button>

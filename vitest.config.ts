@@ -10,7 +10,7 @@ export default defineConfig({
     globals: true,
     // Nested git worktrees under .claude/ carry their own test files, which
     // would otherwise run against this branch's source via the "@" alias.
-    exclude: [...configDefaults.exclude, "**/.claude/**"],
+    exclude: [...configDefaults.exclude, "**/.claude/**", "**/e2e/**"],
   },
   resolve: {
     alias: {

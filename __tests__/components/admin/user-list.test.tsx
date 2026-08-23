@@ -68,6 +68,7 @@ describe("UserList", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Showing 1–3 of 43")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Showing 1–3 of 43");
     expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 
     const mobileDirectory = screen.getByRole("list", {
@@ -81,7 +82,6 @@ describe("UserList", () => {
     ).toBeInTheDocument();
     expect(within(mobileCards[0]).getByText("Role")).toBeInTheDocument();
     expect(within(mobileCards[0]).getByText("Joined")).toBeInTheDocument();
-
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
     expect(within(rows[0]).getByText("Alice Admin")).toBeInTheDocument();
@@ -128,6 +128,45 @@ describe("UserList", () => {
 
     expect(pushMock).toHaveBeenCalledWith("?tab=users&search=CASEY%40EXAMPLE");
     vi.useRealTimers();
+  });
+
+  it("wraps long names and emails within constrained columns", () => {
+    const longName = "Alexandria-Montgomery-Worthington Community Organizer";
+    const longEmail =
+      "alexandria.montgomery-worthington@neighborhood-coalition.example.com";
+
+    render(
+      <UserList
+        users={[
+          {
+            ...users[0],
+            name: longName,
+            email: longEmail,
+          },
+        ]}
+        totalCount={1}
+        totalPages={1}
+        currentPage={1}
+        pageSize={20}
+      />,
+    );
+
+    expect(screen.getByRole("cell", { name: longName })).toHaveClass(
+      "w-32",
+      "max-w-32",
+      "whitespace-normal",
+      "break-words",
+      "sm:w-48",
+      "sm:max-w-48",
+    );
+    expect(screen.getByRole("cell", { name: longEmail })).toHaveClass(
+      "w-40",
+      "max-w-40",
+      "whitespace-normal",
+      "break-all",
+      "sm:w-64",
+      "sm:max-w-64",
+    );
   });
 
   it("shows distinct empty states for the directory and search results", () => {

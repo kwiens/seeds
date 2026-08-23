@@ -85,8 +85,8 @@ export function UserList({
           placeholder="Search by name or email..."
         />
         <p
+          role="status"
           className="text-muted-foreground text-sm whitespace-nowrap"
-          aria-live="polite"
         >
           {resultSummary}
         </p>
@@ -148,10 +148,10 @@ export function UserList({
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="text-sm font-medium whitespace-normal break-words">
+                    <TableCell className="w-32 max-w-32 text-sm font-medium whitespace-normal break-words sm:w-48 sm:max-w-48">
                       {user.name}
                     </TableCell>
-                    <TableCell className="text-sm whitespace-normal break-all">
+                    <TableCell className="w-40 max-w-40 text-sm whitespace-normal break-all sm:w-64 sm:max-w-64">
                       {user.email}
                     </TableCell>
                     <TableCell>

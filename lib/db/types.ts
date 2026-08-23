@@ -4,6 +4,7 @@ import type {
   projectApprovals,
   projectBudgets,
   projectEvents,
+  projectInvites,
   projectParticipants,
   projects,
   projectUpdates,
@@ -36,3 +37,6 @@ export type NewBudget = typeof projectBudgets.$inferInsert;
 
 export type ProjectEvent = typeof projectEvents.$inferSelect;
 export type NewProjectEvent = typeof projectEvents.$inferInsert;
+
+export type ProjectInvite = typeof projectInvites.$inferSelect;
+export type NewProjectInvite = typeof projectInvites.$inferInsert;
