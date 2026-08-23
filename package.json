@@ -13,6 +13,8 @@
     "skills:install": "npx -y impeccable install",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "env:setup": "tsx scripts/setup-local-environment.ts",
     "env:check": "tsx scripts/check-environment.ts --app",
     "db:generate": "drizzle-kit generate",
@@ -55,6 +57,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

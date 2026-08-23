@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -51,3 +53,4 @@ next-env.d.ts
 .claude/skills/
 .github/skills/
 .github/hooks/
+.github/agents/
