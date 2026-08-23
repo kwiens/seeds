@@ -99,8 +99,6 @@ for (const width of [320, 390]) {
     await signInAs(page, e2eTestUsers.admin);
     await page.goto("/admin");
 
-    await expectNoPageOverflow(page);
-
     for (const tabName of [
       "Seeds",
       "Comments",
@@ -113,9 +111,8 @@ for (const width of [320, 390]) {
       await expect(tab).toBeVisible();
       await tab.click();
       await expect(tab).toHaveAttribute("data-state", "active");
+      await expectNoPageOverflow(page);
     }
-
-    await expectNoPageOverflow(page);
   });
 }
 

@@ -74,8 +74,16 @@ export function UserList({ users }: { users: AdminUser[] }) {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
-        <p className="text-muted-foreground text-sm whitespace-nowrap">
-          {filtered.length} of {users.length}
+        <p
+          role="status"
+          className="text-muted-foreground text-sm whitespace-nowrap"
+        >
+          <span aria-hidden="true">
+            {filtered.length} of {users.length}
+          </span>
+          <span className="sr-only">
+            {filtered.length} of {users.length} people shown
+          </span>
         </p>
       </div>
 

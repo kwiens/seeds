@@ -45,6 +45,9 @@ describe("UserList", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("3 of 3")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("status")).getByText("3 of 3 people shown"),
+    ).toHaveClass("sr-only");
 
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
