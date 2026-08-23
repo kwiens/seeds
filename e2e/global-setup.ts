@@ -1,7 +1,7 @@
 import { config as loadEnvironment } from "dotenv";
 import { sql } from "drizzle-orm";
 import { assertSafeDatabaseUrl, isProductionDatabase } from "@/lib/db/safety";
-import { e2eTestUsers } from "./fixtures/test-users";
+import { e2eDirectoryUsers, e2eTestUsers } from "./fixtures/test-users";
 
 export default async function globalSetup() {
   loadEnvironment({ path: ".env.local", quiet: true });
@@ -27,7 +27,7 @@ export default async function globalSetup() {
 
   await db
     .insert(users)
-    .values(Object.values(e2eTestUsers))
+    .values([...Object.values(e2eTestUsers), ...e2eDirectoryUsers])
     .onConflictDoUpdate({
       target: users.email,
       set: {

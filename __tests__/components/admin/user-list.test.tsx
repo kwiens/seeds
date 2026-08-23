@@ -1,6 +1,16 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserList } from "@/components/admin/user-list";
+
+const { pushMock, useSearchParamsMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  useSearchParamsMock: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+  useSearchParams: useSearchParamsMock,
+}));
 
 const users = [
   {
@@ -36,19 +46,42 @@ function searchFor(value: string) {
 }
 
 describe("UserList", () => {
-  it("renders the account fields, count, roles, and Chattanooga join date", () => {
-    render(<UserList users={users} />);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useSearchParamsMock.mockReturnValue(new URLSearchParams("tab=users"));
+  });
+
+  it("renders the current page, full count, roles, and Chattanooga join date", () => {
+    render(
+      <UserList
+        users={users}
+        totalCount={43}
+        totalPages={3}
+        currentPage={1}
+        pageSize={20}
+      />,
+    );
 
     expect(
       screen.getByRole("textbox", {
         name: "Search people by name or email",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("3 of 3")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("status")).getByText("3 of 3 people shown"),
-    ).toHaveClass("sr-only");
+    expect(screen.getByText("Showing 1–3 of 43")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Showing 1–3 of 43");
+    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 
+    const mobileDirectory = screen.getByRole("list", {
+      name: "People directory",
+    });
+    const mobileCards = within(mobileDirectory).getAllByRole("listitem");
+    expect(mobileCards).toHaveLength(3);
+    expect(within(mobileCards[0]).getByText("Alice Admin")).toBeInTheDocument();
+    expect(
+      within(mobileCards[0]).getByText("alice@example.com"),
+    ).toBeInTheDocument();
+    expect(within(mobileCards[0]).getByText("Role")).toBeInTheDocument();
+    expect(within(mobileCards[0]).getByText("Joined")).toBeInTheDocument();
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
     expect(within(rows[0]).getByText("Alice Admin")).toBeInTheDocument();
@@ -59,18 +92,42 @@ describe("UserList", () => {
     expect(within(rows[2]).getByText("Member")).toBeInTheDocument();
   });
 
-  it("searches names and emails case-insensitively after trimming", () => {
-    render(<UserList users={users} />);
+  it("moves to the next server-rendered page and preserves the People tab", () => {
+    render(
+      <UserList
+        users={users}
+        totalCount={43}
+        totalPages={3}
+        currentPage={1}
+        pageSize={20}
+      />,
+    );
 
-    searchFor("  bOB  ");
-    expect(screen.getByText("Bob Council")).toBeInTheDocument();
-    expect(screen.queryByText("Alice Admin")).not.toBeInTheDocument();
-    expect(screen.getByText("1 of 3")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(pushMock).toHaveBeenCalledWith("?tab=users&page=2");
+  });
+
+  it("sends a debounced search to the server and resets the page", () => {
+    vi.useFakeTimers();
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams("tab=users&page=3"),
+    );
+    render(
+      <UserList
+        users={users}
+        totalCount={43}
+        totalPages={3}
+        currentPage={3}
+        pageSize={20}
+      />,
+    );
 
     searchFor("CASEY@EXAMPLE");
-    expect(screen.getByText("Casey Member")).toBeInTheDocument();
-    expect(screen.queryByText("Bob Council")).not.toBeInTheDocument();
-    expect(screen.getByText("1 of 3")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(300));
+
+    expect(pushMock).toHaveBeenCalledWith("?tab=users&search=CASEY%40EXAMPLE");
+    vi.useRealTimers();
   });
 
   it("wraps long names and emails within constrained columns", () => {
@@ -87,6 +144,10 @@ describe("UserList", () => {
             email: longEmail,
           },
         ]}
+        totalCount={1}
+        totalPages={1}
+        currentPage={1}
+        pageSize={20}
       />,
     );
 
@@ -102,30 +163,39 @@ describe("UserList", () => {
       "w-40",
       "max-w-40",
       "whitespace-normal",
-      "break-words",
+      "break-all",
       "sm:w-64",
       "sm:max-w-64",
     );
   });
 
-  it("shows no-match feedback and restores all rows when search clears", () => {
-    render(<UserList users={users} />);
-
-    searchFor("nobody@example.com");
-    expect(screen.getByText("No matches.")).toBeInTheDocument();
-    expect(screen.getByText("0 of 3")).toBeInTheDocument();
-
-    searchFor("");
-    expect(screen.queryByText("No matches.")).not.toBeInTheDocument();
-    expect(screen.getByText("3 of 3")).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(4);
-  });
-
-  it("shows the account empty state", () => {
-    render(<UserList users={[]} />);
+  it("shows distinct empty states for the directory and search results", () => {
+    const { rerender } = render(
+      <UserList
+        users={[]}
+        totalCount={0}
+        totalPages={0}
+        currentPage={1}
+        pageSize={20}
+      />,
+    );
 
     expect(screen.getByText("No accounts yet.")).toBeInTheDocument();
-    expect(screen.getByText("0 of 0")).toBeInTheDocument();
+    expect(screen.getByText("0 people")).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    rerender(
+      <UserList
+        users={[]}
+        totalCount={0}
+        totalPages={0}
+        currentPage={1}
+        pageSize={20}
+        search="nobody@example.com"
+      />,
+    );
+    expect(
+      screen.getByText("No people match your search."),
+    ).toBeInTheDocument();
   });
 });

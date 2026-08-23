@@ -19,4 +19,15 @@ export const e2eTestUsers = {
   },
 } as const;
 
+export const e2eDirectoryUsers = Array.from({ length: 21 }, (_, index) => {
+  const sequence = String(index + 1).padStart(2, "0");
+
+  return {
+    email: `e2e-directory-page-user-${sequence}@npcseeds.test`,
+    name: `E2E Directory Page User ${sequence}`,
+    role: "user" as const,
+    createdAt: new Date(Date.UTC(2026, 7, 1, 0, index)),
+  };
+});
+
 export type E2ETestUser = (typeof e2eTestUsers)[keyof typeof e2eTestUsers];

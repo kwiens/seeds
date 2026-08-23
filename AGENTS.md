@@ -145,6 +145,20 @@ project-scoped paths and clean up test files. Closing a PR does not necessarily
 delete its database branch immediately, so periodically prune old Vercel Preview
 deployments/Neon branches according to the configured retention policy.
 
+## Production Scale Contract
+
+Development and Preview data volumes are not representative of Production.
+Never use a small local or sanitized row count as evidence that an unbounded
+query, in-memory filter, or oversized server-to-client payload is acceptable.
+
+Design for thousands of projects and tens of thousands of users. Interactive
+collection views must paginate at the database, apply search and filters at the
+database, select only the fields they render, and send only the current page to
+the client. Treat full-dataset exports and batch jobs as separate workflows with
+explicit streaming, chunking, or background-processing behavior. When scale is
+relevant, test with representative synthetic volumes without reading or copying
+Production data.
+
 ## Pre-Commit Checklist
 
 Always run all of these locally before committing changes. Fix any failures before committing.
