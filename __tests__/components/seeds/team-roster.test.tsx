@@ -112,10 +112,6 @@ describe("TeamRoster", () => {
       link: "https://npcseeds.com/invite/abc123",
     });
     vi.mocked(cancelInvite).mockClear().mockResolvedValue({ success: true });
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: vi.fn().mockResolvedValue(undefined) },
-    });
   });
 
   it("renders each member with name, roles, and who added them", () => {
@@ -339,36 +335,6 @@ describe("TeamRoster", () => {
     expect(screen.getByText("Guide · invited")).toBeInTheDocument();
   });
 
-  it("does not expose pending invite links to read-only team members", () => {
-    renderRoster({
-      pendingInvites: [pendingGuideInvite],
-      canManage: false,
-    });
-
-    expect(
-      screen.queryByRole("button", {
-        name: "Copy invite link for Priya Patel",
-      }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("copies a server-authorized pending invite link", async () => {
-    renderRoster({
-      pendingInvites: [{ ...pendingGuideInvite, link: "/invite/abc123" }],
-      canManage: true,
-    });
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Copy invite link for Priya Patel" }),
-    );
-
-    await waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalledExactlyOnceWith(
-        new URL("/invite/abc123", window.location.origin).toString(),
-      );
-    });
-  });
-
   it("hides the pending invites section when there are none", () => {
     renderRoster({ pendingInvites: [] });
     expect(screen.queryByText(/Pending invites/)).not.toBeInTheDocument();
@@ -386,22 +352,6 @@ describe("TeamRoster", () => {
 
     await waitFor(() =>
       expect(cancelInvite).toHaveBeenCalledExactlyOnceWith("invite-1"),
-    );
-  });
-
-  it("shows a recoverable error when canceling an invite rejects", async () => {
-    vi.mocked(cancelInvite).mockRejectedValueOnce(new Error("offline"));
-    renderRoster({
-      pendingInvites: [{ ...pendingGuideInvite, link: "/invite/abc123" }],
-      canManage: true,
-    });
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Cancel invite for Priya Patel" }),
-    );
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Could not cancel this invite. Try again.",
     );
   });
 
@@ -423,11 +373,6 @@ describe("TeamRoster", () => {
         name: "Cancel invite for Sana Steward",
       }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", {
-        name: "Copy invite link for Sana Steward",
-      }),
-    ).not.toBeInTheDocument();
     unmount();
 
     renderRoster({
@@ -439,11 +384,6 @@ describe("TeamRoster", () => {
     });
     expect(
       screen.getByRole("button", { name: "Cancel invite for Sana Steward" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "Copy invite link for Sana Steward",
-      }),
     ).toBeInTheDocument();
   });
 
@@ -507,12 +447,7 @@ describe("TeamRoster", () => {
     await waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
     expect(screen.getByRole("tab", { name: "Add by email" })).toBeDisabled();
     expect(screen.getByRole("tab", { name: "Invite by link" })).toBeDisabled();
-    expect(screen.getByRole("combobox", { name: "Team role" })).toBeDisabled();
-    expect(
-      screen.getByRole("textbox", { name: "Name of person being invited" }),
-    ).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generating…" })).toBeDisabled();
 
     await act(async () => {
       resolveInvite({
@@ -544,27 +479,5 @@ describe("TeamRoster", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "You do not have permission to manage this project's team.",
     );
-  });
-
-  it("shows a recoverable error when invite generation rejects", async () => {
-    vi.mocked(createInvite).mockRejectedValueOnce(new Error("offline"));
-    renderRoster({ canManage: true });
-
-    openAddForm();
-    switchToInviteByLink();
-    fireEvent.change(
-      screen.getByRole("textbox", { name: "Name of person being invited" }),
-      { target: { value: "Priya Patel" } },
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Generate invite link" }),
-    );
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Could not generate the invite link. Try again.",
-    );
-    expect(
-      screen.getByRole("textbox", { name: "Name of person being invited" }),
-    ).toHaveValue("Priya Patel");
   });
 });

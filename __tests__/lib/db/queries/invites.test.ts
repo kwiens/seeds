@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -13,53 +13,41 @@ import { getInviteByToken, getPendingInvites } from "@/lib/db/queries/invites";
 
 const rows = [
   {
-    id: "guide-invite",
+    id: "guide",
     token: "guide-token",
-    invitedName: "Priya Guide",
+    invitedName: "Guide",
     role: "guide",
-    createdAt: new Date("2026-01-01"),
+    createdAt: new Date(),
   },
   {
-    id: "steward-invite",
+    id: "steward",
     token: "steward-token",
-    invitedName: "Sana Steward",
+    invitedName: "Steward",
     role: "steward",
-    createdAt: new Date("2026-01-02"),
+    createdAt: new Date(),
   },
 ];
 
-describe("getPendingInvites", () => {
-  beforeEach(() => {
+describe("invite queries", () => {
+  it("returns links only when the viewer can manage that role", async () => {
     vi.mocked(db.query.projectInvites.findMany).mockResolvedValue(
       rows as never,
     );
+
+    for (const [access, expectedLinks] of [
+      [{ canManage: false, isAdmin: false }, [null, null]],
+      [{ canManage: true, isAdmin: false }, ["/invite/guide-token", null]],
+      [
+        { canManage: true, isAdmin: true },
+        ["/invite/guide-token", "/invite/steward-token"],
+      ],
+    ] as const) {
+      const result = await getPendingInvites("project-1", access);
+      expect(result.map((invite) => invite.link)).toEqual(expectedLinks);
+      expect(result.some((invite) => "token" in invite)).toBe(false);
+    }
   });
 
-  it.each([
-    [
-      "read-only team members",
-      { canManage: false, isAdmin: false },
-      [null, null],
-    ],
-    [
-      "project managers",
-      { canManage: true, isAdmin: false },
-      ["/invite/guide-token", null],
-    ],
-    [
-      "admins",
-      { canManage: true, isAdmin: true },
-      ["/invite/guide-token", "/invite/steward-token"],
-    ],
-  ])("returns only authorized links to %s", async (_case, access, links) => {
-    const result = await getPendingInvites("project-1", access);
-
-    expect(result.map((invite) => invite.link)).toEqual(links);
-    expect(result.every((invite) => !("token" in invite))).toBe(true);
-  });
-});
-
-describe("getInviteByToken", () => {
   it("rejects malformed route tokens before querying the database", async () => {
     const result = await getInviteByToken("not-a-token");
 

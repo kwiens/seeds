@@ -292,26 +292,18 @@ describe("acceptInvite", () => {
     expect(result).toEqual({ error: "This invite link isn't valid." });
   });
 
-  it("rejects a canceled invite", async () => {
+  it.each([
+    ["canceledAt", "This invite has been canceled."],
+    ["acceptedAt", "This invite has already been used."],
+  ] as const)("rejects an invite with %s set", async (field, error) => {
     setAuthMock(auth, mockSession());
     vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
       ...invite,
-      canceledAt: new Date(),
+      [field]: new Date(),
     } as never);
 
     const result = await acceptInvite(TOKEN);
-    expect(result).toEqual({ error: "This invite has been canceled." });
-  });
-
-  it("rejects an already-used invite", async () => {
-    setAuthMock(auth, mockSession());
-    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
-      ...invite,
-      acceptedAt: new Date(),
-    } as never);
-
-    const result = await acceptInvite(TOKEN);
-    expect(result).toEqual({ error: "This invite has already been used." });
+    expect(result).toEqual({ error });
   });
 
   it("rejects if the project no longer has a team workspace", async () => {
