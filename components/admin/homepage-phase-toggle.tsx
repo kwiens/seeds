@@ -8,12 +8,14 @@ export function HomepagePhaseToggle({ currentPhase }: { currentPhase: 1 | 2 }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex gap-2 rounded-lg border p-1">
+    <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+      <div className="grid w-full gap-1 rounded-lg border p-1 sm:w-auto sm:grid-cols-2">
         <Button
           variant={currentPhase === 1 ? "secondary" : "ghost"}
           size="sm"
+          className="h-11 w-full sm:h-8"
           disabled={isPending || currentPhase === 1}
+          aria-pressed={currentPhase === 1}
           onClick={() =>
             startTransition(async () => {
               await setHomepagePhase(1);
@@ -25,7 +27,9 @@ export function HomepagePhaseToggle({ currentPhase }: { currentPhase: 1 | 2 }) {
         <Button
           variant={currentPhase === 2 ? "secondary" : "ghost"}
           size="sm"
+          className="h-11 w-full sm:h-8"
           disabled={isPending || currentPhase === 2}
+          aria-pressed={currentPhase === 2}
           onClick={() =>
             startTransition(async () => {
               await setHomepagePhase(2);

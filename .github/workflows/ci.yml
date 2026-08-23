@@ -29,3 +29,44 @@ jobs:
 
       - name: Type check
         run: pnpm exec tsc --noEmit
+
+  end-to-end:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ENV: development
+      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      AUTH_SECRET: ci-only-auth-secret-ci-only-auth-secret-ci-only-auth-secret
+      AUTH_GOOGLE_ID: e2e-google-client-id
+      AUTH_GOOGLE_SECRET: e2e-google-client-secret
+      NEXT_PUBLIC_MAPBOX_TOKEN: pk.e2e-placeholder
+      GOOGLE_GENERATIVE_AI_API_KEY: e2e-placeholder
+      BLOB_READ_WRITE_TOKEN: vercel_blob_rw_cVJ0H9jPR61qF32Y_e2e_placeholder
+      TEAM_FILES_BLOB_READ_WRITE_TOKEN: vercel_blob_rw_YnFQQ1z8IihRdO43_e2e_placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
