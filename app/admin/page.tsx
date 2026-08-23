@@ -3,20 +3,23 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
+import { AdminTabs } from "@/components/admin/admin-tabs";
 import { BannerSettings } from "@/components/admin/banner-settings";
 import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { UserList } from "@/components/admin/user-list";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { type AdminTab, isAdminTab } from "@/lib/admin-tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
 import {
   getAdminEmails,
   getAllProjects,
-  getAllUsers,
   getCouncilMembers,
   getSupporterEmailsMap,
+  getUsersPage,
+  USERS_PER_PAGE,
 } from "@/lib/db/queries/admin";
 import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
 
@@ -29,31 +32,63 @@ const envEmails = (process.env.ADMIN_EMAILS ?? "")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    tab?: string;
+  }>;
+}) {
   const session = await auth();
   if (session?.user?.role !== "admin") {
     redirect("/");
   }
+
+  const params = await searchParams;
+  const activeTab = getActiveTab(params);
+  const peoplePage = parsePage(params.page);
+  const peopleSearch = params.search?.trim() || undefined;
 
   const [
     allSeeds,
     supporterEmailsMap,
     adminEmails,
     councilMembers,
-    allUsers,
+    usersPage,
     allComments,
     homepagePhase,
     bannerConfig,
   ] = await Promise.all([
-    getAllProjects(),
-    getSupporterEmailsMap(),
-    getAdminEmails(),
-    getCouncilMembers(),
-    getAllUsers(),
-    getAllComments(),
-    getHomepagePhase(),
-    getBannerConfig(),
+    activeTab === "seeds" ? getAllProjects() : Promise.resolve([]),
+    activeTab === "seeds"
+      ? getSupporterEmailsMap()
+      : Promise.resolve(new Map<string, string[]>()),
+    activeTab === "settings" ? getAdminEmails() : Promise.resolve([]),
+    activeTab === "settings" ? getCouncilMembers() : Promise.resolve([]),
+    activeTab === "users"
+      ? getUsersPage({ page: peoplePage, search: peopleSearch })
+      : Promise.resolve({
+          users: [],
+          totalCount: 0,
+          totalPages: 0,
+          currentPage: 1,
+          pageSize: USERS_PER_PAGE,
+        }),
+    activeTab === "insights" ? getAllComments() : Promise.resolve([]),
+    activeTab === "settings" ? getHomepagePhase() : Promise.resolve<1 | 2>(1),
+    activeTab === "settings"
+      ? getBannerConfig()
+      : Promise.resolve({ enabled: false, message: "", href: "" }),
   ]);
+
+  if (
+    activeTab === "users" &&
+    usersPage.currentPage > Math.max(1, usersPage.totalPages)
+  ) {
+    redirectToLastPeoplePage(usersPage.totalPages, peopleSearch);
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -64,7 +99,7 @@ export default async function AdminPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="seeds">
+      <AdminTabs activeTab={activeTab}>
         <div className="-mx-4 overflow-x-auto px-4 pb-1">
           <TabsList className="min-w-max">
             <TabsTrigger value="seeds">Seeds</TabsTrigger>
@@ -108,14 +143,15 @@ export default async function AdminPage() {
 
         <TabsContent value="users">
           <div className="mt-4 space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold">All People</h2>
-              <p className="text-muted-foreground text-sm">
-                Check whether someone already has an account before adding them
-                to a Sprout&apos;s team, roster, or Council.
-              </p>
-            </div>
-            <UserList users={allUsers} />
+            <h2 className="text-lg font-semibold">All People</h2>
+            <UserList
+              users={usersPage.users}
+              totalCount={usersPage.totalCount}
+              totalPages={usersPage.totalPages}
+              currentPage={usersPage.currentPage}
+              pageSize={usersPage.pageSize}
+              search={peopleSearch}
+            />
           </div>
         </TabsContent>
 
@@ -169,7 +205,31 @@ export default async function AdminPage() {
             </div>
           </div>
         </TabsContent>
-      </Tabs>
+      </AdminTabs>
     </div>
   );
+}
+
+function getActiveTab(params: {
+  page?: string;
+  search?: string;
+  tab?: string;
+}): AdminTab {
+  if (isAdminTab(params.tab)) return params.tab;
+  return params.page || params.search ? "users" : "seeds";
+}
+
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+function redirectToLastPeoplePage(
+  totalPages: number,
+  search: string | undefined,
+): never {
+  const params = new URLSearchParams({ tab: "users" });
+  if (search) params.set("search", search);
+  if (totalPages > 1) params.set("page", String(totalPages));
+  redirect(`/admin?${params.toString()}`);
 }

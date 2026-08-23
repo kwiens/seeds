@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   adminEmails,
@@ -7,6 +7,8 @@ import {
   users,
 } from "@/lib/db/schema";
 import { supportCountSql } from "./projects";
+
+export const USERS_PER_PAGE = 20;
 
 export async function getAllProjects() {
   return db
@@ -78,15 +80,42 @@ export async function getCouncilMembers() {
     .orderBy(desc(users.createdAt));
 }
 
-export async function getAllUsers() {
-  return db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: users.role,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .orderBy(desc(users.createdAt));
+export async function getUsersPage(
+  options: { page?: number; search?: string } = {},
+) {
+  const currentPage =
+    Number.isSafeInteger(options.page) && (options.page ?? 0) > 0
+      ? (options.page ?? 1)
+      : 1;
+  const search = options.search?.trim();
+  const where = search
+    ? or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`))
+    : undefined;
+  const offset = (currentPage - 1) * USERS_PER_PAGE;
+
+  const [userRows, countResult] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(where)
+      .orderBy(desc(users.createdAt), desc(users.id))
+      .limit(USERS_PER_PAGE)
+      .offset(offset),
+    db.select({ count: count() }).from(users).where(where),
+  ]);
+  const totalCount = countResult[0]?.count ?? 0;
+
+  return {
+    users: userRows,
+    totalCount,
+    totalPages: Math.ceil(totalCount / USERS_PER_PAGE),
+    currentPage,
+    pageSize: USERS_PER_PAGE,
+  };
 }

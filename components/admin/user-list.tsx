@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
+import { Pagination } from "@/components/seeds/pagination";
+import { SearchInput } from "@/components/seeds/search-input";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -26,6 +24,8 @@ const joinedDateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   timeZone: "America/New_York",
 });
+const peopleSearchParams = { tab: "users" };
+const numberFormatter = new Intl.NumberFormat("en-US");
 
 function RoleBadge({ role }: { role: string }) {
   if (role === "admin") {
@@ -52,40 +52,53 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-export function UserList({ users }: { users: AdminUser[] }) {
-  const [search, setSearch] = useState("");
-
-  const query = search.trim().toLowerCase();
-  const filtered = query
-    ? users.filter(
-        (u) =>
-          u.name.toLowerCase().includes(query) ||
-          u.email.toLowerCase().includes(query),
-      )
-    : users;
+export function UserList({
+  currentPage,
+  pageSize,
+  search,
+  totalCount,
+  totalPages,
+  users,
+}: {
+  currentPage: number;
+  pageSize: number;
+  search?: string;
+  totalCount: number;
+  totalPages: number;
+  users: AdminUser[];
+}) {
+  const firstResult = users.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastResult = firstResult + users.length - 1;
+  const resultSummary =
+    totalCount === 0
+      ? "0 people"
+      : totalCount === 1
+        ? "1 person"
+        : `Showing ${numberFormatter.format(firstResult)}–${numberFormatter.format(lastResult)} of ${numberFormatter.format(totalCount)}`;
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <Input
-          aria-label="Search people by name or email"
+      <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SearchInput
+          ariaLabel="Search people by name or email"
+          fixedParams={peopleSearchParams}
           placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
         />
-        <p className="text-muted-foreground text-sm whitespace-nowrap">
-          {filtered.length} of {users.length}
+        <p
+          className="text-muted-foreground text-sm whitespace-nowrap"
+          aria-live="polite"
+        >
+          {resultSummary}
         </p>
       </div>
 
-      {filtered.length === 0 ? (
+      {users.length === 0 ? (
         <p className="text-muted-foreground py-8 text-center text-sm">
-          {users.length === 0 ? "No accounts yet." : "No matches."}
+          {search ? "No people match your search." : "No accounts yet."}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-md border">
-          <Table>
+          <Table className="min-w-[40rem]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -95,12 +108,14 @@ export function UserList({ users }: { users: AdminUser[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="text-sm font-medium">
+                  <TableCell className="text-sm font-medium whitespace-normal break-words">
                     {user.name}
                   </TableCell>
-                  <TableCell className="text-sm">{user.email}</TableCell>
+                  <TableCell className="text-sm whitespace-normal break-all">
+                    {user.email}
+                  </TableCell>
                   <TableCell>
                     <RoleBadge role={user.role} />
                   </TableCell>
@@ -113,6 +128,12 @@ export function UserList({ users }: { users: AdminUser[] }) {
           </Table>
         </div>
       )}
+
+      <Pagination
+        currentPage={currentPage}
+        fixedParams={peopleSearchParams}
+        totalPages={totalPages}
+      />
     </div>
   );
 }
