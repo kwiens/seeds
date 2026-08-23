@@ -73,6 +73,41 @@ describe("UserList", () => {
     expect(screen.getByText("1 of 3")).toBeInTheDocument();
   });
 
+  it("wraps long names and emails within constrained columns", () => {
+    const longName = "Alexandria-Montgomery-Worthington Community Organizer";
+    const longEmail =
+      "alexandria.montgomery-worthington@neighborhood-coalition.example.com";
+
+    render(
+      <UserList
+        users={[
+          {
+            ...users[0],
+            name: longName,
+            email: longEmail,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("cell", { name: longName })).toHaveClass(
+      "w-32",
+      "max-w-32",
+      "whitespace-normal",
+      "break-words",
+      "sm:w-48",
+      "sm:max-w-48",
+    );
+    expect(screen.getByRole("cell", { name: longEmail })).toHaveClass(
+      "w-40",
+      "max-w-40",
+      "whitespace-normal",
+      "break-words",
+      "sm:w-64",
+      "sm:max-w-64",
+    );
+  });
+
   it("shows no-match feedback and restores all rows when search clears", () => {
     render(<UserList users={users} />);
 

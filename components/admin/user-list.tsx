@@ -105,10 +105,12 @@ export function UserList({ users }: { users: AdminUser[] }) {
             <TableBody>
               {filtered.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="text-sm font-medium">
+                  <TableCell className="w-32 max-w-32 whitespace-normal break-words text-sm font-medium sm:w-48 sm:max-w-48">
                     {user.name}
                   </TableCell>
-                  <TableCell className="text-sm">{user.email}</TableCell>
+                  <TableCell className="w-40 max-w-40 whitespace-normal break-words text-sm sm:w-64 sm:max-w-64">
+                    {user.email}
+                  </TableCell>
                   <TableCell>
                     <RoleBadge role={user.role} />
                   </TableCell>
