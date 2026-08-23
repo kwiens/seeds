@@ -11,7 +11,11 @@ import { projectInvites, projectParticipants, projects } from "@/lib/db/schema";
 import { hasTeamWorkspace } from "@/lib/project-stages";
 import { teamRoleLabels, type TeamRole } from "@/lib/participant-roles";
 import { getRequestOrigin } from "@/lib/site-url";
-import { createInviteFormSchema } from "@/lib/validations/invite";
+import {
+  acceptInviteActionSchema,
+  cancelInviteActionSchema,
+  createInviteActionSchema,
+} from "@/lib/validations/invite";
 
 function generateToken() {
   return randomBytes(24).toString("base64url");
@@ -41,14 +45,18 @@ export async function createInvite(
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
-  const parsed = createInviteFormSchema.safeParse({ invitedName, role });
+  const parsed = createInviteActionSchema.safeParse({
+    projectId,
+    invitedName,
+    role,
+  });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid invite." };
   }
-  const teamRole = parsed.data.role as TeamRole;
+  const teamRole = parsed.data.role;
 
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
+    where: eq(projects.id, parsed.data.projectId),
     columns: { id: true, stage: true },
   });
   if (!project) return { error: "Project not found." };
@@ -68,7 +76,7 @@ export async function createInvite(
   const token = generateToken();
   await db.insert(projectInvites).values({
     token,
-    projectId,
+    projectId: parsed.data.projectId,
     role: teamRole,
     invitedName: parsed.data.invitedName,
     createdBy: session.user.id,
@@ -84,8 +92,11 @@ export async function cancelInvite(inviteId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
+  const parsed = cancelInviteActionSchema.safeParse({ inviteId });
+  if (!parsed.success) return { error: "Invite not found." };
+
   const invite = await db.query.projectInvites.findFirst({
-    where: eq(projectInvites.id, inviteId),
+    where: eq(projectInvites.id, parsed.data.inviteId),
   });
   if (!invite) return { error: "Invite not found." };
 
@@ -101,7 +112,7 @@ export async function cancelInvite(inviteId: string) {
     .set({ canceledAt: new Date() })
     .where(
       and(
-        eq(projectInvites.id, inviteId),
+        eq(projectInvites.id, parsed.data.inviteId),
         isNull(projectInvites.acceptedAt),
         isNull(projectInvites.canceledAt),
       ),
@@ -120,8 +131,11 @@ export async function acceptInvite(token: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
+  const parsed = acceptInviteActionSchema.safeParse({ token });
+  if (!parsed.success) return { error: "This invite link isn't valid." };
+
   const invite = await db.query.projectInvites.findFirst({
-    where: eq(projectInvites.token, token),
+    where: eq(projectInvites.token, parsed.data.token),
     with: { project: { columns: { id: true, stage: true } } },
   });
   if (!invite) return { error: "This invite link isn't valid." };

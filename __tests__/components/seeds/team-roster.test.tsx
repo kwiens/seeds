@@ -1,5 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
 import { cancelInvite, createInvite } from "@/lib/actions/invites";
@@ -383,6 +389,22 @@ describe("TeamRoster", () => {
     );
   });
 
+  it("shows a recoverable error when canceling an invite rejects", async () => {
+    vi.mocked(cancelInvite).mockRejectedValueOnce(new Error("offline"));
+    renderRoster({
+      pendingInvites: [{ ...pendingGuideInvite, link: "/invite/abc123" }],
+      canManage: true,
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cancel invite for Priya Patel" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not cancel this invite. Try again.",
+    );
+  });
+
   it("renders controls only when the server provides an authorized link", () => {
     const pendingStewardInvite: PendingInvite = {
       ...pendingGuideInvite,
@@ -430,6 +452,8 @@ describe("TeamRoster", () => {
 
     openAddForm();
     switchToInviteByLink();
+    openRoleSelect();
+    fireEvent.click(screen.getByRole("option", { name: "Guide" }));
 
     fireEvent.change(
       screen.getByRole("textbox", { name: "Name of person being invited" }),
@@ -443,12 +467,62 @@ describe("TeamRoster", () => {
       expect(createInvite).toHaveBeenCalledExactlyOnceWith(
         "seed-1",
         "Priya Patel",
-        "member",
+        "guide",
       ),
     );
     expect(
-      await screen.findByDisplayValue("https://npcseeds.com/invite/abc123"),
-    ).toBeInTheDocument();
+      await screen.findByText("Invite link for Priya Patel"),
+    ).toBeVisible();
+    expect(screen.getByText("Guide")).toBeVisible();
+    expect(
+      screen.getByRole("textbox", { name: "Invite link for Priya Patel" }),
+    ).toHaveValue("https://npcseeds.com/invite/abc123");
+    expect(
+      screen.queryByRole("textbox", { name: "Name of person being invited" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Team role" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("locks form controls while an invite is being generated", async () => {
+    let resolveInvite!: (result: { success: true; link: string }) => void;
+    vi.mocked(createInvite).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveInvite = resolve;
+      }),
+    );
+    renderRoster({ canManage: true });
+
+    openAddForm();
+    switchToInviteByLink();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Name of person being invited" }),
+      { target: { value: "Priya Patel" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+
+    await waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
+    expect(screen.getByRole("tab", { name: "Add by email" })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: "Invite by link" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Team role" })).toBeDisabled();
+    expect(
+      screen.getByRole("textbox", { name: "Name of person being invited" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generating…" })).toBeDisabled();
+
+    await act(async () => {
+      resolveInvite({
+        success: true,
+        link: "https://npcseeds.com/invite/abc123",
+      });
+    });
+    expect(
+      await screen.findByText("Invite link for Priya Patel"),
+    ).toBeVisible();
   });
 
   it("shows an error when generating an invite link fails", async () => {
@@ -470,5 +544,27 @@ describe("TeamRoster", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "You do not have permission to manage this project's team.",
     );
+  });
+
+  it("shows a recoverable error when invite generation rejects", async () => {
+    vi.mocked(createInvite).mockRejectedValueOnce(new Error("offline"));
+    renderRoster({ canManage: true });
+
+    openAddForm();
+    switchToInviteByLink();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Name of person being invited" }),
+      { target: { value: "Priya Patel" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate invite link" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not generate the invite link. Try again.",
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Name of person being invited" }),
+    ).toHaveValue("Priya Patel");
   });
 });

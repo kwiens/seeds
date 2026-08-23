@@ -19,13 +19,19 @@ export function AcceptInviteButton({
   function handleAccept() {
     setError(null);
     startTransition(async () => {
-      const result = await acceptInvite(token);
-      if (result.error) {
-        setError(result.error);
-        return;
+      try {
+        const result = await acceptInvite(token);
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
+        router.push(`/dashboard/projects/${result.projectId}/team`);
+        router.refresh();
+      } catch {
+        setError(
+          "Could not join the team. Check your connection and try again.",
+        );
       }
-      router.push(`/dashboard/projects/${result.projectId}/team`);
-      router.refresh();
     });
   }
 

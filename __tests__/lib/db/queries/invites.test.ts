@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
-      projectInvites: { findMany: vi.fn() },
+      projectInvites: { findMany: vi.fn(), findFirst: vi.fn() },
     },
   },
 }));
 
 import { db } from "@/lib/db";
-import { getPendingInvites } from "@/lib/db/queries/invites";
+import { getInviteByToken, getPendingInvites } from "@/lib/db/queries/invites";
 
 const rows = [
   {
@@ -56,5 +56,14 @@ describe("getPendingInvites", () => {
 
     expect(result.map((invite) => invite.link)).toEqual(links);
     expect(result.every((invite) => !("token" in invite))).toBe(true);
+  });
+});
+
+describe("getInviteByToken", () => {
+  it("rejects malformed route tokens before querying the database", async () => {
+    const result = await getInviteByToken("not-a-token");
+
+    expect(result).toBeNull();
+    expect(db.query.projectInvites.findFirst).not.toHaveBeenCalled();
   });
 });

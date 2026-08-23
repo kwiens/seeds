@@ -235,8 +235,12 @@ function PendingInviteRow({ invite }: { invite: PendingInvite }) {
   function handleCancel() {
     setError(null);
     startTransition(async () => {
-      const result = await cancelInvite(invite.id);
-      if (result.error) setError(result.error);
+      try {
+        const result = await cancelInvite(invite.id);
+        if (result.error) setError(result.error);
+      } catch {
+        setError("Could not cancel this invite. Try again.");
+      }
     });
   }
 
@@ -303,7 +307,11 @@ function AddMemberForm({
   const [role, setRole] = useState<TeamRole>("member");
   const [target, setTarget] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [link, setLink] = useState<string | null>(null);
+  const [generatedInvite, setGeneratedInvite] = useState<{
+    link: string;
+    invitedName: string;
+    roleLabel: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isEmail = mode === "email";
@@ -313,7 +321,7 @@ function AddMemberForm({
     setRole("member");
     setTarget("");
     setError(null);
-    setLink(null);
+    setGeneratedInvite(null);
     setCopied(false);
   }
 
@@ -322,28 +330,41 @@ function AddMemberForm({
     const submittedTarget = target.trim();
     if (!submittedTarget) return;
     const submittedMode = mode;
+    const submittedRole = role;
 
     setError(null);
     startTransition(async () => {
-      const result =
-        submittedMode === "email"
-          ? await addTeamMember(seedId, submittedTarget, role)
-          : await createInvite(seedId, submittedTarget, role);
+      try {
+        const result =
+          submittedMode === "email"
+            ? await addTeamMember(seedId, submittedTarget, submittedRole)
+            : await createInvite(seedId, submittedTarget, submittedRole);
 
-      if ("error" in result && result.error) {
-        setError(result.error);
-      } else if ("link" in result) {
-        setLink(result.link);
-      } else {
-        onDone();
+        if ("error" in result && result.error) {
+          setError(result.error);
+        } else if ("link" in result) {
+          setGeneratedInvite({
+            link: result.link,
+            invitedName: submittedTarget,
+            roleLabel: teamRoleLabels[submittedRole],
+          });
+        } else {
+          onDone();
+        }
+      } catch {
+        setError(
+          submittedMode === "email"
+            ? "Could not add this person. Try again."
+            : "Could not generate the invite link. Try again.",
+        );
       }
     });
   }
 
   async function handleCopy() {
-    if (!link) return;
+    if (!generatedInvite) return;
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(generatedInvite.link);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -358,11 +379,11 @@ function AddMemberForm({
       className="mt-3 rounded-md border p-3"
     >
       <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="email">
+        <TabsTrigger value="email" disabled={isPending || !!generatedInvite}>
           <Mail className="size-3.5" />
           Add by email
         </TabsTrigger>
-        <TabsTrigger value="link">
+        <TabsTrigger value="link" disabled={isPending || !!generatedInvite}>
           <Link2 className="size-3.5" />
           Invite by link
         </TabsTrigger>
@@ -383,29 +404,21 @@ function AddMemberForm({
             </p>
           )}
 
-          <TeamRoleSelect role={role} isAdmin={isAdmin} onChange={setRole} />
-
-          <Input
-            type={isEmail ? "email" : "text"}
-            value={target}
-            onChange={(event) => setTarget(event.target.value)}
-            placeholder={
-              isEmail
-                ? "email@example.com"
-                : "Their name (so you can tell links apart)"
-            }
-            aria-label={
-              isEmail
-                ? "Email address of person to add"
-                : "Name of person being invited"
-            }
-          />
-
-          {link ? (
+          {generatedInvite ? (
             <div className="bg-muted space-y-1.5 rounded-md p-2">
-              <p className="text-xs font-medium">Invite link for {target}</p>
+              <p role="status" className="break-words text-xs font-medium">
+                Invite link for {generatedInvite.invitedName}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {generatedInvite.roleLabel}
+              </p>
               <div className="flex gap-1.5">
-                <Input value={link} readOnly className="font-mono text-xs" />
+                <Input
+                  value={generatedInvite.link}
+                  readOnly
+                  aria-label={`Invite link for ${generatedInvite.invitedName}`}
+                  className="font-mono text-base md:text-sm"
+                />
                 <Button
                   type="button"
                   size="icon"
@@ -429,23 +442,56 @@ function AddMemberForm({
               </div>
             </div>
           ) : (
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onDone}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isPending || !target.trim()}
-              >
-                {isEmail ? "Add" : "Generate invite link"}
-              </Button>
-            </div>
+            <>
+              <TeamRoleSelect
+                role={role}
+                isAdmin={isAdmin}
+                disabled={isPending}
+                onChange={setRole}
+              />
+
+              <Input
+                type={isEmail ? "email" : "text"}
+                value={target}
+                disabled={isPending}
+                onChange={(event) => setTarget(event.target.value)}
+                placeholder={
+                  isEmail
+                    ? "email@example.com"
+                    : "Their name (so you can tell links apart)"
+                }
+                aria-label={
+                  isEmail
+                    ? "Email address of person to add"
+                    : "Name of person being invited"
+                }
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={onDone}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isPending || !target.trim()}
+                >
+                  {isPending
+                    ? isEmail
+                      ? "Adding…"
+                      : "Generating…"
+                    : isEmail
+                      ? "Add"
+                      : "Generate invite link"}
+                </Button>
+              </div>
+            </>
           )}
         </form>
       </TabsContent>
@@ -456,10 +502,12 @@ function AddMemberForm({
 function TeamRoleSelect({
   role,
   isAdmin,
+  disabled = false,
   onChange,
 }: {
   role: TeamRole;
   isAdmin: boolean;
+  disabled?: boolean;
   onChange: (role: TeamRole) => void;
 }) {
   const roles = isAdmin
@@ -467,7 +515,11 @@ function TeamRoleSelect({
     : teamRoleKeys.filter((item) => item !== "steward");
 
   return (
-    <Select value={role} onValueChange={(value) => onChange(value as TeamRole)}>
+    <Select
+      value={role}
+      disabled={disabled}
+      onValueChange={(value) => onChange(value as TeamRole)}
+    >
       <SelectTrigger className="w-full" aria-label="Team role">
         <SelectValue />
       </SelectTrigger>
