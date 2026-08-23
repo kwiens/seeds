@@ -8,11 +8,9 @@ import { acceptInvite } from "@/lib/actions/invites";
 export function AcceptInviteButton({
   token,
   roleLabel,
-  variant = "default",
 }: {
   token: string;
   roleLabel: string;
-  variant?: "default" | "outline";
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -36,7 +34,6 @@ export function AcceptInviteButton({
       <Button
         className="w-full"
         size="lg"
-        variant={variant}
         disabled={isPending}
         onClick={handleAccept}
       >

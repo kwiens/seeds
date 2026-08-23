@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
@@ -14,6 +15,22 @@ import { createInviteFormSchema } from "@/lib/validations/invite";
 
 function generateToken() {
   return randomBytes(24).toString("base64url");
+}
+
+async function getInvitePermissionError(
+  session: Session,
+  projectId: string,
+  role: TeamRole,
+) {
+  if (role === "steward") {
+    return session.user.role === "admin"
+      ? null
+      : `Only Admins can manage ${teamRoleLabels.steward} invites.`;
+  }
+
+  return (await canManageProject(session, { id: projectId }))
+    ? null
+    : "You do not have permission to manage this project's team.";
 }
 
 export async function createInvite(
@@ -32,7 +49,7 @@ export async function createInvite(
 
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { id: true, stage: true, name: true },
+    columns: { id: true, stage: true },
   });
   if (!project) return { error: "Project not found." };
   if (!hasTeamWorkspace(project.stage)) {
@@ -41,15 +58,12 @@ export async function createInvite(
     };
   }
 
-  if (teamRole === "steward") {
-    if (session.user.role !== "admin") {
-      return { error: `Only Admins can invite a ${teamRoleLabels.steward}.` };
-    }
-  } else if (!(await canManageProject(session, project))) {
-    return {
-      error: "You do not have permission to manage this project's team.",
-    };
-  }
+  const permissionError = await getInvitePermissionError(
+    session,
+    project.id,
+    teamRole,
+  );
+  if (permissionError) return { error: permissionError };
 
   const token = generateToken();
   await db.insert(projectInvites).values({
@@ -75,27 +89,12 @@ export async function cancelInvite(inviteId: string) {
   });
   if (!invite) return { error: "Invite not found." };
 
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, invite.projectId),
-    columns: { id: true },
-  });
-  if (!project) return { error: "Project not found." };
-
-  if (invite.role === "steward") {
-    if (session.user.role !== "admin") {
-      return {
-        error: `Only Admins can cancel a ${teamRoleLabels.steward} invite.`,
-      };
-    }
-  } else if (!(await canManageProject(session, project))) {
-    return {
-      error: "You do not have permission to manage this project's team.",
-    };
-  }
-
-  if (invite.acceptedAt || invite.canceledAt) {
-    return { error: "This invite is no longer pending." };
-  }
+  const permissionError = await getInvitePermissionError(
+    session,
+    invite.projectId,
+    invite.role as TeamRole,
+  );
+  if (permissionError) return { error: permissionError };
 
   const canceledInvites = await db
     .update(projectInvites)
@@ -117,45 +116,13 @@ export async function cancelInvite(inviteId: string) {
   return { success: true };
 }
 
-export async function getInviteLink(inviteId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "You must be signed in." };
-
-  const invite = await db.query.projectInvites.findFirst({
-    where: eq(projectInvites.id, inviteId),
-  });
-  if (!invite) return { error: "Invite not found." };
-  if (invite.acceptedAt || invite.canceledAt) {
-    return { error: "This invite is no longer pending." };
-  }
-
-  if (invite.role === "steward") {
-    if (session.user.role !== "admin") {
-      return {
-        error: `Only Admins can copy a ${teamRoleLabels.steward} invite.`,
-      };
-    }
-  } else if (
-    !(await canManageProject(session, {
-      id: invite.projectId,
-    }))
-  ) {
-    return {
-      error: "You do not have permission to manage this project's team.",
-    };
-  }
-
-  const origin = await getRequestOrigin();
-  return { success: true, link: `${origin}/invite/${invite.token}` };
-}
-
 export async function acceptInvite(token: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
   const invite = await db.query.projectInvites.findFirst({
     where: eq(projectInvites.token, token),
-    with: { project: { columns: { id: true, name: true, stage: true } } },
+    with: { project: { columns: { id: true, stage: true } } },
   });
   if (!invite) return { error: "This invite link isn't valid." };
   if (invite.canceledAt) return { error: "This invite has been canceled." };
@@ -234,6 +201,5 @@ export async function acceptInvite(token: string) {
   return {
     success: true,
     projectId: invite.projectId,
-    projectName: invite.project.name,
   };
 }

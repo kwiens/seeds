@@ -12,12 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
-import {
-  cancelInvite,
-  createInvite,
-  getInviteLink,
-} from "@/lib/actions/invites";
+import { cancelInvite, createInvite } from "@/lib/actions/invites";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
 import type { PendingInvite } from "@/lib/db/queries/invites";
 import {
@@ -109,12 +106,7 @@ export function TeamRoster({
           </p>
           <div className="space-y-2.5">
             {pendingInvites.map((invite) => (
-              <PendingInviteRow
-                key={invite.id}
-                invite={invite}
-                canManage={canManage}
-                isAdmin={isAdmin}
-              />
+              <PendingInviteRow key={invite.id} invite={invite} />
             ))}
           </div>
         </div>
@@ -222,37 +214,21 @@ function RosterRow({
   );
 }
 
-function PendingInviteRow({
-  invite,
-  canManage,
-  isAdmin,
-}: {
-  invite: PendingInvite;
-  canManage: boolean;
-  isAdmin: boolean;
-}) {
+function PendingInviteRow({ invite }: { invite: PendingInvite }) {
   const [isPending, startTransition] = useTransition();
-  const [isCopying, setIsCopying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const canManageInvite = invite.role === "steward" ? isAdmin : canManage;
 
   async function handleCopy() {
+    if (!invite.link) return;
     setError(null);
-    setIsCopying(true);
     try {
-      const result = await getInviteLink(invite.id);
-      if (!("link" in result) || !result.link) {
-        setError(result.error ?? "Could not retrieve the invite link.");
-        return;
-      }
-      await navigator.clipboard.writeText(result.link);
+      const link = new URL(invite.link, window.location.origin).toString();
+      await navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       setError("Could not copy the invite link. Try again.");
-    } finally {
-      setIsCopying(false);
     }
   }
 
@@ -277,19 +253,18 @@ function PendingInviteRow({
           {invite.roleLabel} · invited
         </p>
       </div>
-      {canManageInvite && (
+      {invite.link && (
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          disabled={isCopying}
           onClick={handleCopy}
           aria-label={`Copy invite link for ${invite.invitedName}`}
         >
           <Copy className="text-muted-foreground size-3.5" />
         </Button>
       )}
-      {canManageInvite && (
+      {invite.link && (
         <Button
           type="button"
           variant="ghost"
@@ -302,7 +277,9 @@ function PendingInviteRow({
         </Button>
       )}
       {copied && (
-        <p className="text-muted-foreground w-full pl-11 text-xs">Copied.</p>
+        <p role="status" className="text-muted-foreground w-full pl-11 text-xs">
+          Copied.
+        </p>
       )}
       {error && (
         <p role="alert" className="text-destructive w-full pl-11 text-xs">
@@ -323,157 +300,42 @@ function AddMemberForm({
   onDone: () => void;
 }) {
   const [mode, setMode] = useState<"email" | "link">("email");
-
-  return (
-    <div className="mt-3 space-y-2 rounded-md border p-3">
-      <div className="bg-muted flex gap-1 rounded-md p-1 text-xs">
-        <button
-          type="button"
-          onClick={() => setMode("email")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 font-medium ${
-            mode === "email"
-              ? "bg-background shadow-sm"
-              : "text-muted-foreground"
-          }`}
-        >
-          <Mail className="size-3.5" />
-          Add by email
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("link")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 font-medium ${
-            mode === "link"
-              ? "bg-background shadow-sm"
-              : "text-muted-foreground"
-          }`}
-        >
-          <Link2 className="size-3.5" />
-          Invite by link
-        </button>
-      </div>
-
-      {mode === "email" ? (
-        <AddByEmailForm seedId={seedId} isAdmin={isAdmin} onDone={onDone} />
-      ) : (
-        <InviteByLinkForm seedId={seedId} isAdmin={isAdmin} onDone={onDone} />
-      )}
-    </div>
-  );
-}
-
-function AddByEmailForm({
-  seedId,
-  isAdmin,
-  onDone,
-}: {
-  seedId: string;
-  isAdmin: boolean;
-  onDone: () => void;
-}) {
-  const availableRoles = isAdmin
-    ? teamRoleKeys
-    : teamRoleKeys.filter((r) => r !== "steward");
-
-  const [role, setRole] = useState<TeamRole>(availableRoles[0]);
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const targetEmail = email.trim();
-    if (!targetEmail) return;
-
-    setError(null);
-    startTransition(async () => {
-      const result = await addTeamMember(seedId, targetEmail, role);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      onDone();
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <p className="text-muted-foreground text-xs">
-        For people who&apos;ve already signed into the site before.
-      </p>
-      {error && (
-        <p
-          role="alert"
-          className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs"
-        >
-          {error}
-        </p>
-      )}
-
-      <Select value={role} onValueChange={(v) => setRole(v as TeamRole)}>
-        <SelectTrigger className="w-full" aria-label="Team role">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {availableRoles.map((r) => (
-            <SelectItem key={r} value={r}>
-              {teamRoleLabels[r]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="email@example.com"
-        aria-label="Email address of person to add"
-      />
-
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onDone}>
-          Cancel
-        </Button>
-        <Button type="submit" size="sm" disabled={isPending || !email.trim()}>
-          Add
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function InviteByLinkForm({
-  seedId,
-  isAdmin,
-  onDone,
-}: {
-  seedId: string;
-  isAdmin: boolean;
-  onDone: () => void;
-}) {
-  const availableRoles = isAdmin
-    ? teamRoleKeys
-    : teamRoleKeys.filter((r) => r !== "steward");
-
-  const [role, setRole] = useState<TeamRole>(availableRoles[0]);
-  const [invitedName, setInvitedName] = useState("");
+  const [role, setRole] = useState<TeamRole>("member");
+  const [target, setTarget] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const isEmail = mode === "email";
 
-  function handleGenerate() {
-    const name = invitedName.trim();
-    if (!name) return;
+  function handleModeChange(value: string) {
+    setMode(value as typeof mode);
+    setRole("member");
+    setTarget("");
+    setError(null);
+    setLink(null);
+    setCopied(false);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const submittedTarget = target.trim();
+    if (!submittedTarget) return;
+    const submittedMode = mode;
 
     setError(null);
     startTransition(async () => {
-      const result = await createInvite(seedId, name, role);
-      if ("link" in result) {
+      const result =
+        submittedMode === "email"
+          ? await addTeamMember(seedId, submittedTarget, role)
+          : await createInvite(seedId, submittedTarget, role);
+
+      if ("error" in result && result.error) {
+        setError(result.error);
+      } else if ("link" in result) {
         setLink(result.link);
       } else {
-        setError(result.error);
+        onDone();
       }
     });
   }
@@ -485,83 +347,137 @@ function InviteByLinkForm({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Silently no-op; the link is still visible to copy manually.
+      setError("Could not copy the invite link. Try again.");
     }
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-muted-foreground text-xs">
-        Works even if they&apos;ve never signed in — they&apos;ll sign in with
-        Google when they click it, then confirm joining.
-      </p>
-      {error && (
-        <p
-          role="alert"
-          className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs"
-        >
-          {error}
-        </p>
-      )}
-
-      <Select value={role} onValueChange={(v) => setRole(v as TeamRole)}>
-        <SelectTrigger className="w-full" aria-label="Team role">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {availableRoles.map((r) => (
-            <SelectItem key={r} value={r}>
-              {teamRoleLabels[r]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Input
-        value={invitedName}
-        onChange={(e) => setInvitedName(e.target.value)}
-        placeholder="Their name (so you can tell links apart)"
-        aria-label="Name of person being invited"
-      />
-
-      {link ? (
-        <div className="space-y-1.5 rounded-md bg-muted p-2">
-          <p className="text-xs font-medium">Invite link for {invitedName}</p>
-          <div className="flex gap-1.5">
-            <Input value={link} readOnly className="font-mono text-xs" />
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              className="shrink-0"
-              onClick={handleCopy}
-              aria-label="Copy invite link"
+    <Tabs
+      value={mode}
+      onValueChange={handleModeChange}
+      className="mt-3 rounded-md border p-3"
+    >
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="email">
+          <Mail className="size-3.5" />
+          Add by email
+        </TabsTrigger>
+        <TabsTrigger value="link">
+          <Link2 className="size-3.5" />
+          Invite by link
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value={mode} className="mt-2">
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <p className="text-muted-foreground text-xs">
+            {isEmail
+              ? "For people who've already signed into the site before."
+              : "Works even if they've never signed in — they'll sign in with Google when they click it, then confirm joining."}
+          </p>
+          {error && (
+            <p
+              role="alert"
+              className="bg-destructive/10 text-destructive rounded-md px-2 py-1.5 text-xs"
             >
-              <Copy className="size-3.5" />
-            </Button>
-          </div>
-          {copied && <p className="text-muted-foreground text-xs">Copied.</p>}
-          <div className="flex justify-end">
-            <Button type="button" size="sm" onClick={onDone}>
-              Done
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onDone}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={isPending || !invitedName.trim()}
-            onClick={handleGenerate}
-          >
-            Generate invite link
-          </Button>
-        </div>
-      )}
-    </div>
+              {error}
+            </p>
+          )}
+
+          <TeamRoleSelect role={role} isAdmin={isAdmin} onChange={setRole} />
+
+          <Input
+            type={isEmail ? "email" : "text"}
+            value={target}
+            onChange={(event) => setTarget(event.target.value)}
+            placeholder={
+              isEmail
+                ? "email@example.com"
+                : "Their name (so you can tell links apart)"
+            }
+            aria-label={
+              isEmail
+                ? "Email address of person to add"
+                : "Name of person being invited"
+            }
+          />
+
+          {link ? (
+            <div className="bg-muted space-y-1.5 rounded-md p-2">
+              <p className="text-xs font-medium">Invite link for {target}</p>
+              <div className="flex gap-1.5">
+                <Input value={link} readOnly className="font-mono text-xs" />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={handleCopy}
+                  aria-label="Copy invite link"
+                >
+                  <Copy className="size-3.5" />
+                </Button>
+              </div>
+              {copied && (
+                <p role="status" className="text-muted-foreground text-xs">
+                  Copied.
+                </p>
+              )}
+              <div className="flex justify-end">
+                <Button type="button" size="sm" onClick={onDone}>
+                  Done
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onDone}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isPending || !target.trim()}
+              >
+                {isEmail ? "Add" : "Generate invite link"}
+              </Button>
+            </div>
+          )}
+        </form>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function TeamRoleSelect({
+  role,
+  isAdmin,
+  onChange,
+}: {
+  role: TeamRole;
+  isAdmin: boolean;
+  onChange: (role: TeamRole) => void;
+}) {
+  const roles = isAdmin
+    ? teamRoleKeys
+    : teamRoleKeys.filter((item) => item !== "steward");
+
+  return (
+    <Select value={role} onValueChange={(value) => onChange(value as TeamRole)}>
+      <SelectTrigger className="w-full" aria-label="Team role">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {roles.map((item) => (
+          <SelectItem key={item} value={item}>
+            {teamRoleLabels[item]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -27,7 +27,6 @@ import {
   acceptInvite,
   cancelInvite,
   createInvite,
-  getInviteLink,
 } from "@/lib/actions/invites";
 
 const sproutProject = {
@@ -73,16 +72,12 @@ describe("createInvite", () => {
     expect(result).toEqual({ error: "You must be signed in." });
   });
 
-  it("rejects roles outside the team role vocabulary", async () => {
+  it.each([
+    ["roles outside the team role vocabulary", "Priya Patel", "gardener"],
+    ["an empty name", "  ", "guide"],
+  ])("rejects %s", async (_case, name, role) => {
     setAuthMock(auth, mockSession());
-    const result = await createInvite("project-1", "Priya Patel", "gardener");
-    expect(result).toHaveProperty("error");
-    expect(db.insert).not.toHaveBeenCalled();
-  });
-
-  it("rejects an empty name", async () => {
-    setAuthMock(auth, mockSession());
-    const result = await createInvite("project-1", "  ", "guide");
+    const result = await createInvite("project-1", name, role);
     expect(result).toHaveProperty("error");
     expect(db.insert).not.toHaveBeenCalled();
   });
@@ -167,9 +162,6 @@ describe("cancelInvite", () => {
     vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue(
       pendingInvite as never,
     );
-    vi.mocked(db.query.projects.findFirst).mockResolvedValue({
-      id: "project-1",
-    } as never);
     vi.mocked(db.update).mockReturnValue(updateChain() as never);
   });
 
@@ -223,83 +215,6 @@ describe("cancelInvite", () => {
 
     expect(result).toEqual({ error: "This invite is no longer pending." });
     expect(revalidatePath).not.toHaveBeenCalled();
-  });
-});
-
-describe("getInviteLink", () => {
-  const pendingInvite = {
-    id: "invite-1",
-    token: "abc123",
-    projectId: "project-1",
-    role: "guide",
-    acceptedAt: null,
-    canceledAt: null,
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(canManageProject).mockResolvedValue(true);
-    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue(
-      pendingInvite as never,
-    );
-  });
-
-  it("does not expose a link to an unauthenticated user", async () => {
-    setAuthMock(auth, null);
-
-    const result = await getInviteLink("invite-1");
-
-    expect(result).toEqual({ error: "You must be signed in." });
-    expect(db.query.projectInvites.findFirst).not.toHaveBeenCalled();
-  });
-
-  it("requires project management permission", async () => {
-    setAuthMock(auth, mockSession());
-    vi.mocked(canManageProject).mockResolvedValue(false);
-
-    const result = await getInviteLink("invite-1");
-
-    expect(result).toEqual({
-      error: "You do not have permission to manage this project's team.",
-    });
-    expect(result).not.toHaveProperty("link");
-  });
-
-  it("requires admin permission for Steward links", async () => {
-    setAuthMock(auth, mockSession({ role: "user" }));
-    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
-      ...pendingInvite,
-      role: "steward",
-    } as never);
-
-    const result = await getInviteLink("invite-1");
-
-    expect(result).toHaveProperty("error");
-    expect(result).not.toHaveProperty("link");
-  });
-
-  it("returns the link to an authorized project manager", async () => {
-    setAuthMock(auth, mockSession());
-
-    const result = await getInviteLink("invite-1");
-
-    expect(result).toEqual({
-      success: true,
-      link: "https://npcseeds.com/invite/abc123",
-    });
-  });
-
-  it("does not return a link after it is accepted or canceled", async () => {
-    setAuthMock(auth, mockSession());
-    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
-      ...pendingInvite,
-      acceptedAt: new Date(),
-    } as never);
-
-    const result = await getInviteLink("invite-1");
-
-    expect(result).toEqual({ error: "This invite is no longer pending." });
-    expect(result).not.toHaveProperty("link");
   });
 });
 
@@ -391,7 +306,6 @@ describe("acceptInvite", () => {
     expect(result).toEqual({
       success: true,
       projectId: "project-1",
-      projectName: "Bike Share",
     });
     expect(db.batch).toHaveBeenCalledOnce();
     expect(insert.select).toHaveBeenCalledOnce();

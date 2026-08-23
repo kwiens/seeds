@@ -1,10 +1,9 @@
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { AcceptInviteButton } from "@/components/auth/accept-invite-button";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { getInviteByToken } from "@/lib/db/queries/invites";
-import { namesLikelyMatch } from "@/lib/invite-match";
 
 export const metadata: Metadata = {
   title: "You're invited | Seeds",
@@ -42,11 +41,6 @@ export default async function InvitePage({
     );
   }
 
-  const accountName = session?.user?.name ?? null;
-  const isMatch = accountName
-    ? namesLikelyMatch(invite.invitedName, accountName)
-    : true;
-
   return (
     <div className="mx-auto max-w-md px-4 py-10">
       <div className="rounded-lg border p-6 text-center">
@@ -72,7 +66,7 @@ export default async function InvitePage({
               You&apos;ll come right back here after signing in.
             </p>
           </div>
-        ) : isMatch ? (
+        ) : (
           <div className="space-y-3">
             <div className="bg-muted flex items-center justify-center gap-2 rounded-md py-2 text-sm">
               <CheckCircle2 className="text-primary size-4" />
@@ -81,23 +75,6 @@ export default async function InvitePage({
             <AcceptInviteButton
               token={invite.token}
               roleLabel={invite.roleLabel}
-            />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-left text-sm text-amber-900">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              <p>
-                This invite was made out to{" "}
-                <strong>{invite.invitedName}</strong>, but you&apos;re signed in
-                as <strong>{session.user.email}</strong>. Make sure this is the
-                right account before continuing.
-              </p>
-            </div>
-            <AcceptInviteButton
-              token={invite.token}
-              roleLabel={`${invite.roleLabel} anyway`}
-              variant="outline"
             />
           </div>
         )}

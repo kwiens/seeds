@@ -2,11 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { TeamRoster } from "@/components/seeds/team-roster";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
-import {
-  cancelInvite,
-  createInvite,
-  getInviteLink,
-} from "@/lib/actions/invites";
+import { cancelInvite, createInvite } from "@/lib/actions/invites";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
 import type { PendingInvite } from "@/lib/db/queries/invites";
 
@@ -18,7 +14,6 @@ vi.mock("@/lib/actions/team-roster", () => ({
 vi.mock("@/lib/actions/invites", () => ({
   createInvite: vi.fn().mockResolvedValue({}),
   cancelInvite: vi.fn().mockResolvedValue({}),
-  getInviteLink: vi.fn().mockResolvedValue({}),
 }));
 
 // Radix Select needs these DOM APIs, which jsdom does not implement.
@@ -61,9 +56,9 @@ const allMembers = [gardener, teamMember, steward];
 const pendingGuideInvite: PendingInvite = {
   id: "invite-1",
   invitedName: "Priya Patel",
-  role: "guide",
   roleLabel: "Guide",
   createdAt: new Date(2026, 3, 1),
+  link: null,
 };
 
 function renderRoster({
@@ -88,7 +83,9 @@ function openAddForm() {
 }
 
 function switchToInviteByLink() {
-  fireEvent.click(screen.getByRole("button", { name: "Invite by link" }));
+  const tab = screen.getByRole("tab", { name: "Invite by link" });
+  fireEvent.mouseDown(tab);
+  fireEvent.click(tab);
 }
 
 function openRoleSelect() {
@@ -109,10 +106,6 @@ describe("TeamRoster", () => {
       link: "https://npcseeds.com/invite/abc123",
     });
     vi.mocked(cancelInvite).mockClear().mockResolvedValue({ success: true });
-    vi.mocked(getInviteLink).mockClear().mockResolvedValue({
-      success: true,
-      link: "https://npcseeds.com/invite/abc123",
-    });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -353,9 +346,9 @@ describe("TeamRoster", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("retrieves a pending invite link through the authorized server action", async () => {
+  it("copies a server-authorized pending invite link", async () => {
     renderRoster({
-      pendingInvites: [pendingGuideInvite],
+      pendingInvites: [{ ...pendingGuideInvite, link: "/invite/abc123" }],
       canManage: true,
     });
 
@@ -363,12 +356,11 @@ describe("TeamRoster", () => {
       screen.getByRole("button", { name: "Copy invite link for Priya Patel" }),
     );
 
-    await waitFor(() =>
-      expect(getInviteLink).toHaveBeenCalledExactlyOnceWith("invite-1"),
-    );
-    expect(navigator.clipboard.writeText).toHaveBeenCalledExactlyOnceWith(
-      "https://npcseeds.com/invite/abc123",
-    );
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledExactlyOnceWith(
+        new URL("/invite/abc123", window.location.origin).toString(),
+      );
+    });
   });
 
   it("hides the pending invites section when there are none", () => {
@@ -378,7 +370,7 @@ describe("TeamRoster", () => {
 
   it("cancels a pending invite via the server action", async () => {
     renderRoster({
-      pendingInvites: [pendingGuideInvite],
+      pendingInvites: [{ ...pendingGuideInvite, link: "/invite/abc123" }],
       canManage: true,
     });
 
@@ -391,12 +383,11 @@ describe("TeamRoster", () => {
     );
   });
 
-  it("only lets admins copy or cancel a pending Steward invite", () => {
+  it("renders controls only when the server provides an authorized link", () => {
     const pendingStewardInvite: PendingInvite = {
       ...pendingGuideInvite,
       id: "invite-2",
       invitedName: "Sana Steward",
-      role: "steward",
       roleLabel: "City/County Steward",
     };
 
@@ -418,7 +409,9 @@ describe("TeamRoster", () => {
     unmount();
 
     renderRoster({
-      pendingInvites: [pendingStewardInvite],
+      pendingInvites: [
+        { ...pendingStewardInvite, link: "/invite/steward-token" },
+      ],
       canManage: true,
       isAdmin: true,
     });

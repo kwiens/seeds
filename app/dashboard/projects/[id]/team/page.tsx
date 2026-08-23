@@ -53,7 +53,10 @@ export default async function ProjectTeamPage(props: {
     getBudgets(project.id),
     getProjectDocuments(project.id),
     getUpcomingEvents(project.id),
-    getPendingInvites(project.id),
+    getPendingInvites(project.id, {
+      canManage,
+      isAdmin: session.user.role === "admin",
+    }),
   ]);
 
   const rolesByUserId: Record<string, string> = Object.fromEntries(

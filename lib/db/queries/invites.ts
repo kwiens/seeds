@@ -6,13 +6,14 @@ import { participantRoleLabels, type TeamRole } from "@/lib/participant-roles";
 export interface PendingInvite {
   id: string;
   invitedName: string;
-  role: TeamRole;
   roleLabel: string;
   createdAt: Date;
+  link: string | null;
 }
 
 export async function getPendingInvites(
   projectId: string,
+  access: { canManage: boolean; isAdmin: boolean },
 ): Promise<PendingInvite[]> {
   const rows = await db.query.projectInvites.findMany({
     where: and(
@@ -20,16 +21,28 @@ export async function getPendingInvites(
       isNull(projectInvites.acceptedAt),
       isNull(projectInvites.canceledAt),
     ),
+    columns: {
+      id: true,
+      token: true,
+      invitedName: true,
+      role: true,
+      createdAt: true,
+    },
     orderBy: desc(projectInvites.createdAt),
   });
 
-  return rows.map((row) => ({
-    id: row.id,
-    invitedName: row.invitedName,
-    role: row.role as TeamRole,
-    roleLabel: participantRoleLabels[row.role],
-    createdAt: row.createdAt,
-  }));
+  return rows.map((row) => {
+    const canManageInvite =
+      row.role === "steward" ? access.isAdmin : access.canManage;
+
+    return {
+      id: row.id,
+      invitedName: row.invitedName,
+      roleLabel: participantRoleLabels[row.role],
+      createdAt: row.createdAt,
+      link: canManageInvite ? `/invite/${row.token}` : null,
+    };
+  });
 }
 
 export async function getInviteByToken(token: string) {
