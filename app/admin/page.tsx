@@ -100,13 +100,38 @@ export default async function AdminPage({
       </div>
 
       <AdminTabs activeTab={activeTab}>
-        <div className="-mx-4 overflow-x-auto px-4 pb-1">
-          <TabsList className="min-w-max">
-            <TabsTrigger value="seeds">Seeds</TabsTrigger>
-            <TabsTrigger value="insights">Comments</TabsTrigger>
-            <TabsTrigger value="export">Export</TabsTrigger>
-            <TabsTrigger value="users">People</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+        <div className="-mx-4 px-4 pb-1 sm:overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-3 gap-1 group-data-[orientation=horizontal]/tabs:h-auto sm:inline-flex sm:w-fit sm:min-w-max sm:gap-0 sm:group-data-[orientation=horizontal]/tabs:h-9">
+            <TabsTrigger
+              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              value="seeds"
+            >
+              Seeds
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              value="insights"
+            >
+              Comments
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              value="export"
+            >
+              Export
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              value="users"
+            >
+              People
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              value="settings"
+            >
+              Settings
+            </TabsTrigger>
           </TabsList>
         </div>
 

@@ -97,36 +97,75 @@ export function UserList({
           {search ? "No people match your search." : "No accounts yet."}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table className="min-w-[40rem]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="text-sm font-medium whitespace-normal break-words">
-                    {user.name}
-                  </TableCell>
-                  <TableCell className="text-sm whitespace-normal break-all">
-                    {user.email}
-                  </TableCell>
-                  <TableCell>
-                    <RoleBadge role={user.role} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                    {joinedDateFormatter.format(user.createdAt)}
-                  </TableCell>
+        <>
+          <ul className="space-y-3 md:hidden" aria-label="People directory">
+            {users.map((user) => (
+              <li key={user.id} className="rounded-lg border p-4">
+                <dl>
+                  <div className="min-w-0">
+                    <dt className="sr-only">Name</dt>
+                    <dd className="font-medium break-words">{user.name}</dd>
+                  </div>
+                  <div className="mt-1 min-w-0">
+                    <dt className="sr-only">Email</dt>
+                    <dd className="text-muted-foreground text-sm break-all">
+                      {user.email}
+                    </dd>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-4 border-t pt-3">
+                    <div>
+                      <dt className="text-muted-foreground text-xs font-medium">
+                        Role
+                      </dt>
+                      <dd className="mt-1">
+                        <RoleBadge role={user.role} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground text-xs font-medium">
+                        Joined
+                      </dt>
+                      <dd className="mt-1 text-sm whitespace-nowrap">
+                        {joinedDateFormatter.format(user.createdAt)}
+                      </dd>
+                    </div>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden overflow-x-auto rounded-md border md:block">
+            <Table className="min-w-[40rem]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="text-sm font-medium whitespace-normal break-words">
+                      {user.name}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-normal break-all">
+                      {user.email}
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={user.role} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                      {joinedDateFormatter.format(user.createdAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       <Pagination

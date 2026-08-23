@@ -70,6 +70,18 @@ describe("UserList", () => {
     expect(screen.getByText("Showing 1–3 of 43")).toBeInTheDocument();
     expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
 
+    const mobileDirectory = screen.getByRole("list", {
+      name: "People directory",
+    });
+    const mobileCards = within(mobileDirectory).getAllByRole("listitem");
+    expect(mobileCards).toHaveLength(3);
+    expect(within(mobileCards[0]).getByText("Alice Admin")).toBeInTheDocument();
+    expect(
+      within(mobileCards[0]).getByText("alice@example.com"),
+    ).toBeInTheDocument();
+    expect(within(mobileCards[0]).getByText("Role")).toBeInTheDocument();
+    expect(within(mobileCards[0]).getByText("Joined")).toBeInTheDocument();
+
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
     expect(within(rows[0]).getByText("Alice Admin")).toBeInTheDocument();

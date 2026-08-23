@@ -36,6 +36,7 @@ export function Pagination({
       <Button
         variant="outline"
         size="sm"
+        className="h-11 sm:h-8"
         disabled={currentPage <= 1}
         onClick={() => goToPage(currentPage - 1)}
       >
@@ -48,6 +49,7 @@ export function Pagination({
       <Button
         variant="outline"
         size="sm"
+        className="h-11 sm:h-8"
         disabled={currentPage >= totalPages}
         onClick={() => goToPage(currentPage + 1)}
       >

@@ -140,7 +140,16 @@ describe("AdminPage", () => {
 
     render(await AdminPage({ searchParams: Promise.resolve({}) }));
 
-    expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument();
+    expect(screen.getByRole("tablist")).toHaveClass(
+      "grid",
+      "grid-cols-3",
+      "group-data-[orientation=horizontal]/tabs:h-auto",
+      "sm:inline-flex",
+    );
+    expect(screen.getByRole("tab", { name: "People" })).toHaveClass(
+      "h-11",
+      "sm:h-[calc(100%-1px)]",
+    );
     expect(getAllProjects).toHaveBeenCalledOnce();
     expect(getUsersPage).not.toHaveBeenCalled();
 
