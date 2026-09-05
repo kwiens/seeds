@@ -22,17 +22,30 @@ const context = {
   params: Promise.resolve({ updateId: "update-1", attachmentIndex: "0" }),
 };
 
-function mockUpdate() {
+function mockUpdate(overrides?: { attachmentName?: string }) {
   return {
     attachments: [
       {
-        name: "plan.pdf",
+        name: overrides?.attachmentName ?? "plan.pdf",
         url: "https://test.private.blob.vercel-storage.com/projects/seed-1/attachments/plan.pdf",
         size: 4,
       },
     ],
     visibility: "team",
     project: { id: "seed-1", stage: "sprout" },
+  };
+}
+
+function mockBlobResult(contentType: string) {
+  return {
+    statusCode: 200,
+    stream: new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3, 4]));
+        controller.close();
+      },
+    }),
+    blob: { size: 4, contentType },
   };
 }
 
@@ -74,16 +87,7 @@ describe("GET /api/team-files/[updateId]/[attachmentIndex]", () => {
       mockUpdate() as any,
     );
     vi.mocked(canAccessTeamWorkspace).mockResolvedValue(true);
-    vi.mocked(get).mockResolvedValue({
-      statusCode: 200,
-      stream: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array([1, 2, 3, 4]));
-          controller.close();
-        },
-      }),
-      blob: { size: 4, contentType: "application/pdf" },
-    } as any);
+    vi.mocked(get).mockResolvedValue(mockBlobResult("application/pdf") as any);
 
     const response = await GET(new Request("http://localhost"), context);
 
@@ -94,5 +98,47 @@ describe("GET /api/team-files/[updateId]/[attachmentIndex]", () => {
     });
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("forces a download for a non-image attachment", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(
+      mockUpdate({ attachmentName: "plan.pdf" }) as any,
+    );
+    vi.mocked(canAccessTeamWorkspace).mockResolvedValue(true);
+    vi.mocked(get).mockResolvedValue(mockBlobResult("application/pdf") as any);
+
+    const response = await GET(new Request("http://localhost"), context);
+
+    expect(response.headers.get("content-disposition")).toMatch(/^attachment;/);
+  });
+
+  it("serves an image attachment inline so it can be previewed", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(
+      mockUpdate({ attachmentName: "photo.png" }) as any,
+    );
+    vi.mocked(canAccessTeamWorkspace).mockResolvedValue(true);
+    vi.mocked(get).mockResolvedValue(mockBlobResult("image/png") as any);
+
+    const response = await GET(new Request("http://localhost"), context);
+
+    expect(response.headers.get("content-disposition")).toMatch(/^inline;/);
+  });
+
+  it("still forces a download for an image when ?download is present", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(
+      mockUpdate({ attachmentName: "photo.png" }) as any,
+    );
+    vi.mocked(canAccessTeamWorkspace).mockResolvedValue(true);
+    vi.mocked(get).mockResolvedValue(mockBlobResult("image/png") as any);
+
+    const response = await GET(
+      new Request("http://localhost/api/team-files/update-1/0?download=1"),
+      context,
+    );
+
+    expect(response.headers.get("content-disposition")).toMatch(/^attachment;/);
   });
 });
