@@ -2,13 +2,14 @@ import { get } from "@vercel/blob";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isImageAttachment } from "@/lib/attachments";
 import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projectUpdates } from "@/lib/db/schema";
 import { hasTeamWorkspace } from "@/lib/project-stages";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: {
     params: Promise<{ updateId: string; attachmentIndex: string }>;
   },
@@ -59,10 +60,19 @@ export async function GET(
   }
 
   const filename = encodeURIComponent(attachment.name);
+  // Images render inline (in the lightbox) unless the viewer explicitly asks
+  // to download; every other file type keeps the original download-only
+  // behavior, since there's no in-browser preview for those.
+  const forcedDownload = new URL(request.url).searchParams.has("download");
+  const dispositionType =
+    forcedDownload || !isImageAttachment(attachment.name)
+      ? "attachment"
+      : "inline";
+
   return new Response(result.stream, {
     headers: {
       "Cache-Control": "private, no-store",
-      "Content-Disposition": `attachment; filename="download"; filename*=UTF-8''${filename}`,
+      "Content-Disposition": `${dispositionType}; filename="download"; filename*=UTF-8''${filename}`,
       "Content-Length": String(result.blob.size),
       "Content-Type": result.blob.contentType,
       "X-Content-Type-Options": "nosniff",
