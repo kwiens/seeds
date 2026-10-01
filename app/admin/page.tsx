@@ -7,6 +7,7 @@ import { AdminTabs } from "@/components/admin/admin-tabs";
 import { BannerSettings } from "@/components/admin/banner-settings";
 import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
+import { HarvestFestSettings } from "@/components/admin/harvest-fest-settings";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { UserList } from "@/components/admin/user-list";
@@ -21,7 +22,12 @@ import {
   getUsersPage,
   USERS_PER_PAGE,
 } from "@/lib/db/queries/admin";
-import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
+import {
+  EMPTY_HARVEST_FEST_PAGE,
+  getBannerConfig,
+  getHarvestFestPage,
+  getHomepagePhase,
+} from "@/lib/db/queries/settings";
 
 export const metadata: Metadata = {
   title: "Admin | Seeds",
@@ -60,6 +66,7 @@ export default async function AdminPage({
     allComments,
     homepagePhase,
     bannerConfig,
+    harvestFestPage,
   ] = await Promise.all([
     activeTab === "seeds" ? getAllProjects() : Promise.resolve([]),
     activeTab === "seeds"
@@ -81,6 +88,9 @@ export default async function AdminPage({
     activeTab === "settings"
       ? getBannerConfig()
       : Promise.resolve({ enabled: false, message: "", href: "" }),
+    activeTab === "settings"
+      ? getHarvestFestPage()
+      : Promise.resolve(EMPTY_HARVEST_FEST_PAGE),
   ]);
 
   if (
@@ -201,6 +211,16 @@ export default async function AdminPage({
                 </p>
               </div>
               <HomepagePhaseToggle currentPhase={homepagePhase} />
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Harvest Fest Page</h2>
+                <p className="text-muted-foreground text-sm">
+                  Edit the public /harvest-fest page — title, intro, and the
+                  list of events. Changes go live immediately, no deploy needed.
+                </p>
+              </div>
+              <HarvestFestSettings initial={harvestFestPage} />
             </div>
             <div className="space-y-4">
               <div>

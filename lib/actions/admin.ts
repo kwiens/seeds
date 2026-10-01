@@ -11,6 +11,9 @@ import { badgeKeys, type BadgeKey } from "@/lib/badges";
 import {
   BANNER_CACHE_TAG,
   BANNER_SETTING_KEYS,
+  HARVEST_FEST_CACHE_TAG,
+  HARVEST_FEST_SETTING_KEY,
+  type HarvestFestPage,
 } from "@/lib/db/queries/settings";
 
 const bannerConfigSchema = z
@@ -38,6 +41,21 @@ const bannerConfigSchema = z
     message: "Enabled banner must have a message",
     path: ["message"],
   });
+
+const harvestFestEventSchema = z.object({
+  date: z.string().trim().min(1, "Date is required").max(40),
+  time: z.string().trim().min(1, "Time is required").max(40),
+  title: z.string().trim().min(1, "Title is required").max(100),
+  location: z.string().trim().max(150),
+  description: z.string().trim().min(1, "Description is required").max(600),
+});
+
+const harvestFestPageSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(100),
+  tagline: z.string().trim().max(100),
+  intro: z.string().trim().max(1000),
+  events: z.array(harvestFestEventSchema).max(40),
+});
 
 const STATUS_LISTING_PATHS = [
   "/status/seeds",
@@ -228,4 +246,43 @@ export async function setHomepagePhase(phase: 1 | 2) {
   revalidatePath("/");
   revalidatePath("/admin");
   return { success: true };
+}
+
+export async function setHarvestFestPage(input: HarvestFestPage) {
+  await requireAdmin();
+
+  const parsed = harvestFestPageSchema.safeParse({
+    title: input.title,
+    tagline: input.tagline,
+    intro: input.intro,
+    events: input.events.map((event) => ({
+      date: event.date,
+      time: event.time,
+      title: event.title,
+      location: event.location,
+      description: event.description,
+    })),
+  });
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      error: parsed.error.issues[0]?.message ?? "Invalid Harvest Fest page",
+    };
+  }
+
+  await db
+    .insert(siteSettings)
+    .values({
+      key: HARVEST_FEST_SETTING_KEY,
+      value: JSON.stringify(parsed.data),
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: { value: sql`excluded.value`, updatedAt: sql`excluded.updated_at` },
+    });
+
+  updateTag(HARVEST_FEST_CACHE_TAG);
+  revalidatePath("/harvest-fest");
+  return { success: true as const };
 }

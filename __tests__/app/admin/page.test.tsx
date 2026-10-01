@@ -34,6 +34,8 @@ vi.mock("@/lib/db/queries/comments", () => ({ getAllComments: vi.fn() }));
 vi.mock("@/lib/db/queries/settings", () => ({
   getBannerConfig: vi.fn(),
   getHomepagePhase: vi.fn(),
+  getHarvestFestPage: vi.fn(),
+  EMPTY_HARVEST_FEST_PAGE: { title: "", tagline: "", intro: "", events: [] },
 }));
 
 vi.mock("@/components/admin/admin-comments-table", () => ({
@@ -44,6 +46,9 @@ vi.mock("@/components/admin/admin-email-list", () => ({
 }));
 vi.mock("@/components/admin/banner-settings", () => ({
   BannerSettings: () => <div>Banner settings</div>,
+}));
+vi.mock("@/components/admin/harvest-fest-settings", () => ({
+  HarvestFestSettings: () => <div>Harvest Fest settings</div>,
 }));
 vi.mock("@/components/admin/council-list", () => ({
   CouncilList: () => <div>Council list</div>,
@@ -84,7 +89,11 @@ import {
   getUsersPage,
 } from "@/lib/db/queries/admin";
 import { getAllComments } from "@/lib/db/queries/comments";
-import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
+import {
+  getBannerConfig,
+  getHarvestFestPage,
+  getHomepagePhase,
+} from "@/lib/db/queries/settings";
 
 const directoryUsers = [
   {
@@ -117,6 +126,12 @@ describe("AdminPage", () => {
       enabled: false,
       message: "",
       href: "",
+    });
+    vi.mocked(getHarvestFestPage).mockResolvedValue({
+      title: "",
+      tagline: "",
+      intro: "",
+      events: [],
     });
   });
 
