@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { auth } from "@/auth";
+import { IMAGE_CONTENT_TYPES } from "@/lib/attachments";
 import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { TEAM_ATTACHMENT_MAX_SIZE } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { hasTeamWorkspace } from "@/lib/project-stages";
 
 const IMAGE_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const IMAGE_TYPES = IMAGE_CONTENT_TYPES;
 
 const DOCUMENT_TYPES = [
   ...IMAGE_TYPES,

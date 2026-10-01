@@ -146,9 +146,7 @@ describe("TeamUpdatesSection rendering", () => {
     expect(
       screen.queryByRole("link", { name: /site-photo\.png/ }),
     ).not.toBeInTheDocument();
-    const trigger = screen.getByRole("button", { name: "View site-photo.png" });
-    // The thumbnail <img> is decorative (alt="") since the button already
-    // carries the accessible name, so query the DOM directly rather than by role.
+    const trigger = screen.getByRole("button", { name: "Open site-photo.png" });
     expect(trigger.querySelector("img")).toHaveAttribute(
       "src",
       "/api/team-files/update-1/0",

@@ -126,6 +126,19 @@ describe("GET /api/team-files/[updateId]/[attachmentIndex]", () => {
     expect(response.headers.get("content-disposition")).toMatch(/^inline;/);
   });
 
+  it("forces a download when an image-named attachment is not an image", async () => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(
+      mockUpdate({ attachmentName: "photo.png" }) as any,
+    );
+    vi.mocked(canAccessTeamWorkspace).mockResolvedValue(true);
+    vi.mocked(get).mockResolvedValue(mockBlobResult("application/pdf") as any);
+
+    const response = await GET(new Request("http://localhost"), context);
+
+    expect(response.headers.get("content-disposition")).toMatch(/^attachment;/);
+  });
+
   it("still forces a download for an image when ?download is present", async () => {
     setAuthMock(auth, mockSession());
     vi.mocked(db.query.projectUpdates.findFirst).mockResolvedValue(

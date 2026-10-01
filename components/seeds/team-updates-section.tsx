@@ -21,7 +21,7 @@ import {
   type Attachment,
   AttachmentPicker,
 } from "@/components/seeds/attachment-picker";
-import { TeamAttachmentLightbox } from "@/components/seeds/team-attachment-lightbox";
+import { ImageLightbox } from "@/components/seeds/image-lightbox";
 import {
   createTeamProjectUpdate,
   deleteProjectUpdate,
@@ -421,10 +421,16 @@ function UpdateCard({
               {update.attachments.map((file, index) => {
                 const href = `/api/team-files/${update.id}/${index}`;
                 return isImageAttachment(file.name) ? (
-                  <TeamAttachmentLightbox
+                  <ImageLightbox
                     key={file.url}
                     src={href}
-                    name={file.name}
+                    alt={file.name}
+                    unoptimized
+                    thumbWidth={56}
+                    thumbHeight={56}
+                    thumbClassName="size-full object-cover"
+                    triggerClassName="border-input size-14 shrink-0 rounded-md border"
+                    downloadHref={`${href}?download=1`}
                   />
                 ) : (
                   <a

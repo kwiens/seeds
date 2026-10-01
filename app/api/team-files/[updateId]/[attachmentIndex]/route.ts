@@ -2,7 +2,7 @@ import { get } from "@vercel/blob";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { isImageAttachment } from "@/lib/attachments";
+import { isImageContentType } from "@/lib/attachments";
 import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projectUpdates } from "@/lib/db/schema";
@@ -62,10 +62,11 @@ export async function GET(
   const filename = encodeURIComponent(attachment.name);
   // Images render inline (in the lightbox) unless the viewer explicitly asks
   // to download; every other file type keeps the original download-only
-  // behavior, since there's no in-browser preview for those.
+  // behavior. Key off the stored blob's content type, not the attachment
+  // name, which is client-supplied and could dress up a document as "x.png".
   const forcedDownload = new URL(request.url).searchParams.has("download");
   const dispositionType =
-    forcedDownload || !isImageAttachment(attachment.name)
+    forcedDownload || !isImageContentType(result.blob.contentType)
       ? "attachment"
       : "inline";
 
