@@ -1,17 +1,35 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ChevronDown, ChevronUp, Plus, Sprout, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/forms/image-upload";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { setHarvestFestPage } from "@/lib/actions/admin";
+import {
+  searchProjectsForHarvestFest,
+  setHarvestFestPage,
+} from "@/lib/actions/admin";
 import type {
   HarvestFestEvent,
   HarvestFestPage,
 } from "@/lib/db/queries/settings";
+import { projectStages, type ProjectStage } from "@/lib/project-stages";
 
 const EMPTY_EVENT: HarvestFestEvent = {
   date: "",
@@ -243,6 +261,54 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
                   placeholder="What's happening at this event?"
                 />
               </div>
+
+              <div className="space-y-2 rounded-md border border-dashed p-3">
+                <p className="text-muted-foreground text-xs font-medium">
+                  Shown only when someone expands this event with &quot;Learn
+                  more&quot; -- not in the always-visible summary.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor={`hf-event-${index}-details`}>
+                    Additional details (optional)
+                  </Label>
+                  <Textarea
+                    id={`hf-event-${index}-details`}
+                    value={event.details ?? ""}
+                    onChange={(e) =>
+                      updateEvent(index, { details: e.target.value })
+                    }
+                    rows={3}
+                    maxLength={3000}
+                    placeholder="More to say than fits in the summary above?"
+                  />
+                </div>
+                <ImageUpload
+                  images={event.imageUrls ?? []}
+                  onChange={(images) =>
+                    updateEvent(index, { imageUrls: images })
+                  }
+                  maxImages={6}
+                  label="Photos or flyers"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Linked Seed or Sprout (optional)</Label>
+                <ProjectLinkPicker
+                  projectId={event.projectId}
+                  projectName={event.projectName}
+                  onChange={(project) =>
+                    updateEvent(index, {
+                      projectId: project?.id,
+                      projectName: project?.name,
+                    })
+                  }
+                />
+                <p className="text-muted-foreground text-xs">
+                  Shows &quot;Sprouted from: [name]&quot; on the public page,
+                  linking to that Seed or Sprout&apos;s page.
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -252,5 +318,102 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
         {isPending ? "Saving..." : "Save"}
       </Button>
     </div>
+  );
+}
+
+type ProjectResult = { id: string; name: string; stage: ProjectStage };
+
+function ProjectLinkPicker({
+  projectId,
+  projectName,
+  onChange,
+}: {
+  projectId: string | undefined;
+  projectName: string | undefined;
+  onChange: (project: ProjectResult | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ProjectResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = query.trim();
+    const timeout = setTimeout(() => {
+      if (!trimmed) {
+        setResults([]);
+        return;
+      }
+      setIsSearching(true);
+      searchProjectsForHarvestFest(trimmed)
+        .then(setResults)
+        .finally(() => setIsSearching(false));
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [query, open]);
+
+  if (projectId && projectName) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="bg-accent inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
+          <Sprout className="size-3.5" aria-hidden="true" />
+          {projectName}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onChange(null)}
+        >
+          <X className="mr-1 size-3.5" />
+          Unlink
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          <Plus className="mr-1.5 size-4" />
+          Link a Seed or Sprout
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder="Search by name..."
+          />
+          <CommandList>
+            {!isSearching && query.trim() && results.length === 0 && (
+              <CommandEmpty>No matching project found.</CommandEmpty>
+            )}
+            <CommandGroup>
+              {results.map((project) => (
+                <CommandItem
+                  key={project.id}
+                  value={project.id}
+                  onSelect={() => {
+                    onChange(project);
+                    setQuery("");
+                    setResults([]);
+                    setOpen(false);
+                  }}
+                >
+                  {project.name}
+                  <span className="text-muted-foreground ml-auto text-xs">
+                    {projectStages[project.stage].label}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

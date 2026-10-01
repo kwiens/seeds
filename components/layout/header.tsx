@@ -51,12 +51,6 @@ export async function Header() {
             FAQ
           </Link>
           <Link
-            href="/harvest-fest"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Harvest Fest
-          </Link>
-          <Link
             href="/seeds/new"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >

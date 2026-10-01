@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -48,6 +48,10 @@ const harvestFestEventSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(100),
   location: z.string().trim().max(150),
   description: z.string().trim().min(1, "Description is required").max(600),
+  details: z.string().trim().max(3000).optional(),
+  imageUrls: z.array(z.string().trim().url()).max(6).optional(),
+  projectId: z.string().uuid().optional(),
+  projectName: z.string().trim().max(100).optional(),
 });
 
 const harvestFestPageSchema = z.object({
@@ -261,6 +265,10 @@ export async function setHarvestFestPage(input: HarvestFestPage) {
       title: event.title,
       location: event.location,
       description: event.description,
+      details: event.details || undefined,
+      imageUrls: event.imageUrls?.length ? event.imageUrls : undefined,
+      projectId: event.projectId || undefined,
+      projectName: event.projectName || undefined,
     })),
   });
   if (!parsed.success) {
@@ -285,4 +293,34 @@ export async function setHarvestFestPage(input: HarvestFestPage) {
   updateTag(HARVEST_FEST_CACHE_TAG);
   revalidatePath("/harvest-fest");
   return { success: true as const };
+}
+
+export async function searchProjectsForHarvestFest(query: string) {
+  await requireAdmin();
+
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const rows = await db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      stage: projects.stage,
+    })
+    .from(projects)
+    .where(
+      and(
+        ilike(projects.name, `%${trimmed}%`),
+        isNull(projects.archivedAt),
+        // Harvest Fest traces an event back to where it sprouted from --
+        // Trees are the established end state, not a thing something grows
+        // "from", so they're excluded here even though they're still valid
+        // elsewhere in the project lifecycle.
+        inArray(projects.stage, ["seed", "sprout"]),
+      ),
+    )
+    .orderBy(projects.name)
+    .limit(8);
+
+  return rows;
 }

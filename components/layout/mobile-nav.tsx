@@ -68,13 +68,6 @@ export function MobileNav({
             FAQ
           </Link>
           <Link
-            href="/harvest-fest"
-            onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"
-          >
-            Harvest Fest
-          </Link>
-          <Link
             href="/seeds/new"
             onClick={() => setOpen(false)}
             className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"

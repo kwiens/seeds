@@ -53,6 +53,15 @@ export interface HarvestFestEvent {
   title: string;
   location: string;
   description: string;
+  // Shown only once someone expands the card via "Learn more" -- longer
+  // copy and photos don't belong in the always-visible summary.
+  details?: string;
+  imageUrls?: string[];
+  // Denormalized on purpose -- this is a small, human-curated flyer, not a
+  // live listing. If the linked project is later renamed, this event keeps
+  // showing the name it had when it was linked, until an admin re-saves it.
+  projectId?: string;
+  projectName?: string;
 }
 
 export interface HarvestFestPage {
