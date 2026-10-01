@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Plus, Sprout, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,40 +31,42 @@ import type {
 } from "@/lib/db/queries/settings";
 import { projectStages, type ProjectStage } from "@/lib/project-stages";
 
-const EMPTY_EVENT: HarvestFestEvent = {
-  date: "",
-  time: "",
-  title: "",
-  location: "",
-  description: "",
-};
-
 export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
   const [title, setTitle] = useState(initial.title);
   const [tagline, setTagline] = useState(initial.tagline);
   const [intro, setIntro] = useState(initial.intro);
-  const [events, setEvents] = useState(initial.events);
+  // Stable per-card ids so React state (and in-flight photo uploads) stay
+  // with their event when events are reordered or removed. Initial ids are
+  // index-based so server and client renders agree.
+  const [events, setEvents] = useState<EditableEvent[]>(() =>
+    initial.events.map((event, i) => ({ ...event, clientId: `saved-${i}` })),
+  );
+  const nextClientId = useRef(0);
+  const [saved, setSaved] = useState(() => toPayload(initial));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const dirty =
-    title !== initial.title ||
-    tagline !== initial.tagline ||
-    intro !== initial.intro ||
-    JSON.stringify(events) !== JSON.stringify(initial.events);
+  const payload = toPayload({ title, tagline, intro, events });
+  const dirty = JSON.stringify(payload) !== JSON.stringify(saved);
 
-  function updateEvent(index: number, patch: Partial<HarvestFestEvent>) {
+  function updateEvent(clientId: string, patch: Partial<HarvestFestEvent>) {
     setEvents((prev) =>
-      prev.map((event, i) => (i === index ? { ...event, ...patch } : event)),
+      prev.map((event) =>
+        event.clientId === clientId ? { ...event, ...patch } : event,
+      ),
     );
   }
 
   function addEvent() {
-    setEvents((prev) => [...prev, { ...EMPTY_EVENT }]);
+    nextClientId.current += 1;
+    setEvents((prev) => [
+      ...prev,
+      { ...EMPTY_EVENT, clientId: `new-${nextClientId.current}` },
+    ]);
   }
 
-  function removeEvent(index: number) {
-    setEvents((prev) => prev.filter((_, i) => i !== index));
+  function removeEvent(clientId: string) {
+    setEvents((prev) => prev.filter((event) => event.clientId !== clientId));
   }
 
   function moveEvent(index: number, direction: -1 | 1) {
@@ -80,13 +82,9 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
   function save() {
     setError(null);
     startTransition(async () => {
-      const result = await setHarvestFestPage({
-        title,
-        tagline,
-        intro,
-        events,
-      });
+      const result = await setHarvestFestPage(payload);
       if (result.success) {
+        setSaved(payload);
         toast.success("Harvest Fest page updated");
       } else {
         setError(result.error);
@@ -153,7 +151,10 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
 
         <div className="space-y-4">
           {events.map((event, index) => (
-            <div key={index} className="space-y-3 rounded-lg border p-4">
+            <div
+              key={event.clientId}
+              className="space-y-3 rounded-lg border p-4"
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-muted-foreground text-xs font-medium">
                   Event {index + 1}
@@ -183,7 +184,7 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => removeEvent(index)}
+                    onClick={() => removeEvent(event.clientId)}
                     aria-label={`Remove event ${index + 1}`}
                   >
                     <X className="text-destructive size-4" />
@@ -193,24 +194,28 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor={`hf-event-${index}-date`}>Date</Label>
+                  <Label htmlFor={`hf-event-${event.clientId}-date`}>
+                    Date
+                  </Label>
                   <Input
-                    id={`hf-event-${index}-date`}
+                    id={`hf-event-${event.clientId}-date`}
                     value={event.date}
                     onChange={(e) =>
-                      updateEvent(index, { date: e.target.value })
+                      updateEvent(event.clientId, { date: e.target.value })
                     }
                     placeholder="September 26"
                     maxLength={40}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`hf-event-${index}-time`}>Time</Label>
+                  <Label htmlFor={`hf-event-${event.clientId}-time`}>
+                    Time
+                  </Label>
                   <Input
-                    id={`hf-event-${index}-time`}
+                    id={`hf-event-${event.clientId}-time`}
                     value={event.time}
                     onChange={(e) =>
-                      updateEvent(index, { time: e.target.value })
+                      updateEvent(event.clientId, { time: e.target.value })
                     }
                     placeholder="9 AM–3 PM"
                     maxLength={40}
@@ -219,12 +224,14 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor={`hf-event-${index}-title`}>Title</Label>
+                <Label htmlFor={`hf-event-${event.clientId}-title`}>
+                  Title
+                </Label>
                 <Input
-                  id={`hf-event-${index}-title`}
+                  id={`hf-event-${event.clientId}-title`}
                   value={event.title}
                   onChange={(e) =>
-                    updateEvent(index, { title: e.target.value })
+                    updateEvent(event.clientId, { title: e.target.value })
                   }
                   placeholder="The Play Street"
                   maxLength={100}
@@ -232,14 +239,14 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor={`hf-event-${index}-location`}>
+                <Label htmlFor={`hf-event-${event.clientId}-location`}>
                   Location (optional)
                 </Label>
                 <Input
-                  id={`hf-event-${index}-location`}
+                  id={`hf-event-${event.clientId}-location`}
                   value={event.location}
                   onChange={(e) =>
-                    updateEvent(index, { location: e.target.value })
+                    updateEvent(event.clientId, { location: e.target.value })
                   }
                   placeholder="Chestnut Street between 3rd & 4th"
                   maxLength={150}
@@ -247,14 +254,14 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor={`hf-event-${index}-description`}>
+                <Label htmlFor={`hf-event-${event.clientId}-description`}>
                   Description
                 </Label>
                 <Textarea
-                  id={`hf-event-${index}-description`}
+                  id={`hf-event-${event.clientId}-description`}
                   value={event.description}
                   onChange={(e) =>
-                    updateEvent(index, { description: e.target.value })
+                    updateEvent(event.clientId, { description: e.target.value })
                   }
                   rows={2}
                   maxLength={600}
@@ -268,14 +275,14 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
                   more&quot; -- not in the always-visible summary.
                 </p>
                 <div className="space-y-2">
-                  <Label htmlFor={`hf-event-${index}-details`}>
+                  <Label htmlFor={`hf-event-${event.clientId}-details`}>
                     Additional details (optional)
                   </Label>
                   <Textarea
-                    id={`hf-event-${index}-details`}
+                    id={`hf-event-${event.clientId}-details`}
                     value={event.details ?? ""}
                     onChange={(e) =>
-                      updateEvent(index, { details: e.target.value })
+                      updateEvent(event.clientId, { details: e.target.value })
                     }
                     rows={3}
                     maxLength={3000}
@@ -285,7 +292,7 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
                 <ImageUpload
                   images={event.imageUrls ?? []}
                   onChange={(images) =>
-                    updateEvent(index, { imageUrls: images })
+                    updateEvent(event.clientId, { imageUrls: images })
                   }
                   maxImages={6}
                   label="Photos or flyers"
@@ -298,7 +305,7 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
                   projectId={event.projectId}
                   projectName={event.projectName}
                   onChange={(project) =>
-                    updateEvent(index, {
+                    updateEvent(event.clientId, {
                       projectId: project?.id,
                       projectName: project?.name,
                     })
@@ -321,8 +328,6 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
   );
 }
 
-type ProjectResult = { id: string; name: string; stage: ProjectStage };
-
 function ProjectLinkPicker({
   projectId,
   projectName,
@@ -340,6 +345,9 @@ function ProjectLinkPicker({
   useEffect(() => {
     if (!open) return;
     const trimmed = query.trim();
+    // Ignore responses for superseded queries so a slow earlier search can't
+    // overwrite the results for what the admin has typed since.
+    let current = true;
     const timeout = setTimeout(() => {
       if (!trimmed) {
         setResults([]);
@@ -347,10 +355,20 @@ function ProjectLinkPicker({
       }
       setIsSearching(true);
       searchProjectsForHarvestFest(trimmed)
-        .then(setResults)
-        .finally(() => setIsSearching(false));
+        .then((rows) => {
+          if (current) setResults(rows);
+        })
+        .catch(() => {
+          if (current) setResults([]);
+        })
+        .finally(() => {
+          if (current) setIsSearching(false);
+        });
     }, 250);
-    return () => clearTimeout(timeout);
+    return () => {
+      current = false;
+      clearTimeout(timeout);
+    };
   }, [query, open]);
 
   if (projectId && projectName) {
@@ -417,3 +435,39 @@ function ProjectLinkPicker({
     </Popover>
   );
 }
+
+function toPayload(state: {
+  title: string;
+  tagline: string;
+  intro: string;
+  events: HarvestFestEvent[];
+}): HarvestFestPage {
+  return {
+    title: state.title.trim(),
+    tagline: state.tagline.trim(),
+    intro: state.intro.trim(),
+    events: state.events.map((event) => ({
+      date: event.date.trim(),
+      time: event.time.trim(),
+      title: event.title.trim(),
+      location: event.location.trim(),
+      description: event.description.trim(),
+      details: event.details?.trim() || undefined,
+      imageUrls: event.imageUrls?.length ? event.imageUrls : undefined,
+      projectId: event.projectId || undefined,
+      projectName: event.projectName || undefined,
+    })),
+  };
+}
+
+const EMPTY_EVENT: HarvestFestEvent = {
+  date: "",
+  time: "",
+  title: "",
+  location: "",
+  description: "",
+};
+
+type EditableEvent = HarvestFestEvent & { clientId: string };
+
+type ProjectResult = { id: string; name: string; stage: ProjectStage };

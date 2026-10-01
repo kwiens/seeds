@@ -1,12 +1,3 @@
-const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
-const TRAILING_PUNCTUATION = /[.,;:!?)'"]+$/;
-
-function splitTrailingPunctuation(url: string): [string, string] {
-  const match = url.match(TRAILING_PUNCTUATION);
-  if (!match) return [url, ""];
-  return [url.slice(0, -match[0].length), match[0]];
-}
-
 /** Renders plain text with any http(s) URLs turned into real links. */
 export function LinkifyText({ text }: { text: string }) {
   const parts = text.split(URL_PATTERN);
@@ -34,3 +25,12 @@ export function LinkifyText({ text }: { text: string }) {
     </>
   );
 }
+
+function splitTrailingPunctuation(url: string): [string, string] {
+  const match = url.match(TRAILING_PUNCTUATION);
+  if (!match) return [url, ""];
+  return [url.slice(0, -match[0].length), match[0]];
+}
+
+const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+const TRAILING_PUNCTUATION = /[.,;:!?)'"]+$/;

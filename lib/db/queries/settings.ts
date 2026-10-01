@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { siteSettings } from "@/lib/db/schema";
+import { harvestFestEventSchema } from "@/lib/validations/harvest-fest";
 
 export const BANNER_CACHE_TAG = "banner";
 
@@ -57,9 +58,9 @@ export interface HarvestFestEvent {
   // copy and photos don't belong in the always-visible summary.
   details?: string;
   imageUrls?: string[];
-  // Denormalized on purpose -- this is a small, human-curated flyer, not a
-  // live listing. If the linked project is later renamed, this event keeps
-  // showing the name it had when it was linked, until an admin re-saves it.
+  // Snapshot of the project as it was when linked, so the admin editor can
+  // show it without a lookup. The public page resolves the live name and
+  // drops the link if the project has since been archived or deleted.
   projectId?: string;
   projectName?: string;
 }
@@ -80,7 +81,9 @@ export const EMPTY_HARVEST_FEST_PAGE: HarvestFestPage = {
 
 // Cached because the public page reads this on every visit. Tag-invalidated
 // by setHarvestFestPage. Falls back to an empty page if unset or malformed
-// rather than erroring — the page itself decides how to render that.
+// rather than erroring — the page itself decides how to render that. Events
+// that no longer match the schema are dropped so one bad row can't break the
+// whole page.
 export const getHarvestFestPage = unstable_cache(
   async (): Promise<HarvestFestPage> => {
     const value = await getSiteSetting(HARVEST_FEST_SETTING_KEY);
@@ -91,7 +94,12 @@ export const getHarvestFestPage = unstable_cache(
         title: typeof parsed.title === "string" ? parsed.title : "",
         tagline: typeof parsed.tagline === "string" ? parsed.tagline : "",
         intro: typeof parsed.intro === "string" ? parsed.intro : "",
-        events: Array.isArray(parsed.events) ? parsed.events : [],
+        events: Array.isArray(parsed.events)
+          ? parsed.events.flatMap((event: unknown) => {
+              const result = harvestFestEventSchema.safeParse(event);
+              return result.success ? [result.data] : [];
+            })
+          : [],
       };
     } catch {
       return EMPTY_HARVEST_FEST_PAGE;

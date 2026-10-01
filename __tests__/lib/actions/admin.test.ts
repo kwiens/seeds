@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { mockAdminSession, mockSession, setAuthMock } from "../../test-utils";
 
 const setCalls: unknown[] = [];
@@ -34,9 +34,11 @@ import {
   archiveProject,
   revertToSeed,
   revertToSprout,
+  setHarvestFestPage,
   unapproveProject,
   unarchiveProject,
 } from "@/lib/actions/admin";
+import type { HarvestFestEvent } from "@/lib/db/queries/settings";
 
 describe("admin project lifecycle actions", () => {
   beforeEach(() => {
@@ -121,5 +123,79 @@ describe("admin project lifecycle actions", () => {
     ]) {
       expect(revalidatePath).toHaveBeenCalledWith(path);
     }
+  });
+});
+
+describe("setHarvestFestPage", () => {
+  const event: HarvestFestEvent = {
+    date: "October 3",
+    time: "12–2 PM",
+    title: "Eco Tours",
+    location: "",
+    description: "Come see the goats.",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    valueCalls.length = 0;
+  });
+
+  it("rejects non-admins", async () => {
+    setAuthMock(auth, mockSession());
+    await expect(
+      setHarvestFestPage({ title: "Fest", tagline: "", intro: "", events: [] }),
+    ).rejects.toThrow("Unauthorized");
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("names the event that failed validation", async () => {
+    setAuthMock(auth, mockAdminSession());
+    const result = await setHarvestFestPage({
+      title: "Fest",
+      tagline: "",
+      intro: "",
+      events: [event, { ...event, time: "  " }],
+    });
+    expect(result).toEqual({
+      success: false,
+      error: "Event 2: Time is required",
+    });
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes the page title from event titles", async () => {
+    setAuthMock(auth, mockAdminSession());
+    const result = await setHarvestFestPage({
+      title: "",
+      tagline: "",
+      intro: "",
+      events: [],
+    });
+    expect(result).toEqual({
+      success: false,
+      error: "Page title is required",
+    });
+  });
+
+  it("stores trimmed content without empty optional fields", async () => {
+    setAuthMock(auth, mockAdminSession());
+    const result = await setHarvestFestPage({
+      title: "  Fest ",
+      tagline: "",
+      intro: "",
+      events: [{ ...event, details: "", imageUrls: [], projectId: "" }],
+    });
+    expect(result).toEqual({ success: true });
+    const stored = JSON.parse(
+      (valueCalls[0] as { value: string }).value,
+    ) as Record<string, unknown>;
+    expect(stored).toEqual({
+      title: "Fest",
+      tagline: "",
+      intro: "",
+      events: [event],
+    });
+    expect(updateTag).toHaveBeenCalledWith("harvest-fest");
+    expect(revalidatePath).toHaveBeenCalledWith("/harvest-fest");
   });
 });

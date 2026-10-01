@@ -1,4 +1,15 @@
-import { and, count, desc, eq, ilike, isNull, ne, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { CategoryKey } from "@/lib/categories";
 import { db } from "@/lib/db";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
@@ -202,6 +213,21 @@ export async function getProjectById(id: string) {
       },
     })) ?? null
   );
+}
+
+/**
+ * Current names of the given projects that are still publicly viewable
+ * (not archived), keyed by id — for pages that link to projects by a stored id.
+ */
+export async function getPublicProjectNames(
+  ids: string[],
+): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({ id: projects.id, name: projects.name })
+    .from(projects)
+    .where(and(inArray(projects.id, ids), isNull(projects.archivedAt)));
+  return new Map(rows.map((row) => [row.id, row.name]));
 }
 
 export async function getProjectsCreatedByUser(userId: string) {

@@ -9,6 +9,10 @@ import { projectApprovals, projects, siteSettings } from "@/lib/db/schema";
 import type { ApprovalState, ProjectStage } from "@/lib/project-stages";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
 import {
+  formatHarvestFestIssue,
+  harvestFestPageSchema,
+} from "@/lib/validations/harvest-fest";
+import {
   BANNER_CACHE_TAG,
   BANNER_SETTING_KEYS,
   HARVEST_FEST_CACHE_TAG,
@@ -41,25 +45,6 @@ const bannerConfigSchema = z
     message: "Enabled banner must have a message",
     path: ["message"],
   });
-
-const harvestFestEventSchema = z.object({
-  date: z.string().trim().min(1, "Date is required").max(40),
-  time: z.string().trim().min(1, "Time is required").max(40),
-  title: z.string().trim().min(1, "Title is required").max(100),
-  location: z.string().trim().max(150),
-  description: z.string().trim().min(1, "Description is required").max(600),
-  details: z.string().trim().max(3000).optional(),
-  imageUrls: z.array(z.string().trim().url()).max(6).optional(),
-  projectId: z.string().uuid().optional(),
-  projectName: z.string().trim().max(100).optional(),
-});
-
-const harvestFestPageSchema = z.object({
-  title: z.string().trim().min(1, "Title is required").max(100),
-  tagline: z.string().trim().max(100),
-  intro: z.string().trim().max(1000),
-  events: z.array(harvestFestEventSchema).max(40),
-});
 
 const STATUS_LISTING_PATHS = [
   "/status/seeds",
@@ -274,7 +259,9 @@ export async function setHarvestFestPage(input: HarvestFestPage) {
   if (!parsed.success) {
     return {
       success: false as const,
-      error: parsed.error.issues[0]?.message ?? "Invalid Harvest Fest page",
+      error: parsed.error.issues[0]
+        ? formatHarvestFestIssue(parsed.error.issues[0])
+        : "Invalid Harvest Fest page",
     };
   }
 

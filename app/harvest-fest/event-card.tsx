@@ -1,33 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, ChevronUp, MapPin } from "lucide-react";
+import { ChevronDown, ChevronUp, MapPin, Sprout } from "lucide-react";
 import { LinkifyText } from "@/components/linkify-text";
 import { ImageLightbox } from "@/components/seeds/image-lightbox";
 import type { HarvestFestEvent } from "@/lib/db/queries/settings";
 import { cn } from "@/lib/utils";
 
-function splitDate(date: string): { month: string; day: string } | null {
-  const match = date.trim().match(/^(\S+)\s+(\S+)$/);
-  if (!match) return null;
-  return { month: match[1].slice(0, 3).toUpperCase(), day: match[2] };
-}
-
-// Roughly the length a description can reach before it stops fitting two
-// lines at this card's width -- a heuristic, not a pixel measurement, since
-// this is a simple admin-curated flyer rather than something worth adding
-// client-side overflow measurement for.
-const DESCRIPTION_CLAMP_THRESHOLD = 160;
-
 export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
   const [expanded, setExpanded] = useState(false);
+  const descriptionId = useId();
+  const detailsId = useId();
   const parsedDate = splitDate(event.date);
   const isDescriptionLong =
     event.description.trim().length > DESCRIPTION_CLAMP_THRESHOLD;
-  const hasMore = Boolean(
-    event.details?.trim() || event.imageUrls?.length || isDescriptionLong,
-  );
+  const hasDetails = Boolean(event.details?.trim() || event.imageUrls?.length);
+  const hasMore = hasDetails || isDescriptionLong;
+  const linkedProject =
+    event.projectId && event.projectName
+      ? { id: event.projectId, name: event.projectName }
+      : null;
 
   return (
     <li className="rounded-lg border p-4 sm:p-5">
@@ -65,6 +58,7 @@ export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
           )}
           {event.description && (
             <p
+              id={descriptionId}
               className={cn(
                 "mt-2 text-sm break-words whitespace-pre-wrap",
                 isDescriptionLong && !expanded && "line-clamp-2",
@@ -73,16 +67,21 @@ export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
               <LinkifyText text={event.description} />
             </p>
           )}
-          {(event.projectId || hasMore) && (
-            <div className="mt-2 flex items-center justify-between gap-3">
-              {event.projectId && event.projectName ? (
-                <Link
-                  href={`/seeds/${event.projectId}`}
-                  className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
-                >
-                  See the seed that sprouted
-                  <ArrowRight className="size-3.5" aria-hidden="true" />
-                </Link>
+          {(linkedProject || hasMore) && (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3">
+              {linkedProject ? (
+                <p className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm">
+                  <Sprout className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 break-words">
+                    Sprouted from:{" "}
+                    <Link
+                      href={`/seeds/${linkedProject.id}`}
+                      className="text-primary -my-3 inline-block py-3 font-medium hover:underline"
+                    >
+                      {linkedProject.name}
+                    </Link>
+                  </span>
+                </p>
               ) : (
                 <span />
               )}
@@ -92,7 +91,8 @@ export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
                   type="button"
                   onClick={() => setExpanded((prev) => !prev)}
                   aria-expanded={expanded}
-                  className="text-primary flex items-center gap-1 text-sm font-medium hover:underline"
+                  aria-controls={hasDetails ? detailsId : descriptionId}
+                  className="text-primary -my-3 flex items-center gap-1 py-3 text-sm font-medium hover:underline"
                 >
                   {expanded ? "Show less" : "Learn more"}
                   {expanded ? (
@@ -105,8 +105,8 @@ export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
             </div>
           )}
 
-          {expanded && (
-            <div className="mt-3 space-y-3 border-t pt-3">
+          {expanded && hasDetails && (
+            <div id={detailsId} className="mt-3 space-y-3 border-t pt-3">
               {event.details && (
                 <p className="text-sm break-words whitespace-pre-wrap">
                   <LinkifyText text={event.details} />
@@ -133,3 +133,15 @@ export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
     </li>
   );
 }
+
+function splitDate(date: string): { month: string; day: string } | null {
+  const match = date.trim().match(/^(\S+)\s+(\S+)$/);
+  if (!match) return null;
+  return { month: match[1].slice(0, 3).toUpperCase(), day: match[2] };
+}
+
+// Roughly the length a description can reach before it stops fitting two
+// lines at this card's width -- a heuristic, not a pixel measurement, since
+// this is a simple admin-curated flyer rather than something worth adding
+// client-side overflow measurement for.
+const DESCRIPTION_CLAMP_THRESHOLD = 160;

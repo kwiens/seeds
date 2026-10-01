@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { LinkifyText } from "@/components/linkify-text";
-import { getHarvestFestPage } from "@/lib/db/queries/settings";
+import { getPublicProjectNames } from "@/lib/db/queries/projects";
+import {
+  getHarvestFestPage,
+  type HarvestFestEvent,
+} from "@/lib/db/queries/settings";
 import { HarvestFestEventCard } from "./event-card";
 
 export const metadata: Metadata = {
@@ -11,6 +15,7 @@ export const metadata: Metadata = {
 
 export default async function HarvestFestPage() {
   const page = await getHarvestFestPage();
+  const events = await withLiveProjectLinks(page.events);
   const hasContent = page.title.trim().length > 0;
 
   return (
@@ -36,13 +41,13 @@ export default async function HarvestFestPage() {
       <div className="mx-auto max-w-3xl px-4 py-12">
         <h2 className="mb-6 text-2xl font-bold tracking-tight">Events</h2>
 
-        {page.events.length === 0 ? (
+        {events.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             Check back soon for Harvest Fest events.
           </p>
         ) : (
           <ul className="space-y-6">
-            {page.events.map((event, index) => (
+            {events.map((event, index) => (
               <HarvestFestEventCard key={index} event={event} />
             ))}
           </ul>
@@ -50,4 +55,24 @@ export default async function HarvestFestPage() {
       </div>
     </div>
   );
+}
+
+// The stored project link is a snapshot from when an admin linked it. Resolve
+// it against the live project so an archived or deleted project doesn't leave
+// a link that 404s, and a renamed one shows its current name.
+async function withLiveProjectLinks(
+  events: HarvestFestEvent[],
+): Promise<HarvestFestEvent[]> {
+  const ids = events.flatMap((event) =>
+    event.projectId ? [event.projectId] : [],
+  );
+  const names = await getPublicProjectNames(ids);
+  return events.map((event) => {
+    const liveName = event.projectId ? names.get(event.projectId) : undefined;
+    return {
+      ...event,
+      projectId: liveName ? event.projectId : undefined,
+      projectName: liveName,
+    };
+  });
 }
