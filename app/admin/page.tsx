@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ExternalLink } from "lucide-react";
 import { auth } from "@/auth";
 import { AdminCommentsTable } from "@/components/admin/admin-comments-table";
 import { AdminEmailList } from "@/components/admin/admin-email-list";
@@ -7,9 +9,11 @@ import { AdminTabs } from "@/components/admin/admin-tabs";
 import { BannerSettings } from "@/components/admin/banner-settings";
 import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
+import { HarvestFestSettings } from "@/components/admin/harvest-fest-settings";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { UserList } from "@/components/admin/user-list";
+import { Button } from "@/components/ui/button";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type AdminTab, isAdminTab } from "@/lib/admin-tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
@@ -21,7 +25,12 @@ import {
   getUsersPage,
   USERS_PER_PAGE,
 } from "@/lib/db/queries/admin";
-import { getBannerConfig, getHomepagePhase } from "@/lib/db/queries/settings";
+import {
+  EMPTY_HARVEST_FEST_PAGE,
+  getBannerConfig,
+  getHarvestFestPage,
+  getHomepagePhase,
+} from "@/lib/db/queries/settings";
 
 export const metadata: Metadata = {
   title: "Admin | Seeds",
@@ -60,6 +69,7 @@ export default async function AdminPage({
     allComments,
     homepagePhase,
     bannerConfig,
+    harvestFestPage,
   ] = await Promise.all([
     activeTab === "seeds" ? getAllProjects() : Promise.resolve([]),
     activeTab === "seeds"
@@ -81,6 +91,9 @@ export default async function AdminPage({
     activeTab === "settings"
       ? getBannerConfig()
       : Promise.resolve({ enabled: false, message: "", href: "" }),
+    activeTab === "harvestFest"
+      ? getHarvestFestPage()
+      : Promise.resolve(EMPTY_HARVEST_FEST_PAGE),
   ]);
 
   if (
@@ -103,31 +116,37 @@ export default async function AdminPage({
         <div className="-mx-4 px-4 pb-1 sm:overflow-x-auto">
           <TabsList className="grid w-full grid-cols-3 gap-1 group-data-[orientation=horizontal]/tabs:h-auto sm:inline-flex sm:w-fit sm:min-w-max sm:gap-0 sm:group-data-[orientation=horizontal]/tabs:h-9">
             <TabsTrigger
-              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
               value="seeds"
             >
               Seeds
             </TabsTrigger>
             <TabsTrigger
-              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
               value="insights"
             >
               Comments
             </TabsTrigger>
             <TabsTrigger
-              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
               value="export"
             >
               Export
             </TabsTrigger>
             <TabsTrigger
-              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
               value="users"
             >
               People
             </TabsTrigger>
             <TabsTrigger
-              className="h-11 min-w-0 sm:h-[calc(100%-1px)]"
+              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
+              value="harvestFest"
+            >
+              Harvest Fest
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
               value="settings"
             >
               Settings
@@ -177,6 +196,27 @@ export default async function AdminPage({
               pageSize={usersPage.pageSize}
               search={peopleSearch}
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="harvestFest">
+          <div className="mt-4 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Harvest Fest Page</h2>
+                <p className="text-muted-foreground text-sm">
+                  Edit the public /harvest-fest page — title, intro, and the
+                  list of events. Changes go live immediately, no deploy needed.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/harvest-fest" target="_blank">
+                  View public page
+                  <ExternalLink className="ml-1.5 size-3.5" />
+                </Link>
+              </Button>
+            </div>
+            <HarvestFestSettings initial={harvestFestPage} />
           </div>
         </TabsContent>
 

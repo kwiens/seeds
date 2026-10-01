@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { siteSettings } from "@/lib/db/schema";
+import { harvestFestEventSchema } from "@/lib/validations/harvest-fest";
 
 export const BANNER_CACHE_TAG = "banner";
 
@@ -43,6 +44,70 @@ export async function getHomepagePhase(): Promise<1 | 2> {
   const value = await getSiteSetting("homepage_phase");
   return value === "2" ? 2 : 1;
 }
+
+export const HARVEST_FEST_CACHE_TAG = "harvest-fest";
+export const HARVEST_FEST_SETTING_KEY = "harvest_fest_page";
+
+export interface HarvestFestEvent {
+  date: string;
+  time: string;
+  title: string;
+  location: string;
+  description: string;
+  // Shown only once someone expands the card via "Learn more" -- longer
+  // copy and photos don't belong in the always-visible summary.
+  details?: string;
+  imageUrls?: string[];
+  // Snapshot of the project as it was when linked, so the admin editor can
+  // show it without a lookup. The public page resolves the live name and
+  // drops the link if the project has since been archived or deleted.
+  projectId?: string;
+  projectName?: string;
+}
+
+export interface HarvestFestPage {
+  title: string;
+  tagline: string;
+  intro: string;
+  events: HarvestFestEvent[];
+}
+
+export const EMPTY_HARVEST_FEST_PAGE: HarvestFestPage = {
+  title: "",
+  tagline: "",
+  intro: "",
+  events: [],
+};
+
+// Cached because the public page reads this on every visit. Tag-invalidated
+// by setHarvestFestPage. Falls back to an empty page if unset or malformed
+// rather than erroring — the page itself decides how to render that. Events
+// that no longer match the schema are dropped so one bad row can't break the
+// whole page.
+export const getHarvestFestPage = unstable_cache(
+  async (): Promise<HarvestFestPage> => {
+    const value = await getSiteSetting(HARVEST_FEST_SETTING_KEY);
+    if (!value) return EMPTY_HARVEST_FEST_PAGE;
+    try {
+      const parsed = JSON.parse(value);
+      return {
+        title: typeof parsed.title === "string" ? parsed.title : "",
+        tagline: typeof parsed.tagline === "string" ? parsed.tagline : "",
+        intro: typeof parsed.intro === "string" ? parsed.intro : "",
+        events: Array.isArray(parsed.events)
+          ? parsed.events.flatMap((event: unknown) => {
+              const result = harvestFestEventSchema.safeParse(event);
+              return result.success ? [result.data] : [];
+            })
+          : [],
+      };
+    } catch {
+      return EMPTY_HARVEST_FEST_PAGE;
+    }
+  },
+  ["harvest-fest-page"],
+  { tags: [HARVEST_FEST_CACHE_TAG] },
+);
 
 export interface BannerConfig {
   enabled: boolean;
