@@ -436,6 +436,7 @@ describe("BudgetEditor CSV export", () => {
         lineItems: [
           { label: "=SUM(A1:A2)", amount: 100 },
           { label: 'Soil, "premium"', amount: 250 },
+          { label: "Delivery\r=1+1", amount: -10 },
         ],
         notes: "Vendor quote pending",
       }),
@@ -452,7 +453,8 @@ describe("BudgetEditor CSV export", () => {
       "Line item,Amount",
       "'=SUM(A1:A2),100",
       '"Soil, ""premium""",250',
-      "Total,350",
+      '"Delivery\r=1+1",-10',
+      "Total,340",
       "",
       "Notes,Vendor quote pending",
     ]);

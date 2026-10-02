@@ -49,7 +49,7 @@ describe("exportSeedsCsv", () => {
     const mockRows = [
       {
         id: "seed-1",
-        name: "Test Seed",
+        name: "=1+1",
         summary: "A test summary",
         category: "daily_access",
         stage: "seed",
@@ -118,7 +118,7 @@ describe("exportSeedsCsv", () => {
     );
 
     expect(lines[1]).toContain("seed-1");
-    expect(lines[1]).toContain("Test Seed");
+    expect(lines[1]).toContain("seed-1,'=1+1,");
     expect(lines[1]).toContain("Everyday Access"); // human-readable label
     expect(lines[1]).toContain("Alice; Bob");
     expect(lines[1]).toContain("Org A (committed); Org B");
@@ -183,6 +183,26 @@ describe("exportContributorsCsv", () => {
     setAuthMock(auth, mockSession({ role: "user" }));
     await expect(exportContributorsCsv()).rejects.toThrow("Unauthorized");
   });
+
+  it("exports project names and contributor names as literal text", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.select).mockReturnValue(
+      mockSelectChain([
+        {
+          projectName: "=1+1",
+          category: "daily_access",
+          stage: "seed",
+          approvalState: "pending",
+          creatorName: "\t@SUM(1)",
+          creatorEmail: "test@example.com",
+          createdAt: new Date("2024-06-01T00:00:00Z"),
+        },
+      ]) as any,
+    );
+    expect(await exportContributorsCsv()).toContain(
+      "'=1+1,daily_access,seed,pending,'\t@SUM(1),test@example.com",
+    );
+  });
 });
 
 describe("exportSupportersCsv", () => {
@@ -193,5 +213,20 @@ describe("exportSupportersCsv", () => {
   it("rejects non-admin users", async () => {
     setAuthMock(auth, mockSession({ role: "user" }));
     await expect(exportSupportersCsv()).rejects.toThrow("Unauthorized");
+  });
+
+  it("neutralizes formulas and quotes carriage returns in supporter data", async () => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(db.selectDistinctOn).mockReturnValue(
+      mockSelectChain([
+        {
+          supporterName: "Alice\r=1+1",
+          supporterEmail: "+person@example.com",
+        },
+      ]) as any,
+    );
+    expect(await exportSupportersCsv()).toBe(
+      'Name,Email\n"Alice\r=1+1",\'+person@example.com',
+    );
   });
 });

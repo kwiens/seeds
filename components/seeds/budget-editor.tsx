@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { saveBudget } from "@/lib/actions/budgets";
 import type { Budget } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
+import { toCsvRow } from "@/lib/csv";
 
 type LineItem = { label: string; amount: number };
 
@@ -24,15 +25,6 @@ function formatCurrency(amount: number) {
     currency: "USD",
     maximumFractionDigits: 0,
   });
-}
-
-function csvField(value: string | number): string {
-  const raw = String(value);
-  // Spreadsheet apps execute cells beginning with these characters as
-  // formulas. Prefix user-controlled text so exported budgets stay inert.
-  const str =
-    typeof value === "string" && /^\s*[=+\-@]/.test(raw) ? `'${raw}` : raw;
-  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 
 function slugify(value: string): string {
@@ -56,14 +48,14 @@ function downloadBudgetCsv(
     [`${seedName} — ${stageLabel} Budget`],
     [],
     ["Line item", "Amount"],
-    ...lineItems.map((item) => [item.label, String(item.amount)]),
-    ["Total", String(total)],
+    ...lineItems.map((item) => [item.label, item.amount]),
+    ["Total", total],
   ];
   if (notes.trim()) {
     rows.push([], ["Notes", notes]);
   }
 
-  const csv = rows.map((row) => row.map(csvField).join(",")).join("\n");
+  const csv = rows.map(toCsvRow).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

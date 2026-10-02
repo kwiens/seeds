@@ -6,17 +6,7 @@ import { categories, type CategoryKey } from "@/lib/categories";
 import { db } from "@/lib/db";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
 import { getRequestOrigin } from "@/lib/site-url";
-
-function escapeCsvField(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function toCsvRow(fields: string[]): string {
-  return fields.map(escapeCsvField).join(",");
-}
+import { toCsvRow } from "@/lib/csv";
 
 async function requireAdmin() {
   const session = await auth();
