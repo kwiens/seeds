@@ -127,6 +127,32 @@ describe("TeamUpdatesSection rendering", () => {
     expect(link).toHaveAttribute("target", "_blank");
   });
 
+  it("shows an image attachment as a preview button instead of a download link", () => {
+    renderSection({
+      updates: [
+        {
+          ...topUpdate,
+          attachments: [
+            {
+              name: "site-photo.png",
+              url: "https://blob.example/site-photo.png",
+              size: 1024,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(
+      screen.queryByRole("link", { name: /site-photo\.png/ }),
+    ).not.toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "Open site-photo.png" });
+    expect(trigger.querySelector("img")).toHaveAttribute(
+      "src",
+      "/api/team-files/update-1/0",
+    );
+  });
+
   it("shows the empty state when there are no updates", () => {
     renderSection({ updates: [] });
 

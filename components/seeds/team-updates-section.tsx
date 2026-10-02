@@ -21,11 +21,13 @@ import {
   type Attachment,
   AttachmentPicker,
 } from "@/components/seeds/attachment-picker";
+import { ImageLightbox } from "@/components/seeds/image-lightbox";
 import {
   createTeamProjectUpdate,
   deleteProjectUpdate,
   replyToTeamProjectUpdate,
 } from "@/lib/actions/project-updates";
+import { isImageAttachment } from "@/lib/attachments";
 import { TEAM_UPDATE_MAX_LENGTH } from "@/lib/constants";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
 
@@ -415,19 +417,34 @@ function UpdateCard({
             {update.body}
           </p>
           {update.attachments.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {update.attachments.map((file, index) => (
-                <a
-                  key={file.url}
-                  href={`/api/team-files/${update.id}/${index}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-accent hover:bg-accent/70 inline-flex max-w-[220px] items-center gap-1.5 rounded-full py-1.5 pr-2.5 pl-2 text-xs"
-                >
-                  <FileText className="text-muted-foreground size-3 shrink-0" />
-                  <span className="truncate">{file.name}</span>
-                </a>
-              ))}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {update.attachments.map((file, index) => {
+                const href = `/api/team-files/${update.id}/${index}`;
+                return isImageAttachment(file.name) ? (
+                  <ImageLightbox
+                    key={file.url}
+                    src={href}
+                    alt={file.name}
+                    unoptimized
+                    thumbWidth={56}
+                    thumbHeight={56}
+                    thumbClassName="size-full object-cover"
+                    triggerClassName="border-input size-14 shrink-0 rounded-md border"
+                    downloadHref={`${href}?download=1`}
+                  />
+                ) : (
+                  <a
+                    key={file.url}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-accent hover:bg-accent/70 inline-flex max-w-[220px] items-center gap-1.5 rounded-full py-1.5 pr-2.5 pl-2 text-xs"
+                  >
+                    <FileText className="text-muted-foreground size-3 shrink-0" />
+                    <span className="truncate">{file.name}</span>
+                  </a>
+                );
+              })}
             </div>
           )}
         </div>
