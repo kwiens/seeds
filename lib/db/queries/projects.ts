@@ -217,7 +217,8 @@ export async function getProjectById(id: string) {
 
 /**
  * Current names of the given projects that are still publicly viewable
- * (not archived), keyed by id — for pages that link to projects by a stored id.
+ * (neither draft nor archived), keyed by id — for pages that link to projects
+ * by a stored id. Pending projects are intentionally public.
  */
 export async function getPublicProjectNames(
   ids: string[],
@@ -226,7 +227,13 @@ export async function getPublicProjectNames(
   const rows = await db
     .select({ id: projects.id, name: projects.name })
     .from(projects)
-    .where(and(inArray(projects.id, ids), isNull(projects.archivedAt)));
+    .where(
+      and(
+        inArray(projects.id, ids),
+        ne(projects.approvalState, "draft"),
+        isNull(projects.archivedAt),
+      ),
+    );
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 
