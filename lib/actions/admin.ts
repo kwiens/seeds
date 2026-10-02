@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -9,8 +9,15 @@ import { projectApprovals, projects, siteSettings } from "@/lib/db/schema";
 import type { ApprovalState, ProjectStage } from "@/lib/project-stages";
 import { badgeKeys, type BadgeKey } from "@/lib/badges";
 import {
+  formatHarvestFestIssue,
+  harvestFestPageSchema,
+} from "@/lib/validations/harvest-fest";
+import {
   BANNER_CACHE_TAG,
   BANNER_SETTING_KEYS,
+  HARVEST_FEST_CACHE_TAG,
+  HARVEST_FEST_SETTING_KEY,
+  type HarvestFestPage,
 } from "@/lib/db/queries/settings";
 
 const bannerConfigSchema = z
@@ -228,4 +235,79 @@ export async function setHomepagePhase(phase: 1 | 2) {
   revalidatePath("/");
   revalidatePath("/admin");
   return { success: true };
+}
+
+export async function setHarvestFestPage(input: HarvestFestPage) {
+  await requireAdmin();
+
+  const parsed = harvestFestPageSchema.safeParse({
+    title: input.title,
+    tagline: input.tagline,
+    intro: input.intro,
+    events: input.events.map((event) => ({
+      date: event.date,
+      time: event.time,
+      title: event.title,
+      location: event.location,
+      description: event.description,
+      details: event.details || undefined,
+      imageUrls: event.imageUrls?.length ? event.imageUrls : undefined,
+      projectId: event.projectId || undefined,
+      projectName: event.projectName || undefined,
+    })),
+  });
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      error: parsed.error.issues[0]
+        ? formatHarvestFestIssue(parsed.error.issues[0])
+        : "Invalid Harvest Fest page",
+    };
+  }
+
+  await db
+    .insert(siteSettings)
+    .values({
+      key: HARVEST_FEST_SETTING_KEY,
+      value: JSON.stringify(parsed.data),
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: { value: sql`excluded.value`, updatedAt: sql`excluded.updated_at` },
+    });
+
+  updateTag(HARVEST_FEST_CACHE_TAG);
+  revalidatePath("/harvest-fest");
+  return { success: true as const };
+}
+
+export async function searchProjectsForHarvestFest(query: string) {
+  await requireAdmin();
+
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const rows = await db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      stage: projects.stage,
+    })
+    .from(projects)
+    .where(
+      and(
+        ilike(projects.name, `%${trimmed}%`),
+        isNull(projects.archivedAt),
+        // Harvest Fest traces an event back to where it sprouted from --
+        // Trees are the established end state, not a thing something grows
+        // "from", so they're excluded here even though they're still valid
+        // elsewhere in the project lifecycle.
+        inArray(projects.stage, ["seed", "sprout"]),
+      ),
+    )
+    .orderBy(projects.name)
+    .limit(8);
+
+  return rows;
 }

@@ -1,0 +1,78 @@
+import type { Metadata } from "next";
+import { LinkifyText } from "@/components/linkify-text";
+import { getPublicProjectNames } from "@/lib/db/queries/projects";
+import {
+  getHarvestFestPage,
+  type HarvestFestEvent,
+} from "@/lib/db/queries/settings";
+import { HarvestFestEventCard } from "./event-card";
+
+export const metadata: Metadata = {
+  title: "Harvest Fest | Seeds — Chattanooga National Park City",
+  description:
+    "Harvest Fest is a chance to come together and experience what's growing across Chattanooga National Park City.",
+};
+
+export default async function HarvestFestPage() {
+  const page = await getHarvestFestPage();
+  const events = await withLiveProjectLinks(page.events);
+  const hasContent = page.title.trim().length > 0;
+
+  return (
+    <div>
+      <section className="bg-[#2D5334] text-white">
+        <div className="mx-auto max-w-4xl px-4 py-16 md:py-24">
+          {page.tagline && (
+            <p className="mb-3 text-sm font-semibold tracking-widest text-[#74BB23] uppercase">
+              {page.tagline}
+            </p>
+          )}
+          <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl">
+            {hasContent ? page.title : "Harvest Fest"}
+          </h1>
+          {page.intro && (
+            <p className="max-w-2xl text-lg whitespace-pre-wrap text-white/85">
+              <LinkifyText text={page.intro} />
+            </p>
+          )}
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        <h2 className="mb-6 text-2xl font-bold tracking-tight">Events</h2>
+
+        {events.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            Check back soon for Harvest Fest events.
+          </p>
+        ) : (
+          <ul className="space-y-6">
+            {events.map((event, index) => (
+              <HarvestFestEventCard key={index} event={event} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// The stored project link is a snapshot from when an admin linked it. Resolve
+// it against the live project so an archived or deleted project doesn't leave
+// a link that 404s, and a renamed one shows its current name.
+async function withLiveProjectLinks(
+  events: HarvestFestEvent[],
+): Promise<HarvestFestEvent[]> {
+  const ids = events.flatMap((event) =>
+    event.projectId ? [event.projectId] : [],
+  );
+  const names = await getPublicProjectNames(ids);
+  return events.map((event) => {
+    const liveName = event.projectId ? names.get(event.projectId) : undefined;
+    return {
+      ...event,
+      projectId: liveName ? event.projectId : undefined,
+      projectName: liveName,
+    };
+  });
+}

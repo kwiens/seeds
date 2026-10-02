@@ -27,6 +27,13 @@ interface ImageLightboxProps {
   unoptimized?: boolean;
   /** Adds a Download action beside Close in the open lightbox */
   downloadHref?: string;
+  /**
+   * Render the thumbnail at its real aspect ratio instead of cropping to
+   * fill a fixed box -- for content where cropping would cut off real
+   * information (a flyer's text, a QR code), not just decorative photos.
+   * Scales down to fit `triggerClassName`'s max-height, nothing is cut off.
+   */
+  natural?: boolean;
 }
 
 export function ImageLightbox({
@@ -41,6 +48,7 @@ export function ImageLightbox({
   fill,
   unoptimized,
   downloadHref,
+  natural,
 }: ImageLightboxProps) {
   return (
     <Dialog>
@@ -48,13 +56,25 @@ export function ImageLightbox({
         <button
           type="button"
           className={cn(
-            "block cursor-zoom-in overflow-hidden",
-            !fill && "rounded-2xl",
+            "block cursor-zoom-in",
+            !natural && "overflow-hidden",
+            !fill && !natural && "rounded-2xl",
+            natural && "flex items-center justify-center",
             triggerClassName,
           )}
           aria-label={`Open ${alt}`}
         >
-          {fill ? (
+          {natural ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={src}
+              alt={alt}
+              className={cn(
+                "h-auto max-h-[480px] w-auto max-w-full object-contain",
+                thumbClassName,
+              )}
+            />
+          ) : fill ? (
             <Image
               src={src}
               alt={alt}

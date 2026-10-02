@@ -3,6 +3,7 @@ export const adminTabValues = [
   "insights",
   "export",
   "users",
+  "harvestFest",
   "settings",
 ] as const;
 
