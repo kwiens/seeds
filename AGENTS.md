@@ -70,6 +70,13 @@ pnpm build
 
 Deployed via Vercel.
 
+### Claude in CI
+
+Pull requests get an automatic Claude code review, an architecture review,
+and a generated architecture summary in the description; `@claude` in a PR
+or issue asks Claude for help. The review instructions and setup live in
+[.github/claude/README.md](.github/claude/README.md).
+
 ## Environment Safety Contract
 
 The canonical Vercel project is `chattanooga-seeds/seeds`. Always link this
