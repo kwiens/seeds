@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Mail, QrCode, Settings2, Sun, Users } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
-import { auth } from "@/auth";
-import { canAccessTeamWorkspace, canManageProject } from "@/lib/auth-utils";
+import { canAccessTeamWorkspace } from "@/lib/auth-utils";
+import { getReadableProject } from "@/lib/project-read-access";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import { getCommentsByProject } from "@/lib/db/queries/comments";
 import { getPublicBudgets } from "@/lib/db/queries/budgets";
 import { getPublicProjectUpdates } from "@/lib/db/queries/project-updates";
 import {
-  getProjectById,
   getProjectSupportCount,
   getProjectSupporters,
   hasUserSupported,
@@ -101,8 +100,9 @@ export async function generateMetadata(props: {
   params: Promise<{ id: string }>;
 }) {
   const params = await props.params;
-  const seed = await getProjectById(params.id);
-  if (!seed) return { title: "Seed Not Found" };
+  const access = await getReadableProject(params.id);
+  if (!access) return { title: "Seed Not Found" };
+  const { project: seed } = access;
   const ogImage = seed.coverPhotoUrl ?? seed.imageUrl;
   return {
     title: `${seed.name} | Seeds`,
@@ -129,22 +129,13 @@ export default async function SeedPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const params = await props.params;
-  const session = await auth();
-
-  const seed = await getProjectById(params.id);
-  if (!seed) notFound();
-
-  const canEdit = await canManageProject(session, seed);
+  const access = await getReadableProject(params.id);
+  if (!access) notFound();
+  const { project: seed, session, canManage: canEdit } = access;
   const hasTeamAccess =
     !seed.archivedAt && hasTeamWorkspace(seed.stage)
       ? await canAccessTeamWorkspace(session, seed)
       : false;
-
-  // Pending seeds are intentionally public so creators can share links
-  // before approval. Only archived seeds are restricted to owner/admin.
-  if (seed.archivedAt && !canEdit) {
-    notFound();
-  }
 
   const [
     supportCount,

@@ -2,12 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Pencil } from "lucide-react";
-import { auth } from "@/auth";
-import { canManageProject } from "@/lib/auth-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getPublicProjectUpdateById } from "@/lib/db/queries/project-updates";
-import { getProjectById } from "@/lib/db/queries/projects";
+import { getReadableProjectUpdate } from "@/lib/project-read-access";
 import { formatDisplayName } from "@/lib/format";
 import { PhotoGrid } from "@/components/photo-grid";
 import { renderTiptapHTML, extractPlainText } from "@/lib/tiptap";
@@ -16,8 +13,9 @@ export async function generateMetadata(props: {
   params: Promise<{ id: string; updateId: string }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  const update = await getPublicProjectUpdateById(params.updateId);
-  if (!update) return { title: "Update Not Found" };
+  const access = await getReadableProjectUpdate(params.id, params.updateId);
+  if (!access) return { title: "Update Not Found" };
+  const { update } = access;
   return {
     title: `${update.title ?? "Update"} | Seeds`,
     description: extractPlainText(update.body).slice(0, 160),
@@ -28,21 +26,9 @@ export default async function UpdatePage(props: {
   params: Promise<{ id: string; updateId: string }>;
 }) {
   const params = await props.params;
-  const session = await auth();
-
-  const [seed, update] = await Promise.all([
-    getProjectById(params.id),
-    getPublicProjectUpdateById(params.updateId),
-  ]);
-  if (!seed) notFound();
-  if (!update || update.projectId !== seed.id) notFound();
-
-  const canEdit = await canManageProject(session, seed);
-
-  // Archived seeds are restricted to owner/admin — apply same guard as seed detail page
-  if (seed.archivedAt && !canEdit) {
-    notFound();
-  }
+  const access = await getReadableProjectUpdate(params.id, params.updateId);
+  if (!access) notFound();
+  const { project: seed, update, canManage: canEdit } = access;
   const wasEdited =
     update.updatedAt.getTime() - update.createdAt.getTime() > 1000;
 
