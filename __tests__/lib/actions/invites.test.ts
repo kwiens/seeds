@@ -321,6 +321,24 @@ describe("acceptInvite", () => {
     });
   });
 
+  it.each([
+    "sprout",
+    "tree",
+  ])("rejects invites to archived %s projects without consuming them", async (stage) => {
+    setAuthMock(auth, mockSession());
+    vi.mocked(db.query.projectInvites.findFirst).mockResolvedValue({
+      ...invite,
+      project: { ...invite.project, stage, archivedAt: new Date() },
+    } as never);
+
+    expect(await acceptInvite(TOKEN)).toEqual({
+      error: "This project's team workspace is no longer available.",
+    });
+    expect(db.batch).not.toHaveBeenCalled();
+    expect(db.insert).not.toHaveBeenCalled();
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
   it("adds the accepting user to the team and marks the invite used", async () => {
     setAuthMock(auth, mockSession({ id: "user-1", name: "Priya Patel" }));
     const insert = insertChain();
