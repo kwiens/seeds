@@ -2,10 +2,9 @@ import { type NextRequest, NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { auth } from "@/auth";
 import { IMAGE_CONTENT_TYPES } from "@/lib/attachments";
-import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { TEAM_ATTACHMENT_MAX_SIZE } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import { checkProjectAccess } from "@/lib/project-access";
 
 const IMAGE_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const IMAGE_TYPES = IMAGE_CONTENT_TYPES;
@@ -51,12 +50,11 @@ export async function POST(request: NextRequest) {
 
           const project = await db.query.projects.findFirst({
             where: (projects, { eq }) => eq(projects.id, attachmentProjectId),
-            columns: { id: true, stage: true },
+            columns: { id: true, stage: true, archivedAt: true },
           });
           if (
             !project ||
-            !hasTeamWorkspace(project.stage) ||
-            !(await canAccessTeamWorkspace(session, project))
+            (await checkProjectAccess(session, project, { level: "team" }))
           ) {
             throw new Error("You do not have access to this project's files");
           }

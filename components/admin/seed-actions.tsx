@@ -38,7 +38,8 @@ import {
   revertToSprout,
   setProjectBadges,
 } from "@/lib/actions/admin";
-import { badges, badgeKeys, type BadgeKey } from "@/lib/badges";
+import { badges, badgeKeys, type BadgeKey } from "@/config/badges";
+import { routes } from "@/lib/routes";
 
 export function SeedActions({
   projectId,
@@ -128,14 +129,14 @@ export function SeedActions({
 
         {/* Standard actions */}
         <DropdownMenuItem asChild>
-          <Link href={`/dashboard/projects/${projectId}/edit`}>
+          <Link href={routes.workspace(projectId, "edit")}>
             <Pencil className="mr-2 size-4" />
             Edit
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a
-            href={`/seeds/${projectId}/qr`}
+            href={routes.projectQr(projectId)}
             target="_blank"
             rel="noopener noreferrer"
           >

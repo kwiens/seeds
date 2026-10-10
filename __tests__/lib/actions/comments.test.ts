@@ -95,7 +95,7 @@ describe("addComment", () => {
       content: "Great progress!",
       parentId: null,
     });
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1", "layout");
     expect(db.query.projectComments.findFirst).not.toHaveBeenCalled();
   });
 
@@ -162,7 +162,7 @@ describe("addComment", () => {
       content: "A reply",
       parentId: "parent-1",
     });
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1", "layout");
   });
 
   it("allows an admin to reply on any project", async () => {
@@ -233,7 +233,7 @@ describe("archiveComment", () => {
     expect(chain.set).toHaveBeenCalledWith(
       expect.objectContaining({ archivedAt: expect.any(Date) }),
     );
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 
@@ -310,7 +310,7 @@ describe("unarchiveComment", () => {
     expect(result).toEqual({ success: true });
     expect(chain.set).toHaveBeenCalledWith({ archivedAt: null });
     expect(db.update).toHaveBeenCalledTimes(1);
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 });

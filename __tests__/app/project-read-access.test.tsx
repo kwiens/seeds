@@ -105,10 +105,10 @@ describe("public project pages and metadata share read authorization", () => {
       mockProject({ approvalState }) as never,
     );
     expect(await seedMetadata(seedProps)).toMatchObject({
-      title: "Community Garden | Seeds",
+      title: "Community Garden",
     });
     expect(await updateMetadata(updateProps)).toMatchObject({
-      title: "Sensitive update | Seeds",
+      title: "Sensitive update",
       description: "Secret body",
     });
     await expect(SeedPage(seedProps)).resolves.toBeTruthy();
@@ -125,10 +125,10 @@ describe("public project pages and metadata share read authorization", () => {
       mockProject(overrides) as never,
     );
     expect(await seedMetadata(seedProps)).toMatchObject({
-      title: "Community Garden | Seeds",
+      title: "Community Garden",
     });
     expect(await updateMetadata(updateProps)).toMatchObject({
-      title: "Sensitive update | Seeds",
+      title: "Sensitive update",
     });
     await expect(SeedPage(seedProps)).resolves.toBeTruthy();
     await expect(UpdatePage(updateProps)).resolves.toBeTruthy();

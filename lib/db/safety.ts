@@ -1,22 +1,8 @@
-const PRODUCTION_DATABASE = {
-  endpoint: "ep-divine-tooth-aidea37t",
-  database: "neondb",
-} as const;
-
-const BLOB_STORES = {
-  production: {
-    public: "0jJDVIhXX8wVN6Ty",
-    team: "38MP9o7PJgK1kMRX",
-  },
-  development: {
-    public: "cVJ0H9jPR61qF32Y",
-    team: "YnFQQ1z8IihRdO43",
-  },
-  preview: {
-    public: "MFfIAmz3VrsjECPX",
-    team: "aqVq2NIWGjPAdnoW",
-  },
-} as const;
+import {
+  blobStores,
+  productionDatabase,
+  type ResourceEnvironment,
+} from "../../config/deployment";
 
 type DatabaseSafetyOptions = {
   environment?: string;
@@ -26,8 +12,6 @@ type DatabaseSafetyOptions = {
 type BlobSafetyOptions = {
   environment?: string;
 };
-
-type ResourceEnvironment = keyof typeof BLOB_STORES;
 
 export type DatabaseIdentity = {
   endpoint: string;
@@ -63,8 +47,8 @@ export function getDatabaseIdentity(databaseUrl: string): DatabaseIdentity {
 export function isProductionDatabase(databaseUrl: string) {
   const identity = getDatabaseIdentity(databaseUrl);
   return (
-    identity.endpoint === PRODUCTION_DATABASE.endpoint &&
-    identity.database === PRODUCTION_DATABASE.database
+    identity.endpoint === productionDatabase.endpoint &&
+    identity.database === productionDatabase.database
   );
 }
 
@@ -135,7 +119,7 @@ export function assertSafeBlobStores(
     tokens.teamToken,
     "TEAM_FILES_BLOB_READ_WRITE_TOKEN",
   );
-  const expected = BLOB_STORES[resourceEnvironment];
+  const expected = blobStores[resourceEnvironment];
 
   if (publicStore !== expected.public || teamStore !== expected.team) {
     throw new Error(

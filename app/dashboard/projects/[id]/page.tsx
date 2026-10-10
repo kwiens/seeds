@@ -4,6 +4,7 @@ import {
   getDefaultProjectWorkspaceSection,
   projectWorkspacePath,
 } from "@/lib/project-workspace-navigation";
+import { routes } from "@/lib/routes";
 
 export default async function ProjectWorkspacePage(props: {
   params: Promise<{ id: string }>;
@@ -16,6 +17,6 @@ export default async function ProjectWorkspacePage(props: {
     canAccessTeam,
   });
 
-  if (!section) redirect(`/seeds/${project.id}`);
+  if (!section) redirect(routes.project(project.id));
   redirect(projectWorkspacePath(project.id, section));
 }

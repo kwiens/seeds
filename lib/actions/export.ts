@@ -1,17 +1,13 @@
 "use server";
 
 import { and, count, desc, eq, isNull, ne, sql } from "drizzle-orm";
-import { auth } from "@/auth";
-import { categories, type CategoryKey } from "@/lib/categories";
+import { categories, type CategoryKey } from "@/config/categories";
+import { requireAdmin } from "@/lib/auth-guards";
+import { toCsvRow } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
+import { routes } from "@/lib/routes";
 import { getRequestOrigin } from "@/lib/site-url";
-import { toCsvRow } from "@/lib/csv";
-
-async function requireAdmin() {
-  const session = await auth();
-  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
-}
 
 export async function exportContributorsCsv(): Promise<string> {
   await requireAdmin();
@@ -174,7 +170,7 @@ export async function exportSeedsCsv(): Promise<string> {
       row.waterNeed.join("; "),
       row.budgetEstimate ?? "",
       row.obstacles ?? "",
-      `${origin}/seeds/${row.id}`,
+      `${origin}${routes.project(row.id)}`,
       row.createdAt.toISOString(),
       String(row.supportCount),
       row.creatorName,

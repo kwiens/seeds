@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { siteConfig } from "@/config/site";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { getMyProjects } from "@/lib/db/queries/my-projects";
+import { routes } from "@/lib/routes";
 
 export async function Header() {
   const session = await auth();
@@ -23,10 +25,10 @@ export async function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center px-4">
         <Link href="/" className="flex items-center gap-2 font-bold">
           <Image
-            src="/logo.svg"
-            alt="National Park City Seeds"
-            width={137}
-            height={44}
+            src={siteConfig.brand.logo.src}
+            alt={siteConfig.name}
+            width={siteConfig.brand.logo.width}
+            height={siteConfig.brand.logo.height}
             priority
           />
         </Link>
@@ -51,14 +53,14 @@ export async function Header() {
             FAQ
           </Link>
           <Link
-            href="/seeds/new"
+            href={routes.newProject}
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
             Plant a Seed
           </Link>
           {session && (
             <Link
-              href="/dashboard"
+              href={routes.dashboard}
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             >
               My Projects

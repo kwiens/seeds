@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { siteConfig } from "@/config/site";
 import { addComment, archiveComment } from "@/lib/actions/comments";
 import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
@@ -104,8 +105,8 @@ function CommentForm({
       <div className="rounded-lg border border-dashed p-6 text-center">
         <p className="mb-1 text-sm font-medium">Sign in to share an insight</p>
         <p className="text-muted-foreground mb-4 text-sm">
-          We ask that you sign in with Google so the seed creator knows
-          who&apos;s in their corner.
+          We ask that you sign in with {siteConfig.auth.providerLabel} so the
+          seed creator knows who&apos;s in their corner.
         </p>
         <SignInButton />
       </div>

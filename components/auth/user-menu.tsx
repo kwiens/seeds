@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { routes } from "@/lib/routes";
 
 export function UserMenu() {
   const { data: session } = useSession();
@@ -45,7 +46,7 @@ export function UserMenu() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">My Projects</Link>
+          <Link href={routes.dashboard}>My Projects</Link>
         </DropdownMenuItem>
         {session.user.role === "admin" && (
           <DropdownMenuItem asChild>

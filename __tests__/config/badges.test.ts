@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Banknote, Building2, HandHelping, HardHat } from "lucide-react";
-import { badgeKeys, badges } from "@/lib/badges";
+import { badgeKeys, badges } from "@/config/badges";
 
 describe("badges", () => {
   it("exposes badge keys matching the badges record", () => {

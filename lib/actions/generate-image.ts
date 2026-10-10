@@ -1,7 +1,6 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { GoogleGenAI } from "@google/genai";
 import { put } from "@vercel/blob";
 import { auth } from "@/auth";
@@ -9,6 +8,11 @@ import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { buildImagePrompt } from "@/lib/image-prompt";
+import { revalidateProject } from "@/lib/revalidate";
+
+type ImageResult =
+  | { imageUrl: string; error?: undefined }
+  | { error: string; imageUrl?: undefined };
 
 // In-memory rate limiter: 10 requests per 10 minutes per user
 const RATE_LIMIT_MAX = 10;
@@ -87,36 +91,57 @@ async function callGeminiAndUpload(project: {
     .set({ imageUrl: blob.url, updatedAt: new Date() })
     .where(eq(projects.id, project.id));
 
-  revalidatePath(`/seeds/${project.id}`);
-  revalidatePath("/");
+  revalidateProject(project.id);
 
   return { imageUrl: blob.url };
 }
 
-export async function generateProjectImage(projectId: string) {
+/** Generates a poster once; returns the existing image if there is one. */
+export async function generateProjectImage(
+  projectId: string,
+): Promise<ImageResult> {
+  return generateImage(projectId, {
+    forbidden: "You don't have permission to generate an image for this seed.",
+    keepExisting: true,
+  });
+}
+
+/** Replaces the poster even if one already exists. */
+export async function regenerateProjectImage(
+  projectId: string,
+): Promise<ImageResult> {
+  return generateImage(projectId, {
+    forbidden: "You don't have permission to regenerate this image.",
+    keepExisting: false,
+  });
+}
+
+async function generateImage(
+  projectId: string,
+  options: { forbidden: string; keepExisting: boolean },
+): Promise<ImageResult> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
+  if (!session?.user?.id) return { error: "You must be signed in." };
 
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
+    columns: {
+      id: true,
+      name: true,
+      summary: true,
+      category: true,
+      locationAddress: true,
+      waterHave: true,
+      imageUrl: true,
+    },
   });
-
-  if (!project) {
-    return { error: "Project not found." };
-  }
-
+  if (!project) return { error: "Project not found." };
   if (!(await canManageProject(session, project))) {
-    return {
-      error: "You don't have permission to generate an image for this seed.",
-    };
+    return { error: options.forbidden };
   }
-
-  if (project.imageUrl) {
+  if (options.keepExisting && project.imageUrl) {
     return { imageUrl: project.imageUrl };
   }
-
   if (!checkRateLimit(session.user.id)) {
     return { error: "Too many image requests. Please try again later." };
   }
@@ -125,36 +150,6 @@ export async function generateProjectImage(projectId: string) {
     return await callGeminiAndUpload(project);
   } catch (error) {
     console.error("Failed to generate seed image:", error);
-    return { error: "Failed to generate image. Please try again later." };
-  }
-}
-
-export async function regenerateProjectImage(projectId: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in." };
-  }
-
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-  });
-
-  if (!project) {
-    return { error: "Project not found." };
-  }
-
-  if (!(await canManageProject(session, project))) {
-    return { error: "You don't have permission to regenerate this image." };
-  }
-
-  if (!checkRateLimit(session.user.id)) {
-    return { error: "Too many image requests. Please try again later." };
-  }
-
-  try {
-    return await callGeminiAndUpload(project);
-  } catch (error) {
-    console.error("Failed to regenerate seed image:", error);
     return { error: "Failed to generate image. Please try again later." };
   }
 }

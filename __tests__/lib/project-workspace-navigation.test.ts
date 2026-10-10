@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { hasTeamWorkspace } from "@/lib/project-stages";
 import {
   getDefaultProjectWorkspaceSection,
-  hasTeamWorkspace,
   projectWorkspacePath,
 } from "@/lib/project-workspace-navigation";
 

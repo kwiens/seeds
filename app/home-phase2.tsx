@@ -1,5 +1,5 @@
 import { StatusSection } from "@/components/seeds/status-section";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import type { ProjectStage } from "@/lib/project-stages";
 
 interface StagePreview {

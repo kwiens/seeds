@@ -3,7 +3,7 @@ import { SeedForm } from "@/components/forms/seed-form";
 import { getManagedProjectWorkspace } from "@/lib/project-workspace";
 
 export const metadata: Metadata = {
-  title: "Edit Project | Seeds",
+  title: "Edit Project",
 };
 
 export default async function EditProjectPage(props: {

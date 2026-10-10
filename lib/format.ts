@@ -1,3 +1,5 @@
+import { siteConfig } from "@/config/site";
+
 export function formatDisplayName(name: string) {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
@@ -16,5 +18,8 @@ export function formatRelativeTime(date: Date): string {
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHour < 24) return `${diffHour}h ago`;
   if (diffDay < 30) return `${diffDay}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return date.toLocaleDateString(siteConfig.locale, {
+    month: "short",
+    day: "numeric",
+  });
 }

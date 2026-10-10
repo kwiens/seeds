@@ -2,20 +2,14 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import {
+  newSearchSession,
+  type PlaceSuggestion,
+  suggestPlaces,
+} from "@/lib/mapbox-search";
 import { cn } from "@/lib/utils";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const SEARCH_DEBOUNCE_MS = 250;
-
-interface Suggestion {
-  name: string;
-  full_address: string;
-  mapbox_id: string;
-}
-
-function generateSessionToken() {
-  return crypto.randomUUID();
-}
 
 function isUrl(value: string) {
   return /^https?:\/\//i.test(value.trim());
@@ -38,11 +32,11 @@ export function AddressAutocomplete({
   id,
   "aria-label": ariaLabel,
 }: AddressAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const listId = useId();
-  const sessionToken = useRef(generateSessionToken());
+  const sessionToken = useRef(newSearchSession());
   const requestController = useRef<AbortController | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,7 +50,7 @@ export function AddressAutocomplete({
 
   const searchAddress = useCallback(async (query: string) => {
     requestController.current?.abort();
-    if (query.length < 3 || !MAPBOX_TOKEN || isUrl(query)) {
+    if (query.length < 3 || isUrl(query)) {
       setSuggestions([]);
       setShowSuggestions(false);
       setActiveIndex(-1);
@@ -66,22 +60,14 @@ export function AddressAutocomplete({
     const controller = new AbortController();
     requestController.current = controller;
     try {
-      const res = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(query)}&access_token=${MAPBOX_TOKEN}&proximity=-85.3097,35.0456&limit=5&language=en&session_token=${sessionToken.current}`,
-        { signal: controller.signal },
+      const items = await suggestPlaces(
+        query,
+        sessionToken.current,
+        controller.signal,
       );
       if (requestController.current !== controller) return;
-      if (!res.ok) {
-        setSuggestions([]);
-        return;
-      }
-      const data = await res.json();
-      if (requestController.current !== controller) return;
-      const items = (data.suggestions ?? []).filter(
-        (s: Suggestion) => s.mapbox_id && (s.full_address || s.name),
-      );
       setSuggestions(items);
-      setShowSuggestions(true);
+      setShowSuggestions(items.length > 0);
       setActiveIndex(-1);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
@@ -98,12 +84,12 @@ export function AddressAutocomplete({
     );
   }
 
-  function selectSuggestion(suggestion: Suggestion) {
+  function selectSuggestion(suggestion: PlaceSuggestion) {
     onChange(suggestion.full_address || suggestion.name);
     setSuggestions([]);
     setShowSuggestions(false);
     setActiveIndex(-1);
-    sessionToken.current = generateSessionToken();
+    sessionToken.current = newSearchSession();
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {

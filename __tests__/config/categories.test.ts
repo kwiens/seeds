@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categories, categoryKeys } from "@/lib/categories";
+import { categories, categoryKeys } from "@/config/categories";
 
 describe("categories", () => {
   it("has 5 categories", () => {

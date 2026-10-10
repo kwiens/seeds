@@ -147,7 +147,8 @@ describe("createInvite", () => {
       }),
     );
     expect(revalidatePath).toHaveBeenCalledWith(
-      `/dashboard/projects/${PROJECT_ID}/team`,
+      `/dashboard/projects/${PROJECT_ID}`,
+      "layout",
     );
   });
 
@@ -227,7 +228,8 @@ describe("cancelInvite", () => {
       expect.objectContaining({ canceledAt: expect.any(Date) }),
     );
     expect(revalidatePath).toHaveBeenCalledWith(
-      `/dashboard/projects/${PROJECT_ID}/team`,
+      `/dashboard/projects/${PROJECT_ID}`,
+      "layout",
     );
   });
 
@@ -349,7 +351,8 @@ describe("acceptInvite", () => {
       }),
     );
     expect(revalidatePath).toHaveBeenCalledWith(
-      `/dashboard/projects/${PROJECT_ID}/team`,
+      `/dashboard/projects/${PROJECT_ID}`,
+      "layout",
     );
   });
 

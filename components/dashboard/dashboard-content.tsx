@@ -8,10 +8,11 @@ import { CategoryBadge } from "@/components/seeds/category-badge";
 import { DashboardSeedList } from "@/components/dashboard/seed-list-table";
 import { SeedListView } from "@/components/seeds/seed-list-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import type { MyProject } from "@/lib/db/queries/my-projects";
 import { projectStages } from "@/lib/project-stages";
 import { formatRelativeTime } from "@/lib/format";
+import { routes } from "@/lib/routes";
 
 export type DashboardTab = "my-sprouts" | "my-seeds" | "supporting";
 
@@ -104,7 +105,7 @@ export function DashboardContent({
             {sprouts.map((sprout) => (
               <Link
                 key={sprout.id}
-                href={`/dashboard/projects/${sprout.id}`}
+                href={routes.workspace(sprout.id)}
                 className="hover:border-primary flex items-center gap-4 rounded-lg border p-4 transition-colors"
               >
                 {sprout.unreadCount > 0 && (
@@ -142,7 +143,7 @@ export function DashboardContent({
               You haven&apos;t planted any seeds yet.
             </p>
             <Button asChild>
-              <Link href="/seeds/new">Plant Your First Seed</Link>
+              <Link href={routes.newProject}>Plant Your First Seed</Link>
             </Button>
           </div>
         ) : (

@@ -4,6 +4,7 @@ import { PhotoGrid } from "@/components/photo-grid";
 import type { PublicProjectUpdateWithAuthor } from "@/lib/db/queries/project-updates";
 import { formatDisplayName, formatRelativeTime } from "@/lib/format";
 import { extractPlainText } from "@/lib/tiptap";
+import { routes } from "@/lib/routes";
 
 export function UpdatesList({
   updates,
@@ -17,7 +18,7 @@ export function UpdatesList({
       {updates.map((update) => (
         <Link
           key={update.id}
-          href={`/seeds/${seedId}/updates/${update.id}`}
+          href={routes.projectUpdate(seedId, update.id)}
           className="hover:bg-muted/50 block rounded-lg border p-4 transition-colors"
         >
           <h3 className="mb-1 break-words font-semibold">{update.title}</h3>

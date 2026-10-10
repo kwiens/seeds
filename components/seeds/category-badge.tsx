@@ -1,4 +1,4 @@
-import { categories, type CategoryKey } from "@/lib/categories";
+import { categories, type CategoryKey } from "@/config/categories";
 import { cn } from "@/lib/utils";
 
 export function CategoryBadge({

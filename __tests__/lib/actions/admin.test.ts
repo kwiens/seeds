@@ -113,16 +113,11 @@ describe("admin project lifecycle actions", () => {
   it("revalidates every public lifecycle view", async () => {
     setAuthMock(auth, mockAdminSession());
     await advanceToTree("project-1");
-    for (const path of [
-      "/admin",
-      "/",
-      "/seeds/project-1",
-      "/status/seeds",
-      "/status/sprouts",
-      "/status/trees",
-    ]) {
+    for (const path of ["/admin", "/", "/dashboard"]) {
       expect(revalidatePath).toHaveBeenCalledWith(path);
     }
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/project-1", "layout");
+    expect(revalidatePath).toHaveBeenCalledWith("/status/[slug]", "page");
   });
 });
 

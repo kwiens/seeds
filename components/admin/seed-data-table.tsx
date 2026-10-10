@@ -22,7 +22,8 @@ import { Input } from "@/components/ui/input";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
 import { SeedActions } from "@/components/admin/seed-actions";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
+import { routes } from "@/lib/routes";
 
 interface AdminSeed {
   id: string;
@@ -117,7 +118,7 @@ export function AdminSeedTable({
                 <TableRow key={seed.id}>
                   <TableCell>
                     <Link
-                      href={`/seeds/${seed.id}`}
+                      href={routes.project(seed.id)}
                       className="block max-w-[400px] truncate font-medium hover:underline"
                       title={seed.name}
                     >
@@ -150,7 +151,7 @@ export function AdminSeedTable({
                   <TableCell className="hidden sm:table-cell">
                     {seed.supportCount > 0 ? (
                       <Link
-                        href={`/dashboard/projects/${seed.id}/supporters`}
+                        href={routes.workspace(seed.id, "supporters")}
                         className="hover:underline"
                       >
                         {seed.supportCount}

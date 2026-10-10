@@ -9,9 +9,10 @@ import {
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { parse } from "dotenv";
+import { vercelProject } from "../config/deployment";
 import { assertSafeBlobStores, assertSafeDatabaseUrl } from "../lib/db/safety";
 
-const CANONICAL_PROJECT_ID = "prj_5aveWXn8kWvlnplpXBaZdg7k3kjC";
+const linkCommand = `vercel link --yes --scope ${vercelProject.scope} --project ${vercelProject.name}`;
 const localOverridesPath = ".env.development.local";
 const pulledEnvironmentPath = ".env.vercel-development.tmp";
 
@@ -53,7 +54,7 @@ function assertCanonicalProject() {
 
   if (!existsSync(configPath)) {
     throw new Error(
-      "This worktree is not linked. Run `vercel link --yes --scope chattanooga-seeds --project seeds` first.",
+      `This worktree is not linked. Run \`${linkCommand}\` first.`,
     );
   }
 
@@ -66,9 +67,9 @@ function assertCanonicalProject() {
     ...(config.projects?.map((project) => project.id) ?? []),
   ];
 
-  if (!projectIds.includes(CANONICAL_PROJECT_ID)) {
+  if (!projectIds.includes(vercelProject.id)) {
     throw new Error(
-      "This worktree is linked to the wrong Vercel project. Link chattanooga-seeds/seeds before pulling variables.",
+      `This worktree is linked to the wrong Vercel project. Run \`${linkCommand}\` before pulling variables.`,
     );
   }
 }

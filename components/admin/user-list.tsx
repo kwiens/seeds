@@ -1,6 +1,7 @@
 import { Pagination } from "@/components/seeds/pagination";
 import { SearchInput } from "@/components/seeds/search-input";
 import { Badge } from "@/components/ui/badge";
+import { siteConfig } from "@/config/site";
 import {
   Table,
   TableBody,
@@ -18,14 +19,14 @@ interface AdminUser {
   createdAt: Date;
 }
 
-const joinedDateFormatter = new Intl.DateTimeFormat("en-US", {
+const joinedDateFormatter = new Intl.DateTimeFormat(siteConfig.locale, {
   month: "short",
   day: "numeric",
   year: "numeric",
-  timeZone: "America/New_York",
+  timeZone: siteConfig.timeZone,
 });
 const peopleSearchParams = { tab: "users" };
-const numberFormatter = new Intl.NumberFormat("en-US");
+const numberFormatter = new Intl.NumberFormat(siteConfig.locale);
 
 function RoleBadge({ role }: { role: string }) {
   if (role === "admin") {

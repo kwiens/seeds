@@ -14,9 +14,10 @@ import {
 import { getPublicProjectUpdates } from "@/lib/db/queries/project-updates";
 import { getManagedProjectWorkspace } from "@/lib/project-workspace";
 import { projectWorkspacePath } from "@/lib/project-workspace-navigation";
+import { routes } from "@/lib/routes";
 
 export const metadata: Metadata = {
-  title: "Public Updates | Seeds",
+  title: "Public Updates",
 };
 
 export default async function ProjectUpdatesPage(props: {
@@ -67,7 +68,7 @@ export default async function ProjectUpdatesPage(props: {
                 <TableRow key={update.id}>
                   <TableCell className="whitespace-normal break-words">
                     <Link
-                      href={`/seeds/${project.id}/updates/${update.id}`}
+                      href={routes.projectUpdate(project.id, update.id)}
                       className="font-medium hover:underline"
                     >
                       {update.title ?? "Update"}

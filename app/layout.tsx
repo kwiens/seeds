@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Archivo } from "next/font/google";
 import { Toaster } from "sonner";
+import { siteConfig } from "@/config/site";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/header";
 import { EventBanner } from "@/components/layout/event-banner";
@@ -14,33 +15,29 @@ const archivo = Archivo({
   weight: ["400", "500", "600", "700"],
 });
 
+// Pages set `title: "Page name"` and the template appends the site name.
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.npcseeds.org"),
-  title: "National Park City Seeds",
-  description:
-    "Grow the best place in the world to live. Community-led projects across Chattanooga.",
+  metadataBase: new URL(siteConfig.origin),
+  title: {
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.shortName}`,
+  },
+  description: siteConfig.description,
   openGraph: {
-    title: "National Park City Seeds",
-    description:
-      "Grow the best place in the world to live. Community-led projects across Chattanooga.",
-    images: [
-      {
-        url: "/npc_landscape_chattanooga.jpg",
-        width: 1000,
-        height: 522,
-        alt: "Chattanooga National Park City landscape",
-      },
-    ],
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.brand.ogImage],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "National Park City Seeds",
-    description:
-      "Grow the best place in the world to live. Community-led projects across Chattanooga.",
-    images: ["/npc_landscape_chattanooga.jpg"],
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.brand.ogImage.url],
   },
 };
+
+const googleAnalyticsId = siteConfig.analytics.googleAnalyticsId;
 
 export default function RootLayout({
   children,
@@ -48,21 +45,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-X3QH16E5QV"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
+    <html lang={siteConfig.lang}>
+      {googleAnalyticsId && (
+        <head>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-X3QH16E5QV');
+            gtag('config', '${googleAnalyticsId}');
           `}
-        </Script>
-      </head>
+          </Script>
+        </head>
+      )}
       <body className={`${archivo.variable} antialiased`}>
         <a
           href="#main"

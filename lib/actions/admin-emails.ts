@@ -2,17 +2,11 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { getEnvAdminEmails } from "@/lib/admin-emails";
+import { requireAdmin } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { adminEmails, users } from "@/lib/db/schema";
-
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin") {
-    throw new Error("Unauthorized");
-  }
-  return session;
-}
+import { routes } from "@/lib/routes";
 
 export async function addAdminEmail(email: string) {
   const session = await requireAdmin();
@@ -47,7 +41,7 @@ export async function addAdminEmail(email: string) {
       .where(eq(users.id, existingUser.id));
   }
 
-  revalidatePath("/admin");
+  revalidatePath(routes.admin);
   return { success: true };
 }
 
@@ -65,12 +59,7 @@ export async function removeAdminEmail(id: string) {
   await db.delete(adminEmails).where(eq(adminEmails.id, id));
 
   // If user exists and their email isn't in the env var, demote them
-  const envAdminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (!envAdminEmails.includes(record.email)) {
+  if (!getEnvAdminEmails().includes(record.email)) {
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, record.email),
       columns: { id: true },
@@ -83,6 +72,6 @@ export async function removeAdminEmail(id: string) {
     }
   }
 
-  revalidatePath("/admin");
+  revalidatePath(routes.admin);
   return { success: true };
 }

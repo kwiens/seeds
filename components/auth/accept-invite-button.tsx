@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { acceptInvite } from "@/lib/actions/invites";
+import { routes } from "@/lib/routes";
 
 export function AcceptInviteButton({
   token,
@@ -21,11 +22,11 @@ export function AcceptInviteButton({
     startTransition(async () => {
       try {
         const result = await acceptInvite(token);
-        if (result.error) {
+        if (result.error !== undefined) {
           setError(result.error);
           return;
         }
-        router.push(`/dashboard/projects/${result.projectId}/team`);
+        router.push(routes.workspace(result.projectId, "team"));
         router.refresh();
       } catch {
         setError(
