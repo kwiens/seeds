@@ -1,12 +1,9 @@
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { canAccessTeamWorkspace, canManageProject } from "@/lib/auth-utils";
 import { getProjectById } from "@/lib/db/queries/projects";
-import {
-  hasTeamWorkspace,
-  projectWorkspacePath,
-} from "@/lib/project-workspace-navigation";
+import { getProjectAccess } from "@/lib/project-access";
+import { routes } from "@/lib/routes";
 
 /**
  * The workspace's data boundary. Keeping authorization and the project lookup
@@ -15,22 +12,16 @@ import {
 export const getProjectWorkspace = cache(async (projectId: string) => {
   const session = await auth();
   if (!session?.user?.id) {
-    const callbackUrl = encodeURIComponent(projectWorkspacePath(projectId));
-    redirect(`/api/auth/signin?callbackUrl=${callbackUrl}`);
+    redirect(routes.signInWithCallback(routes.workspace(projectId)));
   }
 
   const project = await getProjectById(projectId);
   if (!project) notFound();
 
-  const teamWorkspaceAvailable =
-    !project.archivedAt && hasTeamWorkspace(project.stage);
-  const [canManage, canAccessTeam] = await Promise.all([
-    canManageProject(session, project),
-    teamWorkspaceAvailable ? canAccessTeamWorkspace(session, project) : false,
-  ]);
+  const { canManage, canAccessTeam } = await getProjectAccess(session, project);
 
   if (!canManage && !canAccessTeam) {
-    redirect(`/seeds/${project.id}`);
+    redirect(routes.project(project.id));
   }
 
   return {
@@ -46,8 +37,8 @@ export async function getManagedProjectWorkspace(projectId: string) {
   if (!workspace.canManage) {
     redirect(
       workspace.canAccessTeam
-        ? projectWorkspacePath(workspace.project.id, "team")
-        : `/seeds/${workspace.project.id}`,
+        ? routes.workspace(workspace.project.id, "team")
+        : routes.project(workspace.project.id),
     );
   }
   return workspace;

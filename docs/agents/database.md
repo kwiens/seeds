@@ -19,8 +19,9 @@ Note the app's driver is `neon-http` (`lib/db/index.ts`), so the database must b
 
 ## Data model principles
 
-- **One project lifecycle, one set of tables.** `projects` and its satellites (`project_participants`, `project_updates`, `project_budgets`, `project_events`, `project_comments`, …) serve Seeds, Sprouts, and Trees alike. Capabilities unlock by stage (`lib/project-stages.ts`, `lib/project-workspace.ts`); never create stage-specific parallel tables or duplicate columns.
-- Reads live in `lib/db/queries/` as plain functions; all mutations go through `"use server"` actions in `lib/actions/` that check authorization first (see `lib/project-workspace.ts` and `lib/participant-roles.ts`).
+- **One project lifecycle, one set of tables.** `projects` and its satellites (`project_participants`, `project_updates`, `project_budgets`, `project_events`, `project_comments`, …) serve Seeds, Sprouts, and Trees alike. Capabilities unlock by stage (`lib/project-stages.ts`, `lib/project-access.ts`); never create stage-specific parallel tables or duplicate columns.
+- **City taxonomy is text, not enums.** `projects.category` and `projects.badges` hold keys defined in `config/categories.ts` and `config/badges.ts`, validated by Zod. A city changes its categories by editing config, not by migrating an enum. Lifecycle, approval, participant role and state remain Postgres enums because the code depends on their exact values.
+- Reads live in `lib/db/queries/` as plain functions; recurring conditions (`publicProject`, `notArchived`, `activeSupporter`, …) come from `lib/db/queries/filters.ts`. All mutations go through `"use server"` actions in `lib/actions/` that call `requireProjectAccess` or `requireAdmin` first.
 - Types are inferred in `lib/db/types.ts` — extend schema, regenerate nothing, import the inferred types.
 - Validate all user input with the Zod schemas in `lib/validations/` before it reaches an action.
 - Commit generated migration files from `lib/db/migrations/` alongside the schema change in the same PR.

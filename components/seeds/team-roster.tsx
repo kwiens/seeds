@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { siteConfig } from "@/config/site";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/team-roster";
 import { cancelInvite, createInvite } from "@/lib/actions/invites";
 import type { RosterMember } from "@/lib/db/queries/team-roster";
@@ -340,9 +341,9 @@ function AddMemberForm({
             ? await addTeamMember(seedId, submittedTarget, submittedRole)
             : await createInvite(seedId, submittedTarget, submittedRole);
 
-        if ("error" in result && result.error) {
+        if (result.error) {
           setError(result.error);
-        } else if ("link" in result) {
+        } else if ("link" in result && result.link) {
           setGeneratedInvite({
             link: result.link,
             invitedName: submittedTarget,
@@ -393,7 +394,7 @@ function AddMemberForm({
           <p className="text-muted-foreground text-xs">
             {isEmail
               ? "For people who've already signed into the site before."
-              : "Works even if they've never signed in — they'll sign in with Google when they click it, then confirm joining."}
+              : `Works even if they've never signed in — they'll sign in with ${siteConfig.auth.providerLabel} when they click it, then confirm joining.`}
           </p>
           {error && (
             <p

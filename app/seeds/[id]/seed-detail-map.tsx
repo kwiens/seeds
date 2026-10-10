@@ -2,6 +2,7 @@
 
 import { MapPin } from "lucide-react";
 import { SeedMap } from "@/components/map/seed-map";
+import { siteConfig } from "@/config/site";
 
 export function SeedDetailMap({
   lat,
@@ -16,7 +17,7 @@ export function SeedDetailMap({
     <div className="flex flex-col gap-2">
       <SeedMap
         singleMarker={{ lat, lng }}
-        zoom={13}
+        zoom={siteConfig.map.detailZoom}
         className="h-80 w-full rounded-lg sm:h-96"
         interactive
       />

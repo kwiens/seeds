@@ -1,16 +1,16 @@
+/**
+ * Status badges admins can pin to a project ("Funded", "Needs Volunteers").
+ *
+ * Stored as a JSON array of keys on each project, so renaming or adding a
+ * badge needs no migration. Remove a key only after clearing it from projects.
+ */
 import {
   Banknote,
-  HardHat,
-  HandHelping,
   Building2,
+  HandHelping,
+  HardHat,
   type LucideIcon,
 } from "lucide-react";
-
-export type BadgeKey =
-  | "funded"
-  | "in_construction"
-  | "needs_volunteers"
-  | "city_partnership";
 
 export interface BadgeInfo {
   label: string;
@@ -20,7 +20,7 @@ export interface BadgeInfo {
   textClass: string;
 }
 
-export const badges: Record<BadgeKey, BadgeInfo> = {
+export const badges = {
   funded: {
     label: "Funded",
     icon: Banknote,
@@ -49,6 +49,8 @@ export const badges: Record<BadgeKey, BadgeInfo> = {
     bgClass: "bg-slate-100 dark:bg-slate-900/30",
     textClass: "text-slate-700 dark:text-slate-300",
   },
-};
+} satisfies Record<string, BadgeInfo>;
+
+export type BadgeKey = keyof typeof badges;
 
 export const badgeKeys = Object.keys(badges) as BadgeKey[];

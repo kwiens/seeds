@@ -1,50 +1,42 @@
 "use server";
 
 import { and, eq, inArray, ne } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { projectParticipants, projects } from "@/lib/db/schema";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { findUserByEmail } from "@/lib/db/queries/users";
+import { projectParticipants } from "@/lib/db/schema";
 import {
   teamRoleKeys,
   teamRoleLabels,
   type TeamRole,
 } from "@/lib/participant-roles";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import { requireProjectAccess } from "@/lib/project-access";
+import { revalidateProject } from "@/lib/revalidate";
+import { isAdmin } from "@/lib/session";
+import type { ActionResult } from "./result";
 
 export async function addTeamMember(
   projectId: string,
   email: string,
   role: string,
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "You must be signed in." };
+): Promise<ActionResult<{ link?: undefined }>> {
   if (!teamRoleKeys.includes(role as TeamRole))
     return { error: "Invalid role." };
   const teamRole = role as TeamRole;
 
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    columns: { id: true, stage: true },
+  // Stewards represent the city, so only admins may seat one.
+  const access = await requireProjectAccess(projectId, {
+    level: teamRole === "steward" ? "admin" : "manage",
+    requireWorkspace: true,
+    forbidden:
+      teamRole === "steward"
+        ? `Only Admins can assign a ${teamRoleLabels.steward}.`
+        : "You do not have permission to manage this project's team.",
+    unavailable:
+      "Team members can be managed after a project becomes a Sprout.",
   });
-  if (!project) return { error: "Project not found." };
-  if (!hasTeamWorkspace(project.stage)) {
-    return {
-      error: "Team members can be managed after a project becomes a Sprout.",
-    };
-  }
-
-  if (teamRole === "steward") {
-    if (session.user.role !== "admin") {
-      return { error: `Only Admins can assign a ${teamRoleLabels.steward}.` };
-    }
-  } else if (!(await canManageProject(session, project))) {
-    return {
-      error: "You do not have permission to manage this project's team.",
-    };
-  }
+  if ("error" in access) return access;
+  const { session } = access;
 
   const target = await findUserByEmail(email);
   if (!target) {
@@ -92,37 +84,22 @@ export async function addTeamMember(
     throw error;
   }
 
-  revalidatePath(`/dashboard/projects/${projectId}/team`);
-  revalidatePath("/dashboard");
+  revalidateProject(projectId);
   return { success: true };
 }
 
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
-
-export async function removeTeamMember(projectId: string, userId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "You must be signed in." };
-
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    columns: { id: true, stage: true },
+export async function removeTeamMember(
+  projectId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const access = await requireProjectAccess(projectId, {
+    level: "manage",
+    requireWorkspace: true,
+    forbidden: "You do not have permission to manage this project's team.",
+    unavailable: "This project does not have a team workspace yet.",
   });
-  if (!project) return { error: "Project not found." };
-  if (!hasTeamWorkspace(project.stage)) {
-    return { error: "This project does not have a team workspace yet." };
-  }
-  if (!(await canManageProject(session, project))) {
-    return {
-      error: "You do not have permission to manage this project's team.",
-    };
-  }
+  if ("error" in access) return access;
+  const { session } = access;
 
   const activeRoles = await db.query.projectParticipants.findMany({
     where: and(
@@ -137,13 +114,13 @@ export async function removeTeamMember(projectId: string, userId: string) {
     return { error: "This person isn't on the team." };
   if (
     activeRoles.some((item) => item.role === "gardener") &&
-    session.user.role !== "admin"
+    !isAdmin(session)
   ) {
     return { error: "Only Admins can remove a Gardener." };
   }
   if (
     activeRoles.some((item) => item.role === "steward") &&
-    session.user.role !== "admin"
+    !isAdmin(session)
   ) {
     return { error: `Only Admins can remove a ${teamRoleLabels.steward}.` };
   }
@@ -160,7 +137,6 @@ export async function removeTeamMember(projectId: string, userId: string) {
       ),
     );
 
-  revalidatePath(`/dashboard/projects/${projectId}/team`);
-  revalidatePath("/dashboard");
+  revalidateProject(projectId);
   return { success: true };
 }

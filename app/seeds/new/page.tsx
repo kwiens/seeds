@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { siteConfig } from "@/config/site";
 import { SeedForm } from "@/components/forms/seed-form";
 
 export const metadata: Metadata = {
-  title: "Plant a Seed | Seeds",
-  description: "Submit a community project proposal for Chattanooga.",
+  title: "Plant a Seed",
+  description: `Submit a community project proposal for ${siteConfig.city.name}.`,
 };
 
 export default async function NewSeedPage() {

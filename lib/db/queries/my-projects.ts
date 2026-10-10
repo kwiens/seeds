@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import { db } from "@/lib/db";
 import { projectActivityReads, projects } from "@/lib/db/schema";
 import {

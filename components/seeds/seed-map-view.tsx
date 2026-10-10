@@ -1,7 +1,7 @@
 "use client";
 
 import { SeedMap } from "@/components/map/seed-map";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 
 interface MapSeedData {
   id: string;

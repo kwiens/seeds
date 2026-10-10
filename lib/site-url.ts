@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
+import { siteConfig } from "@/config/site";
 
-export const CANONICAL_ORIGIN = "https://www.npcseeds.org";
+export const CANONICAL_ORIGIN = siteConfig.origin;
 
 // Links we hand out (QR codes, CSV exports) must point back at the host that
 // served the request, so Preview deployments and local dev never link to

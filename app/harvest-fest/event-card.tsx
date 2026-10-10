@@ -7,6 +7,7 @@ import { LinkifyText } from "@/components/linkify-text";
 import { ImageLightbox } from "@/components/seeds/image-lightbox";
 import type { HarvestFestEvent } from "@/lib/db/queries/settings";
 import { cn } from "@/lib/utils";
+import { routes } from "@/lib/routes";
 
 export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
   const [expanded, setExpanded] = useState(false);
@@ -75,7 +76,7 @@ export function HarvestFestEventCard({ event }: { event: HarvestFestEvent }) {
                   <span className="min-w-0 break-words">
                     Sprouted from:{" "}
                     <Link
-                      href={`/seeds/${linkedProject.id}`}
+                      href={routes.project(linkedProject.id)}
                       className="text-primary -my-3 inline-block py-3 font-medium hover:underline"
                     >
                       {linkedProject.name}

@@ -160,7 +160,8 @@ describe("createEvent", () => {
       }),
     );
     expect(revalidatePath).toHaveBeenCalledWith(
-      "/dashboard/projects/seed-1/team",
+      "/dashboard/projects/seed-1",
+      "layout",
     );
   });
 
@@ -272,7 +273,8 @@ describe("updateEvent", () => {
       }),
     );
     expect(revalidatePath).toHaveBeenCalledWith(
-      "/dashboard/projects/seed-1/team",
+      "/dashboard/projects/seed-1",
+      "layout",
     );
   });
 
@@ -350,7 +352,8 @@ describe("deleteEvent", () => {
     expect(result).toEqual({ success: true });
     expect(db.delete).toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith(
-      "/dashboard/projects/seed-1/team",
+      "/dashboard/projects/seed-1",
+      "layout",
     );
   });
 

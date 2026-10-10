@@ -2,15 +2,21 @@
 
 import { randomBytes } from "node:crypto";
 import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import { projectInvites, projectParticipants, projects } from "@/lib/db/schema";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import { projectInvites, projectParticipants } from "@/lib/db/schema";
 import { teamRoleLabels, type TeamRole } from "@/lib/participant-roles";
+import {
+  isTeamWorkspaceAvailable,
+  requireProjectAccess,
+} from "@/lib/project-access";
+import { revalidateProject } from "@/lib/revalidate";
+import { routes } from "@/lib/routes";
+import { isAdmin } from "@/lib/session";
 import { getRequestOrigin } from "@/lib/site-url";
+import type { ActionResult } from "./result";
 import {
   acceptInviteActionSchema,
   cancelInviteActionSchema,
@@ -27,7 +33,7 @@ async function getInvitePermissionError(
   role: TeamRole,
 ) {
   if (role === "steward") {
-    return session.user.role === "admin"
+    return isAdmin(session)
       ? null
       : `Only Admins can manage ${teamRoleLabels.steward} invites.`;
   }
@@ -41,7 +47,7 @@ export async function createInvite(
   projectId: string,
   invitedName: string,
   role: string,
-): Promise<{ error: string } | { success: true; link: string }> {
+): Promise<ActionResult<{ link: string }>> {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
@@ -55,23 +61,16 @@ export async function createInvite(
   }
   const teamRole = parsed.data.role;
 
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, parsed.data.projectId),
-    columns: { id: true, stage: true },
+  const access = await requireProjectAccess(parsed.data.projectId, {
+    level: teamRole === "steward" ? "admin" : "manage",
+    requireWorkspace: true,
+    forbidden:
+      teamRole === "steward"
+        ? `Only Admins can manage ${teamRoleLabels.steward} invites.`
+        : "You do not have permission to manage this project's team.",
+    unavailable: "Team invites can be sent once a project becomes a Sprout.",
   });
-  if (!project) return { error: "Project not found." };
-  if (!hasTeamWorkspace(project.stage)) {
-    return {
-      error: "Team invites can be sent once a project becomes a Sprout.",
-    };
-  }
-
-  const permissionError = await getInvitePermissionError(
-    session,
-    project.id,
-    teamRole,
-  );
-  if (permissionError) return { error: permissionError };
+  if ("error" in access) return access;
 
   const token = generateToken();
   await db.insert(projectInvites).values({
@@ -84,8 +83,8 @@ export async function createInvite(
 
   const origin = await getRequestOrigin();
 
-  revalidatePath(`/dashboard/projects/${projectId}/team`);
-  return { success: true, link: `${origin}/invite/${token}` };
+  revalidateProject(projectId);
+  return { success: true, link: `${origin}${routes.invite(token)}` };
 }
 
 export async function cancelInvite(inviteId: string) {
@@ -123,11 +122,13 @@ export async function cancelInvite(inviteId: string) {
     return { error: "This invite is no longer pending." };
   }
 
-  revalidatePath(`/dashboard/projects/${invite.projectId}/team`);
+  revalidateProject(invite.projectId);
   return { success: true };
 }
 
-export async function acceptInvite(token: string) {
+export async function acceptInvite(
+  token: string,
+): Promise<ActionResult<{ projectId: string }>> {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
@@ -136,14 +137,14 @@ export async function acceptInvite(token: string) {
 
   const invite = await db.query.projectInvites.findFirst({
     where: eq(projectInvites.token, parsed.data.token),
-    with: { project: { columns: { id: true, stage: true } } },
+    with: { project: { columns: { id: true, stage: true, archivedAt: true } } },
   });
   if (!invite) return { error: "This invite link isn't valid." };
   if (invite.canceledAt) return { error: "This invite has been canceled." };
   if (invite.acceptedAt) {
     return { error: "This invite has already been used." };
   }
-  if (!hasTeamWorkspace(invite.project.stage)) {
+  if (!isTeamWorkspaceAvailable(invite.project)) {
     return { error: "This project's team workspace is no longer available." };
   }
 
@@ -210,8 +211,7 @@ export async function acceptInvite(token: string) {
     return { error: "This invite is no longer available." };
   }
 
-  revalidatePath(`/dashboard/projects/${invite.projectId}/team`);
-  revalidatePath("/dashboard");
+  revalidateProject(invite.projectId);
   return {
     success: true,
     projectId: invite.projectId,

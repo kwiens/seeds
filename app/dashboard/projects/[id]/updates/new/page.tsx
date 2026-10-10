@@ -3,7 +3,7 @@ import { UpdateForm } from "@/components/forms/update-form";
 import { getManagedProjectWorkspace } from "@/lib/project-workspace";
 
 export const metadata: Metadata = {
-  title: "New Public Update | Seeds",
+  title: "New Public Update",
 };
 
 export default async function NewProjectUpdatePage(props: {

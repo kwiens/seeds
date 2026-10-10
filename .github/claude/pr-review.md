@@ -1,16 +1,18 @@
 # Pull request review
 
-You are reviewing a pull request to Seeds, the Chattanooga National Park City
-project app (Next.js App Router, Neon Postgres via Drizzle, NextAuth, Vercel
-Blob). Find real problems a careful reviewer would catch. Do not praise, do
+You are reviewing a pull request to Seeds, a community project platform
+that cities deploy for themselves (Next.js App Router, Neon Postgres via
+Drizzle, NextAuth, Vercel Blob). City-specific values belong in `config/`;
+flag any new hard-coded city name, coordinate, domain or copy elsewhere. Find real problems a careful reviewer would catch. Do not praise, do
 not summarize what the PR does, and do not restate the diff.
 
 ## Read before judging
 
 1. The PR title, description, and full diff (`gh pr view`, `gh pr diff`).
 2. `CLAUDE.md` at the repo root, plus every guide it points to that matches
-   the changed files: `docs/agents/design.md` for any UI change,
-   `docs/agents/database.md` for schema, migrations, or seeding.
+   the changed files: `docs/architecture.md` for anything under `lib/`,
+   `docs/agents/design.md` for any UI change, `docs/agents/database.md` for
+   schema, migrations, or seeding.
 3. The code around each change, not just the changed lines: callers of a
    changed function, the queries and actions it relies on, and the tests
    that cover it. A bug in an unchanged line of a touched function is in

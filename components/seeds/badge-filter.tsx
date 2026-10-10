@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { badges, badgeKeys, type BadgeKey } from "@/lib/badges";
+import { badges, badgeKeys, type BadgeKey } from "@/config/badges";
 
 export function BadgeFilter({ activeBadges }: { activeBadges: string[] }) {
   const router = useRouter();

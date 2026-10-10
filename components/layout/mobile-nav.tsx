@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
+import { siteConfig } from "@/config/site";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,6 +14,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { routes } from "@/lib/routes";
 
 export function MobileNav({
   isLoggedIn,
@@ -35,10 +37,13 @@ export function MobileNav({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Image
-              src="/logo.svg"
-              alt="National Park City Seeds"
+              src={siteConfig.brand.logo.src}
+              alt={siteConfig.name}
               width={120}
-              height={39}
+              height={Math.round(
+                (120 * siteConfig.brand.logo.height) /
+                  siteConfig.brand.logo.width,
+              )}
             />
           </SheetTitle>
           <SheetDescription className="sr-only">
@@ -68,7 +73,7 @@ export function MobileNav({
             FAQ
           </Link>
           <Link
-            href="/seeds/new"
+            href={routes.newProject}
             onClick={() => setOpen(false)}
             className="text-muted-foreground hover:text-foreground py-2 text-sm transition-colors"
           >
@@ -76,7 +81,7 @@ export function MobileNav({
           </Link>
           {isLoggedIn && (
             <Link
-              href="/dashboard"
+              href={routes.dashboard}
               onClick={() => setOpen(false)}
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 py-2 text-sm transition-colors"
             >

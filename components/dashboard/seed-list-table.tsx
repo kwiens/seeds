@@ -5,7 +5,8 @@ import { Settings2, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
+import { routes } from "@/lib/routes";
 
 interface DashboardSeed {
   id: string;
@@ -29,7 +30,7 @@ export function DashboardSeedList({ seeds }: { seeds: DashboardSeed[] }) {
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <Link
-                href={`/seeds/${seed.id}`}
+                href={routes.project(seed.id)}
                 className="font-medium break-words hover:underline"
               >
                 {seed.name}
@@ -50,7 +51,7 @@ export function DashboardSeedList({ seeds }: { seeds: DashboardSeed[] }) {
             </div>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/projects/${seed.id}`}>
+            <Link href={routes.workspace(seed.id)}>
               <Settings2 className="mr-1.5 size-3.5" />
               Manage
             </Link>

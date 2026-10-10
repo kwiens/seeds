@@ -4,9 +4,16 @@ import { authConfig } from "./auth.config";
 
 const { auth } = NextAuth(authConfig);
 
+// Signed-out visitors to private routes go to sign-in and come back to the
+// page they asked for. Role checks happen in the pages themselves.
 export const proxy = auth((req) => {
   if (!req.auth) {
-    return NextResponse.redirect(new URL("/api/auth/signin", req.url));
+    const signIn = new URL("/api/auth/signin", req.url);
+    signIn.searchParams.set(
+      "callbackUrl",
+      req.nextUrl.pathname + req.nextUrl.search,
+    );
+    return NextResponse.redirect(signIn);
   }
   return NextResponse.next();
 });

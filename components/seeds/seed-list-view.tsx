@@ -1,5 +1,5 @@
 import { SeedCard } from "@/components/seeds/seed-card";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 
 interface SeedData {
   id: string;

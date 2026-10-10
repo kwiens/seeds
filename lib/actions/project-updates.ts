@@ -2,16 +2,13 @@
 
 import { del } from "@vercel/blob";
 import { eq, inArray, or } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { canAccessTeamWorkspace, canManageProject } from "@/lib/auth-utils";
+import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import {
-  projects,
-  projectUpdateFileDeletions,
-  projectUpdates,
-} from "@/lib/db/schema";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import { projectUpdateFileDeletions, projectUpdates } from "@/lib/db/schema";
+import { checkProjectAccess, requireProjectAccess } from "@/lib/project-access";
+import { revalidateProject } from "@/lib/revalidate";
+import { isAdmin } from "@/lib/session";
 import { projectUpdateFormSchema } from "@/lib/validations/project-update";
 import {
   attachmentsBelongToProject,
@@ -19,44 +16,20 @@ import {
   teamUpdateFormSchema,
   teamUpdateReplyFormSchema,
 } from "@/lib/validations/team-update";
-
-async function findProject(projectId: string) {
-  return db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    columns: { id: true, stage: true },
-  });
-}
-
-function revalidatePublicUpdatePaths(projectId: string, updateId?: string) {
-  revalidatePath(`/seeds/${projectId}`);
-  revalidatePath(`/dashboard/projects/${projectId}/updates`);
-  if (updateId) revalidatePath(`/seeds/${projectId}/updates/${updateId}`);
-}
-
-function revalidateTeamUpdatePaths(projectId: string) {
-  revalidatePath(`/dashboard/projects/${projectId}/team`);
-  revalidatePath("/dashboard");
-}
+import { type ActionResult, firstIssue } from "./result";
 
 export async function createPublicProjectUpdate(
   projectId: string,
   data: unknown,
-) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in to post an update." };
-  }
-
-  const project = await findProject(projectId);
-  if (!project) return { error: "Project not found." };
-  if (!(await canManageProject(session, project))) {
-    return { error: "You do not have permission to post project updates." };
-  }
+): Promise<ActionResult<{ updateId: string }>> {
+  const access = await requireProjectAccess(projectId, {
+    level: "manage",
+    forbidden: "You do not have permission to post project updates.",
+  });
+  if ("error" in access) return access;
 
   const parsed = projectUpdateFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
 
   const [created] = await db
     .insert(projectUpdates)
@@ -66,15 +39,18 @@ export async function createPublicProjectUpdate(
       title: parsed.data.title,
       body: parsed.data.body,
       photos: parsed.data.photos,
-      createdBy: session.user.id,
+      createdBy: access.session.user.id,
     })
     .returning({ id: projectUpdates.id });
 
-  revalidatePublicUpdatePaths(projectId);
+  revalidateProject(projectId);
   return { success: true, updateId: created.id };
 }
 
-export async function editPublicProjectUpdate(updateId: string, data: unknown) {
+export async function editPublicProjectUpdate(
+  updateId: string,
+  data: unknown,
+): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
@@ -91,9 +67,7 @@ export async function editPublicProjectUpdate(updateId: string, data: unknown) {
   }
 
   const parsed = projectUpdateFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
 
   await db
     .update(projectUpdates)
@@ -105,34 +79,22 @@ export async function editPublicProjectUpdate(updateId: string, data: unknown) {
     })
     .where(eq(projectUpdates.id, updateId));
 
-  revalidatePublicUpdatePaths(update.project.id, updateId);
+  revalidateProject(update.project.id);
   return { success: true };
 }
 
 export async function createTeamProjectUpdate(
   projectId: string,
   data: unknown,
-) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be signed in to post a team update." };
-  }
-
-  const project = await findProject(projectId);
-  if (!project) return { error: "Project not found." };
-  if (!hasTeamWorkspace(project.stage)) {
-    return {
-      error: "The team workspace becomes available at the Sprout stage.",
-    };
-  }
-  if (!(await canAccessTeamWorkspace(session, project))) {
-    return { error: "You do not have permission to post team updates." };
-  }
+): Promise<ActionResult> {
+  const access = await requireProjectAccess(projectId, {
+    level: "team",
+    forbidden: "You do not have permission to post team updates.",
+  });
+  if ("error" in access) return access;
 
   const parsed = teamUpdateFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
   if (!attachmentsBelongToProject(parsed.data.attachments, projectId)) {
     return { error: "Invalid attachment URL." };
   }
@@ -140,27 +102,27 @@ export async function createTeamProjectUpdate(
   await db.insert(projectUpdates).values({
     projectId,
     visibility: "team",
-    createdBy: session.user.id,
+    createdBy: access.session.user.id,
     title: parsed.data.title || null,
     body: parsed.data.body,
     attachments: parsed.data.attachments,
   });
 
-  revalidateTeamUpdatePaths(projectId);
+  revalidateProject(projectId);
   return { success: true };
 }
 
 export async function replyToTeamProjectUpdate(
   parentId: string,
   data: unknown,
-) {
+): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in to reply." };
 
   const parent = await db.query.projectUpdates.findFirst({
     where: eq(projectUpdates.id, parentId),
     columns: { id: true, parentId: true, visibility: true },
-    with: { project: { columns: { id: true, stage: true } } },
+    with: { project: { columns: { id: true, stage: true, archivedAt: true } } },
   });
   if (!parent || parent.visibility !== "team") {
     return { error: "Update not found." };
@@ -168,19 +130,14 @@ export async function replyToTeamProjectUpdate(
   if (parent.parentId !== null) {
     return { error: "Replies to replies are not supported." };
   }
-  if (!hasTeamWorkspace(parent.project.stage)) {
-    return {
-      error: "The team workspace becomes available at the Sprout stage.",
-    };
-  }
-  if (!(await canAccessTeamWorkspace(session, parent.project))) {
-    return { error: "You do not have permission to reply to this update." };
-  }
+  const accessError = await checkProjectAccess(session, parent.project, {
+    level: "team",
+    forbidden: "You do not have permission to reply to this update.",
+  });
+  if (accessError) return { error: accessError };
 
   const parsed = teamUpdateReplyFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
   if (!attachmentsBelongToProject(parsed.data.attachments, parent.project.id)) {
     return { error: "Invalid attachment URL." };
   }
@@ -194,11 +151,13 @@ export async function replyToTeamProjectUpdate(
     attachments: parsed.data.attachments,
   });
 
-  revalidateTeamUpdatePaths(parent.project.id);
+  revalidateProject(parent.project.id);
   return { success: true };
 }
 
-export async function deleteProjectUpdate(updateId: string) {
+export async function deleteProjectUpdate(
+  updateId: string,
+): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
@@ -210,7 +169,7 @@ export async function deleteProjectUpdate(updateId: string) {
   if (!update) return { error: "Update not found." };
 
   if (update.visibility === "team") {
-    if (session.user.role !== "admin") {
+    if (!isAdmin(session)) {
       return { error: "Only admins can delete Team Updates." };
     }
   } else if (!(await canManageProject(session, update.project))) {
@@ -227,23 +186,21 @@ export async function deleteProjectUpdate(updateId: string) {
   await db.delete(projectUpdates).where(deleteWhere);
   if (update.visibility === "team") await processTeamFileDeletionQueue();
 
-  if (update.visibility === "team") revalidateTeamUpdatePaths(update.projectId);
-  else revalidatePublicUpdatePaths(update.projectId);
+  revalidateProject(update.projectId);
   return { success: true };
 }
 
-export async function discardTeamAttachment(projectId: string, data: unknown) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "You must be signed in." };
-
-  const project = await findProject(projectId);
-  if (
-    !project ||
-    !hasTeamWorkspace(project.stage) ||
-    !(await canAccessTeamWorkspace(session, project))
-  ) {
-    return { error: "You do not have access to this project's files." };
-  }
+export async function discardTeamAttachment(
+  projectId: string,
+  data: unknown,
+): Promise<ActionResult> {
+  const noAccess = "You do not have access to this project's files.";
+  const access = await requireProjectAccess(projectId, {
+    level: "team",
+    forbidden: noAccess,
+    unavailable: noAccess,
+  });
+  if ("error" in access) return { error: noAccess };
 
   const attachment = teamAttachmentSchema.safeParse(data);
   if (

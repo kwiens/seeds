@@ -106,7 +106,8 @@ describe("consolidated project roster", () => {
       addedBy: "user-1",
     });
     expect(revalidatePath).toHaveBeenCalledWith(
-      "/dashboard/projects/project-1/team",
+      "/dashboard/projects/project-1",
+      "layout",
     );
   });
 
@@ -180,7 +181,8 @@ describe("consolidated project roster", () => {
       expect.objectContaining({ state: "inactive" }),
     );
     expect(revalidatePath).toHaveBeenCalledWith(
-      "/dashboard/projects/project-1/team",
+      "/dashboard/projects/project-1",
+      "layout",
     );
   });
 

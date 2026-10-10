@@ -9,7 +9,7 @@ import { SeedListView } from "@/components/seeds/seed-list-view";
 import { SeedMapView } from "@/components/seeds/seed-map-view";
 import { SortFilter } from "@/components/seeds/sort-filter";
 import { ViewToggle } from "@/components/seeds/view-toggle";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import type { SortOption } from "@/lib/db/queries/projects";
 
 export interface SeedRow {

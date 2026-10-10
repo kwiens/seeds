@@ -1,18 +1,20 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canManageProject } from "@/lib/auth-utils";
 import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { projectComments } from "@/lib/db/schema";
+import { revalidateProject } from "@/lib/revalidate";
+import { isAdmin } from "@/lib/session";
+import type { ActionResult } from "./result";
 
 export async function addComment(
   projectId: string,
   content: string,
   parentId?: string,
-) {
+): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "You must be signed in to share an insight." };
@@ -47,11 +49,11 @@ export async function addComment(
     content: trimmed,
     parentId: parentId ?? null,
   });
-  revalidatePath(`/seeds/${projectId}`);
+  revalidateProject(projectId);
   return { success: true };
 }
 
-export async function archiveComment(commentId: string) {
+export async function archiveComment(commentId: string): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { error: "You must be signed in." };
 
@@ -76,14 +78,15 @@ export async function archiveComment(commentId: string) {
     .set({ archivedAt: now })
     .where(eq(projectComments.id, commentId));
 
-  revalidatePath(`/seeds/${comment.project.id}`);
-  revalidatePath("/admin");
+  revalidateProject(comment.project.id);
   return { success: true };
 }
 
-export async function unarchiveComment(commentId: string) {
+export async function unarchiveComment(
+  commentId: string,
+): Promise<ActionResult> {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin") {
+  if (!isAdmin(session)) {
     return { error: "Only admins can restore archived insights." };
   }
   const comment = await db.query.projectComments.findFirst({
@@ -96,7 +99,6 @@ export async function unarchiveComment(commentId: string) {
     .update(projectComments)
     .set({ archivedAt: null })
     .where(eq(projectComments.id, commentId));
-  revalidatePath(`/seeds/${comment.project.id}`);
-  revalidatePath("/admin");
+  revalidateProject(comment.project.id);
   return { success: true };
 }

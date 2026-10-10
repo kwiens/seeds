@@ -2,93 +2,45 @@
 
 import { and, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
-import { z } from "zod";
-import { auth } from "@/auth";
+import { badgeKeys, type BadgeKey } from "@/config/badges";
+import { requireAdmin } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
-import { projectApprovals, projects, siteSettings } from "@/lib/db/schema";
-import type { ApprovalState, ProjectStage } from "@/lib/project-stages";
-import { badgeKeys, type BadgeKey } from "@/lib/badges";
-import {
-  formatHarvestFestIssue,
-  harvestFestPageSchema,
-} from "@/lib/validations/harvest-fest";
 import {
   BANNER_CACHE_TAG,
   BANNER_SETTING_KEYS,
   HARVEST_FEST_CACHE_TAG,
   HARVEST_FEST_SETTING_KEY,
+  HOMEPAGE_PHASE_CACHE_TAG,
+  HOMEPAGE_PHASE_SETTING_KEY,
   type HarvestFestPage,
 } from "@/lib/db/queries/settings";
+import { projectApprovals, projects, siteSettings } from "@/lib/db/schema";
+import type { ApprovalState, ProjectStage } from "@/lib/project-stages";
+import { revalidateProject } from "@/lib/revalidate";
+import { routes } from "@/lib/routes";
+import {
+  formatHarvestFestIssue,
+  harvestFestPageSchema,
+} from "@/lib/validations/harvest-fest";
+import { bannerConfigSchema } from "@/lib/validations/site-banner";
+import { firstIssue } from "./result";
 
-const bannerConfigSchema = z
-  .object({
-    enabled: z.boolean(),
-    message: z.string().max(200, "Message must be 200 characters or fewer"),
-    href: z
-      .string()
-      .max(2000)
-      .refine(
-        (v) => v === "" || /^https:\/\//i.test(v),
-        "Link must start with https://",
-      )
-      .refine((v) => {
-        if (v === "") return true;
-        try {
-          new URL(v);
-          return true;
-        } catch {
-          return false;
-        }
-      }, "Invalid URL"),
-  })
-  .refine((data) => !data.enabled || data.message.length > 0, {
-    message: "Enabled banner must have a message",
-    path: ["message"],
-  });
-
-const STATUS_LISTING_PATHS = [
-  "/status/seeds",
-  "/status/sprouts",
-  "/status/trees",
-];
-
-function revalidateProjectPaths(projectId: string) {
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidatePath(`/seeds/${projectId}`);
-  for (const p of STATUS_LISTING_PATHS) revalidatePath(p);
-}
-
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin") {
-    throw new Error("Unauthorized");
-  }
-  return session;
-}
-
-async function updateProjectStage(projectId: string, stage: ProjectStage) {
-  await requireAdmin();
-
-  await db
-    .update(projects)
-    .set({ stage, updatedAt: new Date() })
-    .where(eq(projects.id, projectId));
-
-  revalidateProjectPaths(projectId);
-  return { success: true };
-}
-
-async function updateApprovalState(
+/** Admin-only patch of top-level project fields. */
+async function setProjectFields(
   projectId: string,
-  approvalState: ApprovalState,
+  fields: Partial<{
+    stage: ProjectStage;
+    approvalState: ApprovalState;
+    archivedAt: Date | null;
+    badges: BadgeKey[];
+  }>,
 ) {
   await requireAdmin();
   await db
     .update(projects)
-    .set({ approvalState, updatedAt: new Date() })
+    .set({ ...fields, updatedAt: new Date() })
     .where(eq(projects.id, projectId));
-  revalidateProjectPaths(projectId);
+  revalidateProject(projectId);
   return { success: true };
 }
 
@@ -106,68 +58,45 @@ export async function approveProject(projectId: string) {
     }),
   ]);
 
-  revalidateProjectPaths(projectId);
+  revalidateProject(projectId);
   return { success: true };
 }
 
 export async function archiveProject(projectId: string) {
-  await requireAdmin();
-
-  await db
-    .update(projects)
-    .set({ archivedAt: new Date(), updatedAt: new Date() })
-    .where(eq(projects.id, projectId));
-
-  revalidateProjectPaths(projectId);
-  return { success: true };
+  return setProjectFields(projectId, { archivedAt: new Date() });
 }
 
 export async function unarchiveProject(projectId: string) {
-  await requireAdmin();
-  await db
-    .update(projects)
-    .set({ archivedAt: null, updatedAt: new Date() })
-    .where(eq(projects.id, projectId));
-  revalidateProjectPaths(projectId);
-  return { success: true };
+  return setProjectFields(projectId, { archivedAt: null });
 }
 
 export async function unapproveProject(projectId: string) {
-  return updateApprovalState(projectId, "pending");
+  return setProjectFields(projectId, { approvalState: "pending" });
 }
 
 export async function advanceToSprout(projectId: string) {
-  return updateProjectStage(projectId, "sprout");
+  return setProjectFields(projectId, { stage: "sprout" });
 }
 
 export async function advanceToTree(projectId: string) {
-  return updateProjectStage(projectId, "tree");
+  return setProjectFields(projectId, { stage: "tree" });
 }
 
 export async function revertToSeed(projectId: string) {
-  return updateProjectStage(projectId, "seed");
+  return setProjectFields(projectId, { stage: "seed" });
 }
 
 export async function revertToSprout(projectId: string) {
-  return updateProjectStage(projectId, "sprout");
+  return setProjectFields(projectId, { stage: "sprout" });
 }
 
 export async function setProjectBadges(projectId: string, badges: BadgeKey[]) {
-  await requireAdmin();
-
   // Defensive re-check against the known keys — the client-side toggle uses
   // the same source of truth, but we don't trust the wire.
   const cleaned = badges.filter((b): b is BadgeKey =>
     (badgeKeys as string[]).includes(b),
   );
-
-  await db
-    .update(projects)
-    .set({ badges: cleaned, updatedAt: new Date() })
-    .where(eq(projects.id, projectId));
-
-  revalidateProjectPaths(projectId);
-  return { success: true };
+  return setProjectFields(projectId, { badges: cleaned });
 }
 
 export async function setBannerConfig(input: {
@@ -185,7 +114,7 @@ export async function setBannerConfig(input: {
   if (!parsed.success) {
     return {
       success: false as const,
-      error: parsed.error.issues[0]?.message ?? "Invalid banner config",
+      error: firstIssue(parsed, "Invalid banner config"),
     };
   }
 
@@ -223,7 +152,7 @@ export async function setHomepagePhase(phase: 1 | 2) {
   await db
     .insert(siteSettings)
     .values({
-      key: "homepage_phase",
+      key: HOMEPAGE_PHASE_SETTING_KEY,
       value: String(phase),
       updatedAt: new Date(),
     })
@@ -232,8 +161,9 @@ export async function setHomepagePhase(phase: 1 | 2) {
       set: { value: String(phase), updatedAt: new Date() },
     });
 
-  revalidatePath("/");
-  revalidatePath("/admin");
+  updateTag(HOMEPAGE_PHASE_CACHE_TAG);
+  revalidatePath(routes.home);
+  revalidatePath(routes.admin);
   return { success: true };
 }
 
@@ -278,7 +208,7 @@ export async function setHarvestFestPage(input: HarvestFestPage) {
     });
 
   updateTag(HARVEST_FEST_CACHE_TAG);
-  revalidatePath("/harvest-fest");
+  revalidatePath(routes.harvestFest);
   return { success: true as const };
 }
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { badgeKeys, type BadgeKey } from "@/lib/badges";
+import { badgeKeys, type BadgeKey } from "@/config/badges";
+import { categoryKeys, type CategoryKey } from "@/config/categories";
 
 export const projectFormSchema = z
   .object({
@@ -16,13 +17,9 @@ export const projectFormSchema = z
     locationDescription: z.string().max(10000).optional(),
     locationLat: z.number().optional(),
     locationLng: z.number().optional(),
-    category: z.enum([
-      "daily_access",
-      "outdoor_play",
-      "balanced_growth",
-      "respect",
-      "connected_communities",
-    ]),
+    category: z.enum(categoryKeys as [CategoryKey, ...CategoryKey[]], {
+      error: "Please select a category.",
+    }),
     roots: z
       .array(
         z.object({

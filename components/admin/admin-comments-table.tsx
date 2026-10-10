@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { archiveComment, unarchiveComment } from "@/lib/actions/comments";
+import { routes } from "@/lib/routes";
 
 interface AdminComment {
   id: string;
@@ -92,7 +93,7 @@ export function AdminCommentsTable({ comments }: { comments: AdminComment[] }) {
             >
               <TableCell>
                 <Link
-                  href={`/seeds/${comment.projectId}`}
+                  href={routes.project(comment.projectId)}
                   className="block max-w-[400px] truncate text-sm font-medium hover:underline"
                   title={comment.projectName}
                 >

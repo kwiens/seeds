@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { LinkifyText } from "@/components/linkify-text";
+import { siteConfig } from "@/config/site";
 import { getPublicProjectNames } from "@/lib/db/queries/projects";
 import {
   getHarvestFestPage,
@@ -8,22 +10,23 @@ import {
 import { HarvestFestEventCard } from "./event-card";
 
 export const metadata: Metadata = {
-  title: "Harvest Fest | Seeds — Chattanooga National Park City",
-  description:
-    "Harvest Fest is a chance to come together and experience what's growing across Chattanooga National Park City.",
+  title: "Harvest Fest",
+  description: `Harvest Fest is a chance to come together and experience what's growing across ${siteConfig.city.organization}.`,
 };
 
 export default async function HarvestFestPage() {
+  if (!siteConfig.features.harvestFest) notFound();
+
   const page = await getHarvestFestPage();
   const events = await withLiveProjectLinks(page.events);
   const hasContent = page.title.trim().length > 0;
 
   return (
     <div>
-      <section className="bg-[#2D5334] text-white">
+      <section className="bg-brand-hero text-white">
         <div className="mx-auto max-w-4xl px-4 py-16 md:py-24">
           {page.tagline && (
-            <p className="mb-3 text-sm font-semibold tracking-widest text-[#74BB23] uppercase">
+            <p className="mb-3 text-sm font-semibold tracking-widest text-brand-hero-accent uppercase">
               {page.tagline}
             </p>
           )}

@@ -3,10 +3,12 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { isImageContentType } from "@/lib/attachments";
-import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projectUpdates } from "@/lib/db/schema";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import {
+  checkProjectAccess,
+  isTeamWorkspaceAvailable,
+} from "@/lib/project-access";
 
 export async function GET(
   request: Request,
@@ -29,7 +31,7 @@ export async function GET(
     where: eq(projectUpdates.id, updateId),
     columns: { attachments: true, visibility: true },
     with: {
-      project: { columns: { id: true, stage: true } },
+      project: { columns: { id: true, stage: true, archivedAt: true } },
     },
   });
   const attachment = update?.attachments[attachmentIndex];
@@ -37,12 +39,12 @@ export async function GET(
     !update ||
     !attachment ||
     update.visibility !== "team" ||
-    !hasTeamWorkspace(update.project.stage)
+    !isTeamWorkspaceAvailable(update.project)
   ) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
-  if (!(await canAccessTeamWorkspace(session, update.project))) {
+  if (await checkProjectAccess(session, update.project, { level: "team" })) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -6,7 +6,7 @@ import { getManagedProjectWorkspace } from "@/lib/project-workspace";
 import { EMPTY_TIPTAP_DOC, parseTiptapDoc } from "@/lib/tiptap";
 
 export const metadata: Metadata = {
-  title: "Edit Public Update | Seeds",
+  title: "Edit Public Update",
 };
 
 export default async function EditProjectUpdatePage(props: {
