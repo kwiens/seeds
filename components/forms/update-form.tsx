@@ -16,7 +16,7 @@ import { projectWorkspacePath } from "@/lib/project-workspace-navigation";
 import { EMPTY_TIPTAP_DOC } from "@/lib/tiptap";
 
 interface UpdateFormProps {
-  seedId: string;
+  projectId: string;
   update?: {
     id: string;
     title: string;
@@ -25,9 +25,9 @@ interface UpdateFormProps {
   };
 }
 
-export function UpdateForm({ seedId, update }: UpdateFormProps) {
+export function UpdateForm({ projectId, update }: UpdateFormProps) {
   const router = useRouter();
-  const updatesPath = projectWorkspacePath(seedId, "updates");
+  const updatesPath = projectWorkspacePath(projectId, "updates");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState(update?.title ?? "");
@@ -45,7 +45,7 @@ export function UpdateForm({ seedId, update }: UpdateFormProps) {
     startTransition(async () => {
       const result = update
         ? await editPublicProjectUpdate(update.id, formData)
-        : await createPublicProjectUpdate(seedId, formData);
+        : await createPublicProjectUpdate(projectId, formData);
 
       if (result?.error) {
         setError(result.error);

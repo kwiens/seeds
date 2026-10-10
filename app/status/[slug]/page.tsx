@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { SeedExplorer } from "@/components/seeds/seed-explorer";
+import { ProjectExplorer } from "@/components/projects/project-explorer";
 import {
   getProjectsByStage,
   getAllProjectsForMap,
@@ -63,7 +63,7 @@ export default async function StatusPage({
         ? "mine"
         : "newest";
 
-  const [seedResult, mapSeeds] = await Promise.all([
+  const [projectResult, mapProjects] = await Promise.all([
     getProjectsByStage({
       stage,
       badges: badgesParam.length > 0 ? badgesParam : undefined,
@@ -101,11 +101,11 @@ export default async function StatusPage({
       </div>
 
       <Suspense fallback={<div className="py-8 text-center">Loading...</div>}>
-        <SeedExplorer
-          seeds={seedResult.projects}
-          mapSeeds={mapSeeds}
-          currentPage={seedResult.currentPage}
-          totalPages={seedResult.totalPages}
+        <ProjectExplorer
+          projects={projectResult.projects}
+          mapProjects={mapProjects}
+          currentPage={projectResult.currentPage}
+          totalPages={projectResult.totalPages}
           activeBadges={badgesParam}
           activeSort={sort}
           isSignedIn={!!session?.user}

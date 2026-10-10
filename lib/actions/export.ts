@@ -49,7 +49,7 @@ export async function exportContributorsCsv(): Promise<string> {
   return [header, ...lines].join("\n");
 }
 
-export async function exportSeedsCsv(): Promise<string> {
+export async function exportProjectsCsv(): Promise<string> {
   await requireAdmin();
   const origin = await getRequestOrigin();
 

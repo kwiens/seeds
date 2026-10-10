@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { siteConfig } from "@/config/site";
-import { SeedForm } from "@/components/forms/seed-form";
+import { ProjectForm } from "@/components/forms/project-form";
 
 export const metadata: Metadata = {
   title: "Plant a Seed",
   description: `Submit a community project proposal for ${siteConfig.city.name}.`,
 };
 
-export default async function NewSeedPage() {
+export default async function NewProjectPage() {
   const session = await auth();
 
   return (
@@ -21,7 +21,7 @@ export default async function NewSeedPage() {
           other passionate people!
         </p>
       </div>
-      <SeedForm planterName={session?.user?.name ?? undefined} />
+      <ProjectForm planterName={session?.user?.name ?? undefined} />
     </div>
   );
 }

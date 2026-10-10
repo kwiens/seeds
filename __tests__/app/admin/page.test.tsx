@@ -59,8 +59,8 @@ vi.mock("@/components/admin/export-buttons", () => ({
 vi.mock("@/components/admin/homepage-phase-toggle", () => ({
   HomepagePhaseToggle: () => <div>Homepage phase</div>,
 }));
-vi.mock("@/components/admin/seed-data-table", () => ({
-  AdminSeedTable: () => <div>Seed table</div>,
+vi.mock("@/components/admin/project-data-table", () => ({
+  AdminProjectTable: () => <div>Seed table</div>,
 }));
 vi.mock("@/components/admin/user-list", () => ({
   UserList: ({

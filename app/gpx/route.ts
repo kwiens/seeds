@@ -3,7 +3,7 @@ import { publicProject } from "@/lib/db/queries/filters";
 import { projects } from "@/lib/db/schema";
 
 export async function GET() {
-  const allSeeds = await db
+  const allProjects = await db
     .select({
       name: projects.name,
       summary: projects.summary,
@@ -15,7 +15,7 @@ export async function GET() {
     .from(projects)
     .where(publicProject());
 
-  const waypoints = allSeeds
+  const waypoints = allProjects
     .filter((s) => s.locationLat != null && s.locationLng != null)
     .map(
       (s) =>
@@ -38,7 +38,7 @@ ${waypoints}
   return new Response(gpx, {
     headers: {
       "Content-Type": "application/gpx+xml",
-      "Content-Disposition": 'attachment; filename="seeds.gpx"',
+      "Content-Disposition": 'attachment; filename="projects.gpx"',
     },
   });
 }

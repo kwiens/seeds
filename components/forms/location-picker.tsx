@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SeedIcon } from "@/components/icons/seed-icons";
-import { SeedMap } from "@/components/map/seed-map";
+import { ProjectMap } from "@/components/map/project-map";
 import { siteConfig } from "@/config/site";
 import {
   newSearchSession,
@@ -115,7 +115,7 @@ export function LocationPicker({
       </div>
       {lat && lng && (
         <div className="mt-3">
-          <SeedMap
+          <ProjectMap
             key={`${lat},${lng}`}
             singleMarker={{ lat, lng }}
             zoom={siteConfig.map.pickerZoom}

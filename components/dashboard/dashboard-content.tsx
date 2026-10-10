@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Leaf, Sprout, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CategoryBadge } from "@/components/seeds/category-badge";
-import { DashboardSeedList } from "@/components/dashboard/seed-list-table";
-import { SeedListView } from "@/components/seeds/seed-list-view";
+import { CategoryBadge } from "@/components/projects/category-badge";
+import { DashboardProjectList } from "@/components/dashboard/project-list-table";
+import { ProjectListView } from "@/components/projects/project-list-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CategoryKey } from "@/config/categories";
 import type { MyProject } from "@/lib/db/queries/my-projects";
@@ -16,7 +16,7 @@ import { routes } from "@/lib/routes";
 
 export type DashboardTab = "my-sprouts" | "my-seeds" | "supporting";
 
-interface DashboardSeed {
+interface DashboardProject {
   id: string;
   name: string;
   category: CategoryKey;
@@ -27,7 +27,7 @@ interface DashboardSeed {
   createdAt: Date;
 }
 
-interface SupportedSeed {
+interface SupportedProject {
   id: string;
   name: string;
   summary: string;
@@ -41,21 +41,23 @@ interface SupportedSeed {
 
 export function DashboardContent({
   sprouts,
-  userSeeds,
-  supportedSeeds,
+  createdProjects,
+  supportedProjects,
   initialTab,
 }: {
   sprouts: MyProject[];
-  userSeeds: DashboardSeed[];
-  supportedSeeds: SupportedSeed[];
+  createdProjects: DashboardProject[];
+  supportedProjects: SupportedProject[];
   initialTab?: DashboardTab;
 }) {
-  const hasActiveSeeds = userSeeds.some((seed) => !seed.archivedAt);
+  const hasActiveProjects = createdProjects.some(
+    (project) => !project.archivedAt,
+  );
   const defaultTab: DashboardTab =
     initialTab ??
     (sprouts.length > 0
       ? "my-sprouts"
-      : hasActiveSeeds
+      : hasActiveProjects
         ? "my-seeds"
         : "supporting");
   const [activeTab, setActiveTab] = useState<DashboardTab>(defaultTab);
@@ -137,7 +139,7 @@ export function DashboardContent({
       </TabsContent>
 
       <TabsContent value="my-seeds">
-        {userSeeds.length === 0 ? (
+        {createdProjects.length === 0 ? (
           <div className="rounded-lg border border-dashed py-16 text-center">
             <p className="text-muted-foreground mb-4 text-lg">
               You haven&apos;t planted any seeds yet.
@@ -147,12 +149,12 @@ export function DashboardContent({
             </Button>
           </div>
         ) : (
-          <DashboardSeedList seeds={userSeeds} />
+          <DashboardProjectList projects={createdProjects} />
         )}
       </TabsContent>
 
       <TabsContent value="supporting">
-        {supportedSeeds.length === 0 ? (
+        {supportedProjects.length === 0 ? (
           <div className="rounded-lg border border-dashed py-16 text-center">
             <p className="text-muted-foreground mb-4 text-lg">
               You haven&apos;t supported any seeds yet.
@@ -165,7 +167,7 @@ export function DashboardContent({
             </Button>
           </div>
         ) : (
-          <SeedListView seeds={supportedSeeds} />
+          <ProjectListView projects={supportedProjects} />
         )}
       </TabsContent>
     </Tabs>

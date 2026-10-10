@@ -29,12 +29,13 @@ export default async function DashboardPage({
     redirect("/api/auth/signin");
   }
 
-  const [{ tab }, sprouts, userSeeds, supportedSeeds] = await Promise.all([
-    searchParams,
-    getMyProjects(session.user.id, session.user.role),
-    getProjectsCreatedByUser(session.user.id),
-    getSupportedProjectsByUser(session.user.id),
-  ]);
+  const [{ tab }, sprouts, createdProjects, supportedProjects] =
+    await Promise.all([
+      searchParams,
+      getMyProjects(session.user.id, session.user.role),
+      getProjectsCreatedByUser(session.user.id),
+      getSupportedProjectsByUser(session.user.id),
+    ]);
   const initialTab = dashboardTabs.includes(tab as DashboardTab)
     ? (tab as DashboardTab)
     : undefined;
@@ -58,8 +59,8 @@ export default async function DashboardPage({
 
       <DashboardContent
         sprouts={sprouts}
-        userSeeds={userSeeds}
-        supportedSeeds={supportedSeeds}
+        createdProjects={createdProjects}
+        supportedProjects={supportedProjects}
         initialTab={initialTab}
       />
     </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Pencil, Plus } from "lucide-react";
-import { DeleteUpdateButton } from "@/components/seeds/update-actions";
+import { DeleteUpdateButton } from "@/components/projects/update-actions";
 import { Button } from "@/components/ui/button";
 import {
   Table,

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { ProjectWorkspaceNav } from "@/components/dashboard/project-workspace-nav";
-import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
-import { CategoryBadge } from "@/components/seeds/category-badge";
+import { ProjectStatusBadge } from "@/components/dashboard/project-status-badge";
+import { CategoryBadge } from "@/components/projects/category-badge";
 import { Button } from "@/components/ui/button";
 import { getProjectWorkspace } from "@/lib/project-workspace";
 import { isTeamWorkspaceAvailable } from "@/lib/project-access";
@@ -33,7 +33,7 @@ export default async function ProjectWorkspaceLayout({
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <CategoryBadge category={project.category} />
-            <SeedStatusBadge
+            <ProjectStatusBadge
               stage={project.stage}
               approvalState={project.approvalState}
               archivedAt={project.archivedAt}

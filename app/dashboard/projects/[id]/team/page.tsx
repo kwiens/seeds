@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { BudgetEditor } from "@/components/seeds/budget-editor";
-import { MarkSproutRead } from "@/components/seeds/mark-sprout-read";
-import { SeedDocuments } from "@/components/seeds/seed-documents";
-import { TeamRoster } from "@/components/seeds/team-roster";
-import { TeamUpdatesSection } from "@/components/seeds/team-updates-section";
-import { UpcomingEvents } from "@/components/seeds/upcoming-events";
+import { BudgetEditor } from "@/components/projects/budget-editor";
+import { MarkProjectActivityRead } from "@/components/projects/mark-project-activity-read";
+import { ProjectDocuments } from "@/components/projects/project-documents";
+import { TeamRoster } from "@/components/projects/team-roster";
+import { TeamUpdatesSection } from "@/components/projects/team-updates-section";
+import { UpcomingEvents } from "@/components/projects/upcoming-events";
 import { getBudgets } from "@/lib/db/queries/budgets";
 import { getProjectDocuments } from "@/lib/db/queries/documents";
 import { getPendingInvites } from "@/lib/db/queries/invites";
@@ -74,7 +74,10 @@ export default async function ProjectTeamPage(props: {
 
   return (
     <section>
-      <MarkSproutRead seedId={project.id} readThrough={readThrough} />
+      <MarkProjectActivityRead
+        projectId={project.id}
+        readThrough={readThrough}
+      />
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight">Team workspace</h2>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -84,32 +87,32 @@ export default async function ProjectTeamPage(props: {
 
       <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">
         <TeamUpdatesSection
-          seedId={project.id}
+          projectId={project.id}
           updates={teamUpdates}
           isAdmin={session.user.role === "admin"}
           rolesByUserId={rolesByUserId}
         />
         <div className="space-y-4">
           <UpcomingEvents
-            seedId={project.id}
+            projectId={project.id}
             events={upcomingEvents}
             canManage={canManage}
           />
           <TeamRoster
-            seedId={project.id}
+            projectId={project.id}
             members={members}
             pendingInvites={pendingInvites}
             canManage={canManage}
             isAdmin={session.user.role === "admin"}
           />
           <BudgetEditor
-            seedId={project.id}
-            seedName={project.name}
+            projectId={project.id}
+            projectName={project.name}
             proposed={budgets.proposed}
             final={budgets.final}
             canManage={canManage}
           />
-          <SeedDocuments seedId={project.id} documents={documents} />
+          <ProjectDocuments projectId={project.id} documents={documents} />
         </div>
       </div>
     </section>

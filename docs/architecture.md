@@ -175,7 +175,7 @@ stage-gated pattern rather than forking a parallel feature:
 4. **Actions.** `lib/actions/resources.ts` using `requireProjectAccess` (pick
    `manage` or `team`, and `requireWorkspace: true` if it is a Sprout+
    feature), `firstIssue`, `revalidateProject`, returning `ActionResult`.
-5. **UI.** A client component in `components/seeds/` that owns the form state
+5. **UI.** A client component in `components/projects/` that owns the form state
    and calls the action; render it from the right workspace section page
    (`app/dashboard/projects/[id]/team/page.tsx` for team features). Public
    display, if any, goes in `app/seeds/[id]/page.tsx`. Follow
@@ -204,9 +204,11 @@ Add a boolean under `features` in `config/site.ts`, gate the route with
 
 Things an audit flagged that are left for later, in rough priority order:
 
-- The `components/seeds/` directory and many `seed*` names refer to the
-  project entity, not the Seed stage; `seedId` props are really `projectId`.
-  A rename-only PR would make this consistent.
+- Naming: the data model, components and props say "project"; the public
+  routes (`/seeds/…`) and all UI copy say "Seed", because that is the brand
+  and the first lifecycle stage. `SeedIcon` is the Seed-anatomy icon set and
+  keeps its name. Do not rename URLs.
+
 - The in-memory rate limiter in `lib/actions/generate-image.ts` is per
   instance, so it is advisory on serverless.
 - `getAllProjects` (admin table), `getAllComments`, `getAllProjectsForMap` and

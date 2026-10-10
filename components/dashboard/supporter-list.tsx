@@ -13,10 +13,10 @@ interface Supporter {
 
 export function SupporterExport({
   supporters,
-  seedName,
+  projectName,
 }: {
   supporters: Supporter[];
-  seedName: string;
+  projectName: string;
 }) {
   function downloadCsv() {
     const header = "Name,Email,Supported On";
@@ -28,7 +28,7 @@ export function SupporterExport({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${seedName.replace(/[^a-z0-9]/gi, "-")}-supporters.csv`;
+    a.download = `${projectName.replace(/[^a-z0-9]/gi, "-")}-supporters.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -71,8 +71,8 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={mockSprouts}
-        userSeeds={mockUserSeeds}
-        supportedSeeds={mockSupportedSeeds}
+        createdProjects={mockUserSeeds}
+        supportedProjects={mockSupportedSeeds}
       />,
     );
 
@@ -85,8 +85,8 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={[]}
-        userSeeds={mockUserSeeds}
-        supportedSeeds={mockSupportedSeeds}
+        createdProjects={mockUserSeeds}
+        supportedProjects={mockSupportedSeeds}
       />,
     );
 
@@ -99,13 +99,13 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={[]}
-        userSeeds={[
+        createdProjects={[
           {
             ...mockUserSeeds[0],
             archivedAt: new Date("2024-08-01"),
           },
         ]}
-        supportedSeeds={mockSupportedSeeds}
+        supportedProjects={mockSupportedSeeds}
       />,
     );
 
@@ -117,8 +117,8 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={mockSprouts}
-        userSeeds={mockUserSeeds}
-        supportedSeeds={mockSupportedSeeds}
+        createdProjects={mockUserSeeds}
+        supportedProjects={mockSupportedSeeds}
       />,
     );
 
@@ -133,8 +133,8 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={[]}
-        userSeeds={mockUserSeeds}
-        supportedSeeds={[]}
+        createdProjects={mockUserSeeds}
+        supportedProjects={[]}
         initialTab="supporting"
       />,
     );
@@ -151,8 +151,8 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={[]}
-        userSeeds={[]}
-        supportedSeeds={mockSupportedSeeds}
+        createdProjects={[]}
+        supportedProjects={mockSupportedSeeds}
       />,
     );
 
@@ -170,8 +170,8 @@ describe("DashboardContent", () => {
     render(
       <DashboardContent
         sprouts={mockSprouts}
-        userSeeds={mockUserSeeds}
-        supportedSeeds={mockSupportedSeeds}
+        createdProjects={mockUserSeeds}
+        supportedProjects={mockSupportedSeeds}
       />,
     );
 

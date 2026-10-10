@@ -18,4 +18,4 @@ export const projectUpdateFormSchema = z.object({
   photos: z.array(z.string().url()).max(6).default([]),
 });
 
-export type SeedUpdateFormValues = z.infer<typeof projectUpdateFormSchema>;
+export type ProjectUpdateFormValues = z.infer<typeof projectUpdateFormSchema>;

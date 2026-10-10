@@ -22,7 +22,7 @@ it("downloads supporter values as literal CSV fields", async () => {
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
   render(
     <SupporterExport
-      seedName="Garden"
+      projectName="Garden"
       supporters={[
         {
           id: "user-1",

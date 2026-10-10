@@ -20,7 +20,7 @@ export default async function NewProjectUpdatePage(props: {
           Share progress on {project.name}.
         </p>
       </div>
-      <UpdateForm seedId={project.id} />
+      <UpdateForm projectId={project.id} />
     </section>
   );
 }

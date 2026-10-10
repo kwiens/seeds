@@ -36,7 +36,7 @@ export default async function ProjectSupportersPage(props: {
           </p>
         </div>
         {supporters.length > 0 && (
-          <SupporterExport supporters={supporters} seedName={project.name} />
+          <SupporterExport supporters={supporters} projectName={project.name} />
         )}
       </div>
 

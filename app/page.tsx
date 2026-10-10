@@ -11,7 +11,7 @@ import {
   type SortOption,
 } from "@/lib/db/queries/projects";
 import { getHomepagePhase } from "@/lib/db/queries/settings";
-import { SeedExplorer } from "@/components/seeds/seed-explorer";
+import { ProjectExplorer } from "@/components/projects/project-explorer";
 import { HomePhase2 } from "./home-phase2";
 import { routes } from "@/lib/routes";
 
@@ -89,7 +89,7 @@ async function Phase1Content({
         ? "mine"
         : "newest";
 
-  const [seedResult, mapSeeds] = await Promise.all([
+  const [projectResult, mapProjects] = await Promise.all([
     getSeedStageProjects({
       category,
       page,
@@ -102,11 +102,11 @@ async function Phase1Content({
   ]);
 
   return (
-    <SeedExplorer
-      seeds={seedResult.projects}
-      mapSeeds={mapSeeds}
-      currentPage={seedResult.currentPage}
-      totalPages={seedResult.totalPages}
+    <ProjectExplorer
+      projects={projectResult.projects}
+      mapProjects={mapProjects}
+      currentPage={projectResult.currentPage}
+      totalPages={projectResult.totalPages}
       activeCategory={category}
       activeSort={sort}
       isSignedIn={isSignedIn}

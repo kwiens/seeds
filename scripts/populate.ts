@@ -10,7 +10,7 @@ import type { CategoryKey } from "../config/categories";
 import * as schema from "../lib/db/schema";
 import { buildImagePrompt } from "../lib/image-prompt";
 
-const SEED_BOT_EMAIL = "seedbot@seeds.example.com";
+const SEED_BOT_EMAIL = "seedbot@projects.example.com";
 const SEED_BOT_NAME = "Seed Bot";
 
 // ---------------------------------------------------------------------------
@@ -1303,7 +1303,7 @@ async function main() {
       // Delete fake supporter users
       await db
         .delete(schema.users)
-        .where(like(schema.users.email, "supporter-%@seeds.example.com"));
+        .where(like(schema.users.email, "supporter-%@projects.example.com"));
       // Delete the seed bot user
       await db.delete(schema.users).where(eq(schema.users.id, seedUser.id));
     }
@@ -1338,7 +1338,7 @@ async function main() {
   const supporters: { id: string; name: string }[] = [];
 
   for (let i = 0; i < supporterCount; i++) {
-    const email = `supporter-${i}@seeds.example.com`;
+    const email = `supporter-${i}@projects.example.com`;
     let supporter = await db.query.users.findFirst({
       where: eq(schema.users.email, email),
     });

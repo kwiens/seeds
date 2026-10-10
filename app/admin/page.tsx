@@ -11,7 +11,7 @@ import { CouncilList } from "@/components/admin/council-list";
 import { ExportButtons } from "@/components/admin/export-buttons";
 import { HarvestFestSettings } from "@/components/admin/harvest-fest-settings";
 import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
-import { AdminSeedTable } from "@/components/admin/seed-data-table";
+import { AdminProjectTable } from "@/components/admin/project-data-table";
 import { UserList } from "@/components/admin/user-list";
 import { Button } from "@/components/ui/button";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,7 +62,7 @@ export default async function AdminPage({
   const peopleSearch = params.search?.trim() || undefined;
 
   const [
-    allSeeds,
+    allProjects,
     supporterEmailsMap,
     adminEmails,
     councilMembers,
@@ -158,8 +158,8 @@ export default async function AdminPage({
         </div>
 
         <TabsContent value="seeds">
-          <AdminSeedTable
-            seeds={allSeeds}
+          <AdminProjectTable
+            projects={allProjects}
             supporterEmailsMap={Object.fromEntries(supporterEmailsMap)}
           />
         </TabsContent>
