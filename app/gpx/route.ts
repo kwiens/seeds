@@ -38,7 +38,7 @@ ${waypoints}
   return new Response(gpx, {
     headers: {
       "Content-Type": "application/gpx+xml",
-      "Content-Disposition": 'attachment; filename="projects.gpx"',
+      "Content-Disposition": 'attachment; filename="seeds.gpx"',
     },
   });
 }

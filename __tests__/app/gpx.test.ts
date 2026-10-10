@@ -49,7 +49,7 @@ describe("GET /gpx", () => {
 
     expect(response.headers.get("Content-Type")).toBe("application/gpx+xml");
     expect(response.headers.get("Content-Disposition")).toBe(
-      'attachment; filename="projects.gpx"',
+      'attachment; filename="seeds.gpx"',
     );
   });
 

@@ -39,7 +39,7 @@ export function ExportButtons() {
       <Button
         variant="outline"
         disabled={isPending}
-        onClick={() => handleExport(exportProjectsCsv, "projects.csv")}
+        onClick={() => handleExport(exportProjectsCsv, "seeds.csv")}
       >
         <Download className="mr-2 h-4 w-4" />
         Download Seeds

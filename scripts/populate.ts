@@ -1,16 +1,24 @@
+/**
+ * Development sample data: fifty Chattanooga projects with fictional people.
+ * City-specific by design; see docs/city-setup.md. Refuses to run against
+ * Production through the same checks as the app.
+ *
+ *   pnpm db:seed                 insert sample projects
+ *   pnpm db:seed --with-images   also generate posters (needs Gemini + Blob)
+ *   pnpm db:seed --clean         remove bot-created data first
+ *   pnpm db:seed --clean-only    remove bot-created data and stop
+ */
 import { config } from "dotenv";
-config({ path: ".env.local" });
+config({ path: ".env.local", quiet: true });
+config({ path: ".env.development.local", override: true, quiet: true });
 
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { eq, isNull, like } from "drizzle-orm";
-import { GoogleGenAI } from "@google/genai";
-import { put } from "@vercel/blob";
+import { eq, like } from "drizzle-orm";
 import type { CategoryKey } from "../config/categories";
+import { assertSafeBlobStores, assertSafeDatabaseUrl } from "../lib/db/safety";
 import * as schema from "../lib/db/schema";
-import { buildImagePrompt } from "../lib/image-prompt";
+import { generateProjectPoster } from "../lib/image-generation";
 
-const SEED_BOT_EMAIL = "seedbot@projects.example.com";
+const SEED_BOT_EMAIL = "seedbot@seeds.example.com";
 const SEED_BOT_NAME = "Seed Bot";
 
 // ---------------------------------------------------------------------------
@@ -48,62 +56,6 @@ const PEOPLE = [
   "Lily Cheng",
   "Andre Clark",
 ];
-
-// ---------------------------------------------------------------------------
-// Image generation
-// ---------------------------------------------------------------------------
-async function generateImage(seed: {
-  id: string;
-  name: string;
-  summary: string;
-  category: string;
-  locationAddress: string | null;
-  waterHave: string[];
-}) {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) {
-    return { error: "GOOGLE_GENERATIVE_AI_API_KEY is not set." };
-  }
-
-  const prompt = buildImagePrompt(seed);
-
-  const ai = new GoogleGenAI({ apiKey });
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
-    contents: prompt,
-    config: {
-      responseModalities: ["IMAGE"],
-      imageConfig: {
-        aspectRatio: "3:4",
-      },
-    },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts;
-  if (!parts) {
-    return { error: "No image was generated." };
-  }
-
-  const imagePart = parts.find((part) =>
-    part.inlineData?.mimeType?.startsWith("image/"),
-  );
-  if (!imagePart?.inlineData?.data) {
-    return { error: "No image data in response." };
-  }
-
-  const imageBuffer = Buffer.from(imagePart.inlineData.data, "base64");
-  const mimeType = imagePart.inlineData.mimeType ?? "image/png";
-  const extension = mimeType === "image/jpeg" ? "jpg" : "png";
-
-  const blob = await put(`projects/${seed.id}.${extension}`, imageBuffer, {
-    access: "public",
-    contentType: mimeType,
-    addRandomSuffix: true,
-  });
-
-  return { imageUrl: blob.url };
-}
 
 // Helpers
 function pick<T>(arr: T[], n: number): T[] {
@@ -1281,13 +1233,16 @@ async function main() {
   const clean = process.argv.includes("--clean");
   const withImages = process.argv.includes("--with-images");
 
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set. Did you create .env.local?");
-    process.exit(1);
+  assertSafeDatabaseUrl(process.env.DATABASE_URL);
+  if (withImages) {
+    assertSafeBlobStores({
+      publicToken: process.env.BLOB_READ_WRITE_TOKEN,
+      teamToken: process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN,
+    });
   }
-
-  const sql = neon(process.env.DATABASE_URL);
-  const db = drizzle(sql, { schema });
+  // Imported after the environment is loaded; the client asserts the
+  // database target again when the module initializes.
+  const { db } = await import("../lib/db");
 
   // --clean: remove seeded data
   if (clean) {
@@ -1303,7 +1258,7 @@ async function main() {
       // Delete fake supporter users
       await db
         .delete(schema.users)
-        .where(like(schema.users.email, "supporter-%@projects.example.com"));
+        .where(like(schema.users.email, "supporter-%@seeds.example.com"));
       // Delete the seed bot user
       await db.delete(schema.users).where(eq(schema.users.id, seedUser.id));
     }
@@ -1338,7 +1293,7 @@ async function main() {
   const supporters: { id: string; name: string }[] = [];
 
   for (let i = 0; i < supporterCount; i++) {
-    const email = `supporter-${i}@projects.example.com`;
+    const email = `supporter-${i}@seeds.example.com`;
     let supporter = await db.query.users.findFirst({
       where: eq(schema.users.email, email),
     });
@@ -1456,7 +1411,7 @@ async function main() {
 
     // Find all seeds created by seed bot that lack images
     const seedsWithoutImages = await db.query.projects.findMany({
-      where: (s, { eq: e, and }) =>
+      where: (s, { eq: e, and, isNull }) =>
         and(e(s.createdBy, seedUser.id), isNull(s.imageUrl)),
     });
 
@@ -1477,8 +1432,8 @@ async function main() {
       );
 
       try {
-        const result = await generateImage(seed);
-        if (result.error) {
+        const result = await generateProjectPoster(seed);
+        if (result.error !== undefined) {
           console.log(`FAILED: ${result.error}`);
           continue;
         }
