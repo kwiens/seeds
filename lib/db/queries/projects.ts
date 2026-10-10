@@ -4,6 +4,8 @@ import {
   desc,
   eq,
   ilike,
+  gt,
+  asc,
   inArray,
   isNull,
   or,
@@ -13,12 +15,19 @@ import type { CategoryKey } from "@/config/categories";
 import { db } from "@/lib/db";
 import { publicProject } from "@/lib/db/queries/filters";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
+import { managementRoles } from "@/lib/participant-roles";
 import {
   publicProjectStageOrder,
   type ProjectStage,
 } from "@/lib/project-stages";
 
 const PROJECTS_PER_PAGE = 20;
+/** Bounded supported-project preview. */
+const DASHBOARD_LIST_LIMIT = 200;
+export const SUPPORTERS_PER_PAGE = 50;
+export const MANAGED_PROJECTS_PER_PAGE = 20;
+/** Markers the explorer map will draw. */
+export const MAP_MAX_MARKERS = 2000;
 
 export const supportCountSql = sql<number>`(
   select count(*) from project_participants
@@ -228,8 +237,36 @@ export async function getPublicProjectNames(
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 
-export async function getProjectsCreatedByUser(userId: string) {
-  return db
+/**
+ * Projects the user can manage: ones they created plus ones where they hold
+ * an active management role (gardener or co-gardener), with a total and
+ * stable database pagination.
+ */
+export async function getManagedProjectsByUser(userId: string, page = 1) {
+  const managementRoleRows = db
+    .select({ projectId: projectParticipants.projectId })
+    .from(projectParticipants)
+    .where(
+      and(
+        eq(projectParticipants.userId, userId),
+        inArray(projectParticipants.role, managementRoles),
+        eq(projectParticipants.state, "active"),
+      ),
+    );
+
+  const where = or(
+    eq(projects.createdBy, userId),
+    inArray(projects.id, managementRoleRows),
+  );
+  const countRows = await db
+    .select({ count: count() })
+    .from(projects)
+    .where(where);
+  const totalCount = countRows[0]?.count ?? 0;
+  const totalPages = Math.ceil(totalCount / MANAGED_PROJECTS_PER_PAGE);
+  const requestedPage = Number.isSafeInteger(page) && page > 0 ? page : 1;
+  const currentPage = Math.min(requestedPage, Math.max(1, totalPages));
+  const rows = await db
     .select({
       id: projects.id,
       name: projects.name,
@@ -241,8 +278,11 @@ export async function getProjectsCreatedByUser(userId: string) {
       supportCount: supportCountSql,
     })
     .from(projects)
-    .where(eq(projects.createdBy, userId))
-    .orderBy(desc(projects.createdAt));
+    .where(where)
+    .orderBy(desc(projects.createdAt), desc(projects.id))
+    .limit(MANAGED_PROJECTS_PER_PAGE)
+    .offset((currentPage - 1) * MANAGED_PROJECTS_PER_PAGE);
+  return { projects: rows, totalCount, totalPages, currentPage };
 }
 
 export async function getSupportedProjectsByUser(userId: string) {
@@ -270,7 +310,8 @@ export async function getSupportedProjectsByUser(userId: string) {
         eq(projectParticipants.state, "active"),
       ),
     )
-    .orderBy(desc(projectParticipants.updatedAt));
+    .orderBy(desc(projectParticipants.updatedAt))
+    .limit(DASHBOARD_LIST_LIMIT);
 }
 
 export async function getProjectSupportCount(projectId: string) {
@@ -289,7 +330,7 @@ export async function getProjectSupportCount(projectId: string) {
 
 export async function getProjectSupporters(
   projectId: string,
-  options?: { includeEmail?: boolean },
+  options?: { includeEmail?: boolean; page?: number },
 ) {
   const rows = await db
     .select({
@@ -307,10 +348,46 @@ export async function getProjectSupporters(
         eq(projectParticipants.state, "active"),
       ),
     )
-    .orderBy(desc(projectParticipants.createdAt));
+    .orderBy(desc(projectParticipants.createdAt), desc(projectParticipants.id))
+    .limit(options?.page === undefined ? 500 : SUPPORTERS_PER_PAGE)
+    .offset(((options?.page ?? 1) - 1) * SUPPORTERS_PER_PAGE);
 
   if (options?.includeEmail) return rows;
   return rows.map((row) => ({ ...row, email: "" }));
+}
+
+/** Export authorization needs metadata, not the full participation roster. */
+export async function getSupporterExportProject(projectId: string) {
+  return db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { id: true, name: true, stage: true, archivedAt: true },
+  });
+}
+
+/** Keyset chunks keep exports complete without loading the entire roster. */
+export async function getSupporterExportChunk(
+  projectId: string,
+  afterId?: string,
+) {
+  return db
+    .select({
+      participantId: projectParticipants.id,
+      name: users.name,
+      email: users.email,
+      createdAt: projectParticipants.createdAt,
+    })
+    .from(projectParticipants)
+    .innerJoin(users, eq(projectParticipants.userId, users.id))
+    .where(
+      and(
+        eq(projectParticipants.projectId, projectId),
+        eq(projectParticipants.role, "supporter"),
+        eq(projectParticipants.state, "active"),
+        afterId ? gt(projectParticipants.id, afterId) : undefined,
+      ),
+    )
+    .orderBy(asc(projectParticipants.id))
+    .limit(500);
 }
 
 export async function hasUserSupported(projectId: string, userId: string) {
@@ -354,7 +431,9 @@ export async function getAllProjectsForMap(options: {
     })
     .from(projects)
     .innerJoin(users, eq(projects.createdBy, users.id))
-    .where(where);
+    .where(where)
+    .orderBy(desc(projects.createdAt))
+    .limit(MAP_MAX_MARKERS);
 }
 
 const PREVIEW_LIMIT = 8;

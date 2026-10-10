@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ImageLightbox } from "@/components/seeds/image-lightbox";
+import { ImageLightbox } from "@/components/projects/image-lightbox";
 
 interface PhotoGridProps {
   photos: string[];

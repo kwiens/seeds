@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 import { config as loadEnvironment } from "dotenv";
 
@@ -10,6 +10,7 @@ loadEnvironment({
 });
 
 process.env.E2E_TEST_AUTH_ENABLED = "true";
+process.env.E2E_PAGINATION_PROJECT_ID ??= randomUUID();
 process.env.E2E_TEST_AUTH_SECRET ??= randomBytes(32).toString("hex");
 
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 3100);

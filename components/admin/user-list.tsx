@@ -1,5 +1,5 @@
-import { Pagination } from "@/components/seeds/pagination";
-import { SearchInput } from "@/components/seeds/search-input";
+import { Pagination } from "@/components/projects/pagination";
+import { SearchInput } from "@/components/projects/search-input";
 import { Badge } from "@/components/ui/badge";
 import { siteConfig } from "@/config/site";
 import {

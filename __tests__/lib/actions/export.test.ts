@@ -13,7 +13,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
   exportContributorsCsv,
-  exportSeedsCsv,
+  exportProjectsCsv,
   exportSupportersCsv,
 } from "@/lib/actions/export";
 
@@ -28,19 +28,19 @@ function mockSelectChain(rows: unknown[]) {
   return chain;
 }
 
-describe("exportSeedsCsv", () => {
+describe("exportProjectsCsv", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("rejects unauthenticated users", async () => {
     setAuthMock(auth, null);
-    await expect(exportSeedsCsv()).rejects.toThrow("Unauthorized");
+    await expect(exportProjectsCsv()).rejects.toThrow("Unauthorized");
   });
 
   it("rejects non-admin users", async () => {
     setAuthMock(auth, mockSession({ role: "user" }));
-    await expect(exportSeedsCsv()).rejects.toThrow("Unauthorized");
+    await expect(exportProjectsCsv()).rejects.toThrow("Unauthorized");
   });
 
   it("returns CSV with header and data rows", async () => {
@@ -67,7 +67,7 @@ describe("exportSeedsCsv", () => {
       },
     ];
 
-    // exportSeedsCsv builds a subquery with db.select().from().groupBy().as()
+    // exportProjectsCsv builds a subquery with db.select().from().groupBy().as()
     const subqueryChain: Record<string, any> = {};
     subqueryChain.from = vi.fn().mockReturnValue(subqueryChain);
     subqueryChain.where = vi.fn().mockReturnValue(subqueryChain);
@@ -110,7 +110,7 @@ describe("exportSeedsCsv", () => {
       .mockReturnValueOnce(mainChain as any) // main query
       .mockReturnValueOnce(participantChain as any); // participant roles
 
-    const csv = await exportSeedsCsv();
+    const csv = await exportProjectsCsv();
     const lines = csv.split("\n");
 
     expect(lines[0]).toBe(
@@ -168,7 +168,7 @@ describe("exportSeedsCsv", () => {
       .mockReturnValueOnce(participantChain as any);
 
     // Should not throw
-    const csv = await exportSeedsCsv();
+    const csv = await exportProjectsCsv();
     const lines = csv.split("\n");
     expect(lines).toHaveLength(2); // header + 1 row
   });

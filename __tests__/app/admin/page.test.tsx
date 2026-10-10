@@ -22,15 +22,21 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 vi.mock("@/lib/db/queries/admin", () => ({
+  ADMIN_PROJECTS_PER_PAGE: 25,
   getAdminEmails: vi.fn(),
-  getAllProjects: vi.fn(),
   getCouncilMembers: vi.fn(),
+  getProjectsPage: vi.fn(),
   getSupporterEmailsMap: vi.fn(),
   getUsersPage: vi.fn(),
+  isAdminProjectStageFilter: (value: string | undefined) =>
+    ["seed", "sprout", "tree", "archived"].includes(value ?? ""),
   USERS_PER_PAGE: 20,
 }));
 
-vi.mock("@/lib/db/queries/comments", () => ({ getAllComments: vi.fn() }));
+vi.mock("@/lib/db/queries/comments", () => ({
+  ADMIN_COMMENTS_PER_PAGE: 50,
+  getCommentsPage: vi.fn(),
+}));
 vi.mock("@/lib/db/queries/settings", () => ({
   getBannerConfig: vi.fn(),
   getHomepagePhase: vi.fn(),
@@ -59,8 +65,8 @@ vi.mock("@/components/admin/export-buttons", () => ({
 vi.mock("@/components/admin/homepage-phase-toggle", () => ({
   HomepagePhaseToggle: () => <div>Homepage phase</div>,
 }));
-vi.mock("@/components/admin/seed-data-table", () => ({
-  AdminSeedTable: () => <div>Seed table</div>,
+vi.mock("@/components/admin/project-data-table", () => ({
+  AdminProjectTable: () => <div>Seed table</div>,
 }));
 vi.mock("@/components/admin/user-list", () => ({
   UserList: ({
@@ -83,12 +89,12 @@ import { auth } from "@/auth";
 import AdminPage from "@/app/admin/page";
 import {
   getAdminEmails,
-  getAllProjects,
   getCouncilMembers,
+  getProjectsPage,
   getSupporterEmailsMap,
   getUsersPage,
 } from "@/lib/db/queries/admin";
-import { getAllComments } from "@/lib/db/queries/comments";
+import { getCommentsPage } from "@/lib/db/queries/comments";
 import {
   getBannerConfig,
   getHarvestFestPage,
@@ -109,7 +115,13 @@ describe("AdminPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSearchParamsMock.mockReturnValue(new URLSearchParams());
-    vi.mocked(getAllProjects).mockResolvedValue([]);
+    vi.mocked(getProjectsPage).mockResolvedValue({
+      projects: [],
+      totalCount: 0,
+      totalPages: 0,
+      currentPage: 1,
+      pageSize: 25,
+    });
     vi.mocked(getSupporterEmailsMap).mockResolvedValue(new Map());
     vi.mocked(getAdminEmails).mockResolvedValue([]);
     vi.mocked(getCouncilMembers).mockResolvedValue([]);
@@ -120,7 +132,13 @@ describe("AdminPage", () => {
       currentPage: 2,
       pageSize: 20,
     });
-    vi.mocked(getAllComments).mockResolvedValue([]);
+    vi.mocked(getCommentsPage).mockResolvedValue({
+      comments: [],
+      totalCount: 0,
+      totalPages: 0,
+      currentPage: 1,
+      pageSize: 50,
+    });
     vi.mocked(getHomepagePhase).mockResolvedValue(1);
     vi.mocked(getBannerConfig).mockResolvedValue({
       enabled: false,
@@ -147,7 +165,7 @@ describe("AdminPage", () => {
     ).rejects.toThrow("NEXT_REDIRECT:/");
 
     expect(getUsersPage).not.toHaveBeenCalled();
-    expect(getAllProjects).not.toHaveBeenCalled();
+    expect(getProjectsPage).not.toHaveBeenCalled();
   });
 
   it("loads only the default Seeds tab data and makes People URL-addressable", async () => {
@@ -165,7 +183,12 @@ describe("AdminPage", () => {
       "h-11",
       "sm:h-[calc(100%-1px)]",
     );
-    expect(getAllProjects).toHaveBeenCalledOnce();
+    expect(getProjectsPage).toHaveBeenCalledWith({
+      page: 1,
+      search: undefined,
+      stage: undefined,
+    });
+    expect(getSupporterEmailsMap).toHaveBeenCalledWith([]);
     expect(getUsersPage).not.toHaveBeenCalled();
 
     fireEvent.mouseDown(screen.getByRole("tab", { name: "People" }), {
@@ -175,6 +198,44 @@ describe("AdminPage", () => {
 
     expect(routerPushMock).toHaveBeenCalledWith("/admin?tab=users", {
       scroll: false,
+    });
+  });
+
+  it("passes search, stage and page through to the project query", async () => {
+    setAuthMock(auth, mockAdminSession());
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams("search=garden&stage=sprout&page=3"),
+    );
+
+    render(
+      await AdminPage({
+        searchParams: Promise.resolve({
+          search: " garden ",
+          stage: "sprout",
+          page: "3",
+        }),
+      }),
+    );
+
+    expect(getProjectsPage).toHaveBeenCalledWith({
+      page: 3,
+      search: "garden",
+      stage: "sprout",
+    });
+    expect(getUsersPage).not.toHaveBeenCalled();
+  });
+
+  it("ignores an unknown stage filter", async () => {
+    setAuthMock(auth, mockAdminSession());
+
+    render(
+      await AdminPage({ searchParams: Promise.resolve({ stage: "bogus" }) }),
+    );
+
+    expect(getProjectsPage).toHaveBeenCalledWith({
+      page: 1,
+      search: undefined,
+      stage: undefined,
     });
   });
 
@@ -195,9 +256,9 @@ describe("AdminPage", () => {
     );
 
     expect(getUsersPage).toHaveBeenCalledWith({ page: 2, search: "Alice" });
-    expect(getAllProjects).not.toHaveBeenCalled();
+    expect(getProjectsPage).not.toHaveBeenCalled();
     expect(getSupporterEmailsMap).not.toHaveBeenCalled();
-    expect(getAllComments).not.toHaveBeenCalled();
+    expect(getCommentsPage).not.toHaveBeenCalled();
 
     expect(
       screen.getByRole("heading", { name: "All People" }),
@@ -225,5 +286,35 @@ describe("AdminPage", () => {
         searchParams: Promise.resolve({ tab: "users", page: "99" }),
       }),
     ).rejects.toThrow("NEXT_REDIRECT:/admin?tab=users&page=3");
+  });
+  it.each([
+    [
+      "seeds",
+      getProjectsPage,
+      { projects: [], pageSize: 25 },
+      { search: "garden", stage: "sprout" },
+      "tab=seeds&search=garden&stage=sprout&page=2",
+    ],
+    [
+      "insights",
+      getCommentsPage,
+      { comments: [], pageSize: 50 },
+      {},
+      "tab=insights&page=2",
+    ],
+  ] as const)("clamps the %s tab and preserves its filters", async (tab, query, rows, filters, target) => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(query).mockResolvedValue({
+      ...rows,
+      totalCount: 30,
+      totalPages: 2,
+      currentPage: 99,
+    } as never);
+    await expect(
+      AdminPage({
+        searchParams: Promise.resolve({ tab, page: "99", ...filters }),
+      }),
+    ).rejects.toThrow(`NEXT_REDIRECT:/admin?${target}`);
+    expect(getSupporterEmailsMap).not.toHaveBeenCalled();
   });
 });

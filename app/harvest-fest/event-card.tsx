@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, MapPin, Sprout } from "lucide-react";
 import { LinkifyText } from "@/components/linkify-text";
-import { ImageLightbox } from "@/components/seeds/image-lightbox";
+import { ImageLightbox } from "@/components/projects/image-lightbox";
 import type { HarvestFestEvent } from "@/lib/db/queries/settings";
 import { cn } from "@/lib/utils";
 import { routes } from "@/lib/routes";

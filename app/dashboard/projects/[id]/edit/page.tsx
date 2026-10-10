@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SeedForm } from "@/components/forms/seed-form";
+import { ProjectForm } from "@/components/forms/project-form";
 import { getManagedProjectWorkspace } from "@/lib/project-workspace";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default async function EditProjectPage(props: {
           Every public project field remains editable as this project matures.
         </p>
       </div>
-      <SeedForm project={project} />
+      <ProjectForm project={project} />
     </section>
   );
 }

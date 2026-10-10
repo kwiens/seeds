@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import {
-  getProjectsCreatedByUser,
+  getManagedProjectsByUser,
   getSupportedProjectsByUser,
 } from "@/lib/db/queries/projects";
 import { getMyProjects } from "@/lib/db/queries/my-projects";
@@ -22,19 +22,30 @@ const dashboardTabs: DashboardTab[] = ["my-sprouts", "my-seeds", "supporting"];
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/api/auth/signin");
   }
 
-  const [{ tab }, sprouts, userSeeds, supportedSeeds] = await Promise.all([
-    searchParams,
+  const { tab, page: rawPage } = await searchParams;
+  const requestedPage = Number(rawPage);
+  const page =
+    Number.isSafeInteger(requestedPage) && requestedPage > 0
+      ? requestedPage
+      : 1;
+  const [sprouts, managedPage, supportedProjects] = await Promise.all([
     getMyProjects(session.user.id, session.user.role),
-    getProjectsCreatedByUser(session.user.id),
+    getManagedProjectsByUser(session.user.id, page),
     getSupportedProjectsByUser(session.user.id),
   ]);
+  if (page !== managedPage.currentPage && tab === "my-seeds") {
+    const params = new URLSearchParams({ tab: "my-seeds" });
+    if (managedPage.currentPage > 1)
+      params.set("page", String(managedPage.currentPage));
+    redirect(`/dashboard?${params}`);
+  }
   const initialTab = dashboardTabs.includes(tab as DashboardTab)
     ? (tab as DashboardTab)
     : undefined;
@@ -57,9 +68,11 @@ export default async function DashboardPage({
       </div>
 
       <DashboardContent
+        key={initialTab ?? "default"}
         sprouts={sprouts}
-        userSeeds={userSeeds}
-        supportedSeeds={supportedSeeds}
+        createdProjects={managedPage.projects}
+        managedPage={managedPage}
+        supportedProjects={supportedProjects}
         initialTab={initialTab}
       />
     </div>

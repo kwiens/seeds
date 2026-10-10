@@ -1,4 +1,4 @@
-import { StatusSection } from "@/components/seeds/status-section";
+import { StatusSection } from "@/components/projects/status-section";
 import type { CategoryKey } from "@/config/categories";
 import type { ProjectStage } from "@/lib/project-stages";
 
@@ -35,7 +35,7 @@ export function HomePhase2({ previews }: { previews: StagePreview[] }) {
         <StatusSection
           key={preview.stage}
           stage={preview.stage}
-          seeds={preview.projects}
+          projects={preview.projects}
           totalCount={preview.totalCount}
         />
       ))}

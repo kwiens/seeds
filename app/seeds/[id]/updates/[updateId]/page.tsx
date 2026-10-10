@@ -29,18 +29,18 @@ export default async function UpdatePage(props: {
   const params = await props.params;
   const access = await getReadableProjectUpdate(params.id, params.updateId);
   if (!access) notFound();
-  const { project: seed, update, canManage: canEdit } = access;
+  const { project, update, canManage: canEdit } = access;
   const wasEdited =
     update.updatedAt.getTime() - update.createdAt.getTime() > 1000;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link
-        href={routes.project(seed.id)}
+        href={routes.project(project.id)}
         className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-3.5" />
-        Back to {seed.name}
+        Back to {project.name}
       </Link>
 
       <article className="mt-4">
@@ -50,7 +50,7 @@ export default async function UpdatePage(props: {
           </h1>
           {canEdit && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={routes.workspaceEditUpdate(seed.id, update.id)}>
+              <Link href={routes.workspaceEditUpdate(project.id, update.id)}>
                 <Pencil className="mr-1.5 size-3.5" />
                 Edit
               </Link>

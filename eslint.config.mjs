@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "playwright-report/**",
+    "test-results/**",
     // Vendored AI-agent skill bundles (impeccable installer output)
     ".claude/**",
     ".github/skills/**",

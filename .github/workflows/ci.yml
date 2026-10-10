@@ -2,7 +2,6 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
@@ -60,7 +59,9 @@ jobs:
       - name: Run end-to-end tests
         env:
           DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
-        run: pnpm test:e2e
+        run: |
+          pnpm db:migrate
+          pnpm test:e2e
 
       - name: Upload Playwright diagnostics
         if: ${{ !cancelled() }}

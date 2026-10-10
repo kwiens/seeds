@@ -17,7 +17,7 @@ vi.mock("drizzle-orm", async (importOriginal) => {
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  getAllComments,
+  getCommentsPage,
   getCommentsByProject,
 } from "@/lib/db/queries/comments";
 import { projectComments } from "@/lib/db/schema";
@@ -107,12 +107,26 @@ describe("getCommentsByProject", () => {
   });
 });
 
-describe("getAllComments", () => {
+describe("getCommentsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns the mapped rows from the database as-is", async () => {
+  function mockPage(rows: unknown[], totalCount: number) {
+    const rowsChain: Record<string, ReturnType<typeof vi.fn>> = {};
+    for (const step of ["from", "innerJoin", "where", "orderBy", "limit"]) {
+      rowsChain[step] = vi.fn().mockReturnValue(rowsChain);
+    }
+    rowsChain.offset = vi.fn().mockResolvedValue(rows);
+    const countChain: Record<string, ReturnType<typeof vi.fn>> = {};
+    countChain.from = vi.fn().mockResolvedValue([{ count: totalCount }]);
+    vi.mocked(db.select)
+      .mockReturnValueOnce(rowsChain as any)
+      .mockReturnValueOnce(countChain as any);
+    return rowsChain;
+  }
+
+  it("returns one page of rows with pagination metadata", async () => {
     const rows = [
       {
         id: "c1",
@@ -125,19 +139,28 @@ describe("getAllComments", () => {
         userName: "Alice",
       },
     ];
-    const chain = mockSelectChain(rows);
-    vi.mocked(db.select).mockReturnValue(chain as any);
+    const chain = mockPage(rows, 120);
 
-    const result = await getAllComments();
+    const result = await getCommentsPage({ page: 2 });
 
-    expect(result).toEqual(rows);
+    expect(result).toEqual({
+      comments: rows,
+      totalCount: 120,
+      totalPages: 3,
+      currentPage: 2,
+      pageSize: 50,
+    });
+    expect(chain.limit).toHaveBeenCalledWith(50);
+    expect(chain.offset).toHaveBeenCalledWith(50);
   });
 
-  it("returns an empty array when there are no comments at all", async () => {
-    vi.mocked(db.select).mockReturnValue(mockSelectChain([]) as any);
+  it("treats an invalid page as the first page", async () => {
+    const chain = mockPage([], 0);
 
-    const result = await getAllComments();
+    const result = await getCommentsPage({ page: -4 });
 
-    expect(result).toEqual([]);
+    expect(result.currentPage).toBe(1);
+    expect(result.totalPages).toBe(0);
+    expect(chain.offset).toHaveBeenCalledWith(0);
   });
 });

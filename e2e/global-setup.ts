@@ -1,6 +1,7 @@
 import { config as loadEnvironment } from "dotenv";
 import { sql } from "drizzle-orm";
 import { assertSafeDatabaseUrl, isProductionDatabase } from "@/lib/db/safety";
+import { seedPaginationData } from "./fixtures/pagination-data";
 import { e2eDirectoryUsers, e2eTestUsers } from "./fixtures/test-users";
 
 export default async function globalSetup() {
@@ -37,4 +38,5 @@ export default async function globalSetup() {
         image: null,
       },
     });
+  return await seedPaginationData();
 }

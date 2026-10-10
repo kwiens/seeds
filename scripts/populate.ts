@@ -1,14 +1,22 @@
+/**
+ * Development sample data: fifty Chattanooga projects with fictional people.
+ * City-specific by design; see docs/city-setup.md. Refuses to run against
+ * Production through the same checks as the app.
+ *
+ *   pnpm db:seed                 insert sample projects
+ *   pnpm db:seed --with-images   also generate posters (needs Gemini + Blob)
+ *   pnpm db:seed --clean         remove bot-created data first
+ *   pnpm db:seed --clean-only    remove bot-created data and stop
+ */
 import { config } from "dotenv";
-config({ path: ".env.local" });
+config({ path: ".env.local", quiet: true });
+config({ path: ".env.development.local", override: true, quiet: true });
 
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { eq, isNull, like } from "drizzle-orm";
-import { GoogleGenAI } from "@google/genai";
-import { put } from "@vercel/blob";
+import { eq, like } from "drizzle-orm";
 import type { CategoryKey } from "../config/categories";
+import { assertSafeBlobStores, assertSafeDatabaseUrl } from "../lib/db/safety";
 import * as schema from "../lib/db/schema";
-import { buildImagePrompt } from "../lib/image-prompt";
+import { generateProjectPoster } from "../lib/image-generation";
 
 const SEED_BOT_EMAIL = "seedbot@seeds.example.com";
 const SEED_BOT_NAME = "Seed Bot";
@@ -48,62 +56,6 @@ const PEOPLE = [
   "Lily Cheng",
   "Andre Clark",
 ];
-
-// ---------------------------------------------------------------------------
-// Image generation
-// ---------------------------------------------------------------------------
-async function generateImage(seed: {
-  id: string;
-  name: string;
-  summary: string;
-  category: string;
-  locationAddress: string | null;
-  waterHave: string[];
-}) {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) {
-    return { error: "GOOGLE_GENERATIVE_AI_API_KEY is not set." };
-  }
-
-  const prompt = buildImagePrompt(seed);
-
-  const ai = new GoogleGenAI({ apiKey });
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
-    contents: prompt,
-    config: {
-      responseModalities: ["IMAGE"],
-      imageConfig: {
-        aspectRatio: "3:4",
-      },
-    },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts;
-  if (!parts) {
-    return { error: "No image was generated." };
-  }
-
-  const imagePart = parts.find((part) =>
-    part.inlineData?.mimeType?.startsWith("image/"),
-  );
-  if (!imagePart?.inlineData?.data) {
-    return { error: "No image data in response." };
-  }
-
-  const imageBuffer = Buffer.from(imagePart.inlineData.data, "base64");
-  const mimeType = imagePart.inlineData.mimeType ?? "image/png";
-  const extension = mimeType === "image/jpeg" ? "jpg" : "png";
-
-  const blob = await put(`projects/${seed.id}.${extension}`, imageBuffer, {
-    access: "public",
-    contentType: mimeType,
-    addRandomSuffix: true,
-  });
-
-  return { imageUrl: blob.url };
-}
 
 // Helpers
 function pick<T>(arr: T[], n: number): T[] {
@@ -1281,13 +1233,22 @@ async function main() {
   const clean = process.argv.includes("--clean");
   const withImages = process.argv.includes("--with-images");
 
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set. Did you create .env.local?");
-    process.exit(1);
+  if (process.env.VERCEL_ENV === "production") {
+    throw new Error("Development sample data must never run in Production.");
   }
-
-  const sql = neon(process.env.DATABASE_URL);
-  const db = drizzle(sql, { schema });
+  assertSafeDatabaseUrl(process.env.DATABASE_URL, {
+    environment: "development",
+    allowProduction: false,
+  });
+  if (withImages) {
+    assertSafeBlobStores({
+      publicToken: process.env.BLOB_READ_WRITE_TOKEN,
+      teamToken: process.env.TEAM_FILES_BLOB_READ_WRITE_TOKEN,
+    });
+  }
+  // Imported after the environment is loaded; the client asserts the
+  // database target again when the module initializes.
+  const { db } = await import("../lib/db");
 
   // --clean: remove seeded data
   if (clean) {
@@ -1456,7 +1417,7 @@ async function main() {
 
     // Find all seeds created by seed bot that lack images
     const seedsWithoutImages = await db.query.projects.findMany({
-      where: (s, { eq: e, and }) =>
+      where: (s, { eq: e, and, isNull }) =>
         and(e(s.createdBy, seedUser.id), isNull(s.imageUrl)),
     });
 
@@ -1477,8 +1438,8 @@ async function main() {
       );
 
       try {
-        const result = await generateImage(seed);
-        if (result.error) {
+        const result = await generateProjectPoster(seed);
+        if (result.error !== undefined) {
           console.log(`FAILED: ${result.error}`);
           continue;
         }

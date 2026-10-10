@@ -1,0 +1,631 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import Image from "next/image";
+import { useSession } from "next-auth/react";
+import { ArrowDown, ArrowUp, GripVertical, Info, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SeedIcon } from "@/components/icons/seed-icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { PhotoUpload } from "@/components/forms/photo-upload";
+import { RegenerateImageButton } from "@/components/projects/regenerate-image-button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SortableList } from "@/components/forms/sortable-list";
+import { LocationPicker } from "@/components/forms/location-picker";
+import { SignInButton } from "@/components/auth/sign-in-button";
+import { badges, badgeKeys } from "@/config/badges";
+import {
+  categories,
+  categoryKeys,
+  type CategoryKey,
+} from "@/config/categories";
+import { siteConfig } from "@/config/site";
+import { createProject, updateProject } from "@/lib/actions/projects";
+import type { Project, ProjectParticipant } from "@/lib/db/types";
+import { cn } from "@/lib/utils";
+
+interface RootItem {
+  name: string;
+  committed: boolean;
+}
+
+function FieldInfoLink({ anchor }: { anchor: string }) {
+  return (
+    <a
+      href={`/about#seed-${anchor}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted-foreground hover:text-foreground"
+      title="Learn more"
+      aria-label="Learn more about this field (opens in new tab)"
+    >
+      <Info className="size-3.5" />
+    </a>
+  );
+}
+
+interface ProjectFormProps {
+  project?: Project & { participants: ProjectParticipant[] };
+  planterName?: string;
+}
+
+export function ProjectForm({ project, planterName }: ProjectFormProps) {
+  const { data: session } = useSession();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
+
+  const [name, setName] = useState(project?.name ?? "");
+  const [summary, setSummary] = useState(project?.summary ?? "");
+  const [gardeners, setGardeners] = useState<string[]>(
+    project
+      ? participantNames(project.participants, "gardener")
+      : planterName
+        ? [planterName]
+        : [],
+  );
+  const [locationAddress, setLocationAddress] = useState(
+    project?.locationAddress ?? "",
+  );
+  const [locationLat, setLocationLat] = useState<number | null>(
+    project?.locationLat ?? null,
+  );
+  const [locationLng, setLocationLng] = useState<number | null>(
+    project?.locationLng ?? null,
+  );
+  const [category, setCategory] = useState<CategoryKey | "">(
+    (project?.category as CategoryKey) ?? "",
+  );
+  const [roots, setRoots] = useState<RootItem[]>(
+    project
+      ? project.participants
+          .filter((participant) => participant.role === "roots")
+          .map((participant) => ({
+            name: participant.displayName,
+            committed: participant.state === "active",
+          }))
+      : [],
+  );
+  const [supportPeople, setSupportPeople] = useState<string[]>(
+    project ? participantNames(project.participants, "guide") : [],
+  );
+  const [waterHave, setWaterHave] = useState<string[]>(
+    project?.waterHave ?? [],
+  );
+  const [waterNeed, setWaterNeed] = useState<string[]>(
+    project?.waterNeed ?? [],
+  );
+  const [locationDescription, setLocationDescription] = useState(
+    project?.locationDescription ?? "",
+  );
+  const [budgetEstimate, setBudgetEstimate] = useState(
+    project?.budgetEstimate ?? "",
+  );
+  const [obstacles, setObstacles] = useState(project?.obstacles ?? "");
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    project?.imageUrl ?? null,
+  );
+  const [photos, setPhotos] = useState<string[]>(project?.photos ?? []);
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(
+    project?.coverPhotoUrl ?? null,
+  );
+  const [selectedBadges, setSelectedBadges] = useState<string[]>(
+    project?.badges ?? [],
+  );
+
+  const isSignedIn = !!session?.user;
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!category) {
+      setError("Please select a category.");
+      return;
+    }
+
+    const formData = {
+      name,
+      summary,
+      gardeners,
+      locationAddress: locationAddress || undefined,
+      locationDescription: locationDescription || undefined,
+      locationLat: locationLat ?? undefined,
+      locationLng: locationLng ?? undefined,
+      category,
+      roots,
+      supportPeople,
+      waterHave,
+      waterNeed,
+      budgetEstimate: budgetEstimate || undefined,
+      obstacles: obstacles || undefined,
+      photos,
+      coverPhotoUrl: coverPhotoUrl ?? null,
+      badges: selectedBadges,
+    };
+
+    startTransition(async () => {
+      const result = project
+        ? await updateProject(project.id, formData)
+        : await createProject(formData);
+
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {!isSignedIn && (
+        <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
+          <p className="mb-3 text-sm text-muted-foreground">
+            Sign in with {siteConfig.auth.providerLabel} to plant your seed
+          </p>
+          <SignInButton />
+        </div>
+      )}
+
+      {error && (
+        <div
+          ref={errorRef}
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {error}
+        </div>
+      )}
+
+      <fieldset disabled={!isSignedIn || isPending} className="space-y-6">
+        {/* Name */}
+        <div className="space-y-2">
+          <Label htmlFor="name">Seed Name</Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={160}
+            placeholder="Give your seed a catchy name that's fun to say"
+            required
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {name.length}/160 characters
+          </p>
+        </div>
+
+        {/* Summary */}
+        <div className="space-y-2">
+          <Label htmlFor="summary" className="flex items-center gap-2">
+            <SeedIcon name="idea" />
+            The Idea
+            <FieldInfoLink anchor="name" />
+          </Label>
+          <Textarea
+            id="summary"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            maxLength={10000}
+            placeholder="Describe your idea"
+            rows={6}
+            required
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {summary.length}/10,000 characters
+          </p>
+        </div>
+
+        {/* Category */}
+        <div className="space-y-2">
+          <Label htmlFor="category">Category</Label>
+          <Select
+            value={category}
+            onValueChange={(val) => setCategory(val as CategoryKey)}
+          >
+            <SelectTrigger id="category">
+              <SelectValue placeholder="Select a category..." />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryKeys.map((key) => {
+                const info = categories[key];
+                const Icon = info.icon;
+                return (
+                  <SelectItem key={key} value={key}>
+                    <span className="flex items-center gap-2">
+                      <Icon className="size-4" />
+                      {info.label}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Gardeners */}
+        <SortableList
+          items={gardeners}
+          onItemsChange={setGardeners}
+          label={
+            <>
+              <SeedIcon name="gardeners" />
+              Gardeners (Who&apos;s responsible for this seed?)
+              <FieldInfoLink anchor="gardeners" />
+            </>
+          }
+          placeholder="Add a gardener"
+        />
+
+        {/* Location */}
+        <LocationPicker
+          address={locationAddress}
+          lat={locationLat}
+          lng={locationLng}
+          onLocationChange={({ address, lat, lng }) => {
+            setLocationAddress(address);
+            setLocationLat(lat);
+            setLocationLng(lng);
+          }}
+        />
+
+        {/* Location Description */}
+        <div className="space-y-2">
+          <Label htmlFor="locationDescription">Location Description</Label>
+          <Textarea
+            id="locationDescription"
+            value={locationDescription}
+            onChange={(e) => setLocationDescription(e.target.value)}
+            maxLength={10000}
+            placeholder="Describe this location, neighborhood or community"
+            rows={3}
+          />
+        </div>
+
+        {/* Roots (Organizations) */}
+        <RootsList roots={roots} onRootsChange={setRoots} />
+
+        {/* Guides (People) */}
+        <SortableList
+          items={supportPeople}
+          onItemsChange={setSupportPeople}
+          label={
+            <>
+              <SeedIcon name="support" />
+              Guides (Experts who could support)
+              <FieldInfoLink anchor="support" />
+            </>
+          }
+          placeholder="Add a person"
+        />
+
+        {/* Fertilizer: What do you have? */}
+        <SortableList
+          items={waterHave}
+          onItemsChange={setWaterHave}
+          label={
+            <>
+              <SeedIcon name="fertilizer" />
+              Fertilizer (Resources you already have)
+              <FieldInfoLink anchor="soil" />
+            </>
+          }
+          placeholder="Space, materials, volunteers…"
+        />
+
+        {/* Water: What resources and funding do you need? */}
+        <SortableList
+          items={waterNeed}
+          onItemsChange={setWaterNeed}
+          label={
+            <>
+              <SeedIcon name="water" />
+              Water (Resources you need)
+              <FieldInfoLink anchor="water" />
+            </>
+          }
+          placeholder="Land, venue, equipment…"
+        />
+
+        {/* Budget */}
+        <div className="space-y-2">
+          <Label htmlFor="budget">Budget</Label>
+          <Input
+            id="budget"
+            value={budgetEstimate}
+            onChange={(e) => setBudgetEstimate(e.target.value)}
+            maxLength={500}
+            placeholder="How much money do you think you need?"
+          />
+        </div>
+
+        {/* Obstacles */}
+        <div className="space-y-2">
+          <Label htmlFor="obstacles" className="flex items-center gap-2">
+            Obstacles
+          </Label>
+          <Textarea
+            id="obstacles"
+            value={obstacles}
+            onChange={(e) => setObstacles(e.target.value)}
+            maxLength={10000}
+            placeholder="Known obstacles, challenges or roadblocks"
+            rows={4}
+          />
+        </div>
+
+        {/* Badges */}
+        <div className="space-y-2">
+          <Label id="badges-label">Badges</Label>
+          <p className="text-muted-foreground text-xs">
+            Select any badges that apply to this seed.
+          </p>
+          <div
+            role="group"
+            aria-labelledby="badges-label"
+            className="flex flex-wrap gap-2"
+          >
+            {badgeKeys.map((key) => {
+              const info = badges[key];
+              const Icon = info.icon;
+              const isActive = selectedBadges.includes(key);
+              return (
+                <Button
+                  key={key}
+                  type="button"
+                  variant={isActive ? "secondary" : "outline"}
+                  size="sm"
+                  className="gap-1.5"
+                  aria-pressed={isActive}
+                  onClick={() => {
+                    setSelectedBadges((prev) =>
+                      prev.includes(key)
+                        ? prev.filter((b) => b !== key)
+                        : [...prev, key],
+                    );
+                  }}
+                >
+                  <Icon className="size-3.5" />
+                  {info.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Photos */}
+        <PhotoUpload
+          photos={photos}
+          onPhotosChange={setPhotos}
+          coverPhotoUrl={coverPhotoUrl}
+          onCoverPhotoChange={setCoverPhotoUrl}
+        />
+
+        {/* Illustration (edit mode only) */}
+        {project && (
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <SeedIcon name="harvest" />
+              Illustration
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Improve the automatically generated image by editing your
+              description. The more descriptive your idea, the better the
+              illustration. This will be your cover photo unless you star an
+              image you upload.
+            </p>
+            {imageUrl ? (
+              <a
+                href={imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block max-w-xs overflow-hidden rounded-lg"
+              >
+                <Image
+                  src={imageUrl}
+                  alt={project.name}
+                  width={320}
+                  height={320}
+                  className="h-auto w-full"
+                  sizes="320px"
+                />
+              </a>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No image generated yet.
+              </p>
+            )}
+            <RegenerateImageButton
+              projectId={project.id}
+              hasImage={!!imageUrl}
+              onImageGenerated={setImageUrl}
+            />
+          </div>
+        )}
+
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending
+            ? "Planting..."
+            : project
+              ? "Update Seed"
+              : "Plant This Seed"}
+        </Button>
+      </fieldset>
+    </form>
+  );
+}
+
+function participantNames(
+  participants: ProjectParticipant[],
+  role: ProjectParticipant["role"],
+) {
+  return participants
+    .filter(
+      (participant) =>
+        participant.role === role && participant.state !== "inactive",
+    )
+    .map((participant) => participant.displayName);
+}
+
+function RootsList({
+  roots,
+  onRootsChange,
+}: {
+  roots: RootItem[];
+  onRootsChange: (roots: RootItem[]) => void;
+}) {
+  const [newRoot, setNewRoot] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  function addRoot() {
+    const trimmed = newRoot.trim();
+    if (!trimmed) return;
+    onRootsChange([...roots, { name: trimmed, committed: false }]);
+    setNewRoot("");
+  }
+
+  function removeRoot(index: number) {
+    onRootsChange(roots.filter((_, i) => i !== index));
+  }
+
+  function moveRoot(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= roots.length) return;
+    const updated = [...roots];
+    [updated[index], updated[target]] = [updated[target], updated[index]];
+    onRootsChange(updated);
+  }
+
+  function toggleCommitted(index: number) {
+    const updated = [...roots];
+    updated[index] = {
+      ...updated[index],
+      committed: !updated[index].committed,
+    };
+    onRootsChange(updated);
+  }
+
+  function handleDragStart(index: number) {
+    setDragIndex(index);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    const updated = [...roots];
+    const [moved] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, moved);
+    onRootsChange(updated);
+    setDragIndex(index);
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null);
+  }
+
+  return (
+    <div>
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium">
+        <SeedIcon name="roots" />
+        Roots (Organizations that could help)
+        <FieldInfoLink anchor="roots" />
+      </span>
+      {roots.length > 0 && (
+        <ul className="mb-2 space-y-1">
+          {roots.map((root, index) => (
+            <li
+              key={`${root.name}-${index}`}
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm",
+                dragIndex === index && "opacity-50",
+              )}
+            >
+              <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
+              <span className="flex-1">{root.name}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Move ${root.name} up`}
+                disabled={index === 0}
+                onClick={() => moveRoot(index, -1)}
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Move ${root.name} down`}
+                disabled={index === roots.length - 1}
+                onClick={() => moveRoot(index, 1)}
+              >
+                <ArrowDown className="size-4" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => toggleCommitted(index)}
+                className={cn(
+                  "shrink-0 rounded px-2 py-0.5 text-xs font-medium",
+                  root.committed
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {root.committed ? "Committed" : "Not committed yet"}
+              </button>
+              <button
+                type="button"
+                onClick={() => removeRoot(index)}
+                aria-label={`Remove ${root.name}`}
+                className="-m-1 shrink-0 p-1 text-muted-foreground hover:text-destructive"
+              >
+                <X className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={newRoot}
+          onChange={(e) => setNewRoot(e.target.value)}
+          placeholder="Add an organization"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addRoot();
+            }
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Add organization"
+          onClick={addRoot}
+        >
+          <Plus className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}

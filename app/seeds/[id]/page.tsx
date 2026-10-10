@@ -7,16 +7,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CategoryBadge } from "@/components/seeds/category-badge";
-import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
-import { CommentsSection } from "@/components/seeds/comments-section";
-import { ImageLightbox } from "@/components/seeds/image-lightbox";
-import { SeedImageGenerator } from "@/components/seeds/seed-image-generator";
-import { SupportButton } from "@/components/seeds/support-button";
-import { ExpandableText } from "@/components/seeds/expandable-text";
-import { SeedDetailTabs } from "@/components/seeds/seed-detail-tabs";
+import { CategoryBadge } from "@/components/projects/category-badge";
+import { ProjectStatusBadge } from "@/components/dashboard/project-status-badge";
+import { CommentsSection } from "@/components/projects/comments-section";
+import { ImageLightbox } from "@/components/projects/image-lightbox";
+import { ProjectImageGenerator } from "@/components/projects/project-image-generator";
+import { SupportButton } from "@/components/projects/support-button";
+import { ExpandableText } from "@/components/projects/expandable-text";
+import { ProjectDetailTabs } from "@/components/projects/project-detail-tabs";
 import { PhotoGrid } from "@/components/photo-grid";
-import { SeedDetailMap } from "./seed-detail-map";
+import { ProjectDetailMap } from "./project-detail-map";
 import { getCommentsByProject } from "@/lib/db/queries/comments";
 import { getPublicBudgets } from "@/lib/db/queries/budgets";
 import { getPublicProjectUpdates } from "@/lib/db/queries/project-updates";
@@ -102,22 +102,22 @@ export async function generateMetadata(props: {
   const params = await props.params;
   const access = await getReadableProject(params.id);
   if (!access) return { title: "Seed Not Found" };
-  const { project: seed } = access;
-  const ogImage = seed.coverPhotoUrl ?? seed.imageUrl;
+  const { project } = access;
+  const ogImage = project.coverPhotoUrl ?? project.imageUrl;
   return {
-    title: seed.name,
-    description: seed.summary.slice(0, 160),
+    title: project.name,
+    description: project.summary.slice(0, 160),
     openGraph: {
-      title: seed.name,
-      description: seed.summary.slice(0, 160),
+      title: project.name,
+      description: project.summary.slice(0, 160),
       ...(ogImage && {
         images: [{ url: ogImage }],
       }),
     },
     twitter: {
       card: "summary_large_image",
-      title: seed.name,
-      description: seed.summary.slice(0, 160),
+      title: project.name,
+      description: project.summary.slice(0, 160),
       ...(ogImage && {
         images: [ogImage],
       }),
@@ -125,16 +125,16 @@ export async function generateMetadata(props: {
   };
 }
 
-export default async function SeedPage(props: {
+export default async function ProjectPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const params = await props.params;
   const access = await getReadableProject(params.id);
   if (!access) notFound();
-  const { project: seed, session, canManage: canEdit } = access;
+  const { project, session, canManage: canEdit } = access;
   const { canAccessTeam: hasTeamAccess } = await getProjectAccess(
     session,
-    seed,
+    project,
   );
 
   const [
@@ -145,33 +145,34 @@ export default async function SeedPage(props: {
     updates,
     publicBudgets,
   ] = await Promise.all([
-    getProjectSupportCount(seed.id),
-    getProjectSupporters(seed.id, { includeEmail: canEdit }),
-    session?.user?.id ? hasUserSupported(seed.id, session.user.id) : false,
-    getCommentsByProject(seed.id),
-    getPublicProjectUpdates(seed.id),
-    getPublicBudgets(seed.id),
+    getProjectSupportCount(project.id),
+    getProjectSupporters(project.id, { includeEmail: canEdit }),
+    session?.user?.id ? hasUserSupported(project.id, session.user.id) : false,
+    getCommentsByProject(project.id),
+    getPublicProjectUpdates(project.id),
+    getPublicBudgets(project.id),
   ]);
 
-  const hasLocation = seed.locationLat !== null && seed.locationLng !== null;
+  const hasLocation =
+    project.locationLat !== null && project.locationLng !== null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Title row — full width */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <CategoryBadge category={seed.category} className="mb-2" />
+          <CategoryBadge category={project.category} className="mb-2" />
           <h1 className="break-words text-3xl font-bold tracking-tight">
-            {seed.name}
+            {project.name}
           </h1>
-          {(seed.stage !== "seed" ||
-            seed.approvalState !== "approved" ||
-            seed.archivedAt) && (
+          {(project.stage !== "seed" ||
+            project.approvalState !== "approved" ||
+            project.archivedAt) && (
             <div className="mt-2">
-              <SeedStatusBadge
-                stage={seed.stage}
-                approvalState={seed.approvalState}
-                archivedAt={seed.archivedAt}
+              <ProjectStatusBadge
+                stage={project.stage}
+                approvalState={project.approvalState}
+                archivedAt={project.archivedAt}
               />
             </div>
           )}
@@ -179,21 +180,21 @@ export default async function SeedPage(props: {
         <div className="flex flex-wrap gap-2">
           {canEdit ? (
             <Button variant="outline" asChild>
-              <Link href={routes.workspace(seed.id)}>
+              <Link href={routes.workspace(project.id)}>
                 <Settings2 className="mr-1.5 size-3.5" />
                 Manage project
               </Link>
             </Button>
           ) : hasTeamAccess ? (
             <Button variant="outline" asChild>
-              <Link href={routes.workspace(seed.id, "team")}>
+              <Link href={routes.workspace(project.id, "team")}>
                 <Users className="mr-1.5 size-3.5" />
                 Team workspace
               </Link>
             </Button>
           ) : null}
           <SupportButton
-            seedId={seed.id}
+            projectId={project.id}
             supportCount={supportCount}
             hasSupported={userHasSupported}
           />
@@ -206,30 +207,30 @@ export default async function SeedPage(props: {
           {/* Creator */}
           <div className="mb-4 flex items-center gap-3">
             <Avatar className="size-8">
-              <AvatarImage src={seed.creator.image ?? undefined} />
+              <AvatarImage src={project.creator.image ?? undefined} />
               <AvatarFallback>
-                {(seed.creator.name ?? "U").charAt(0).toUpperCase()}
+                {(project.creator.name ?? "U").charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{seed.creator.name}</p>
+              <p className="text-sm font-medium">{project.creator.name}</p>
               <p className="text-muted-foreground text-xs">Planted this seed</p>
             </div>
           </div>
 
           {/* Summary */}
           <div className="prose prose-neutral dark:prose-invert max-w-none">
-            <ExpandableText text={seed.summary} />
+            <ExpandableText text={project.summary} />
           </div>
         </div>
 
         {/* Image — top right on desktop, below on mobile */}
         <div className="flex flex-col gap-4">
           {(() => {
-            const hero = seed.coverPhotoUrl
-              ? { src: seed.coverPhotoUrl, alt: seed.name }
-              : seed.imageUrl
-                ? { src: seed.imageUrl, alt: buildImagePrompt(seed) }
+            const hero = project.coverPhotoUrl
+              ? { src: project.coverPhotoUrl, alt: project.name }
+              : project.imageUrl
+                ? { src: project.imageUrl, alt: buildImagePrompt(project) }
                 : null;
             if (!hero) return null;
             return (
@@ -242,20 +243,22 @@ export default async function SeedPage(props: {
             );
           })()}
           {/* Always generate AI illustration if missing, even when cover photo is set */}
-          {!seed.imageUrl && canEdit && <SeedImageGenerator seedId={seed.id} />}
+          {!project.imageUrl && canEdit && (
+            <ProjectImageGenerator projectId={project.id} />
+          )}
         </div>
       </div>
 
       {/* Photos — exclude cover photo (already shown as primary) */}
       {(() => {
-        const displayPhotos = seed.coverPhotoUrl
-          ? seed.photos.filter((url) => url !== seed.coverPhotoUrl)
-          : seed.photos;
+        const displayPhotos = project.coverPhotoUrl
+          ? project.photos.filter((url) => url !== project.coverPhotoUrl)
+          : project.photos;
         if (displayPhotos.length === 0) return null;
         return (
           <div className="mb-8">
             <h2 className="mb-3 text-sm font-semibold">Photos</h2>
-            <PhotoGrid photos={displayPhotos} alt={seed.name} />
+            <PhotoGrid photos={displayPhotos} alt={project.name} />
           </div>
         );
       })()}
@@ -267,14 +270,14 @@ export default async function SeedPage(props: {
             {/* Map — full width */}
             {hasLocation && (
               <div className="mb-8">
-                <SeedDetailMap
-                  lat={seed.locationLat!}
-                  lng={seed.locationLng!}
-                  address={seed.locationAddress}
+                <ProjectDetailMap
+                  lat={project.locationLat!}
+                  lng={project.locationLng!}
+                  address={project.locationAddress}
                 />
-                {seed.locationDescription && (
+                {project.locationDescription && (
                   <p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">
-                    {seed.locationDescription}
+                    {project.locationDescription}
                   </p>
                 )}
               </div>
@@ -285,12 +288,12 @@ export default async function SeedPage(props: {
             {/* Details grid */}
             <div className="grid gap-8 sm:grid-cols-2">
               <DetailList
-                items={participantNames(seed.participants, "gardener")}
+                items={participantNames(project.participants, "gardener")}
                 seedIcon="gardeners"
                 label="Gardeners"
               />
               <RootsDetailList
-                roots={seed.participants
+                roots={project.participants
                   .filter(
                     (participant) =>
                       participant.role === "roots" &&
@@ -302,28 +305,28 @@ export default async function SeedPage(props: {
                   }))}
               />
               <DetailList
-                items={participantNames(seed.participants, "guide")}
+                items={participantNames(project.participants, "guide")}
                 seedIcon="support"
                 label="Guides"
               />
               <DetailList
-                items={seed.waterHave}
+                items={project.waterHave}
                 seedIcon="fertilizer"
                 label="Fertilizer"
               />
               <DetailList
-                items={seed.waterNeed}
+                items={project.waterNeed}
                 seedIcon="water"
                 label="Water"
               />
             </div>
 
             {/* Budget */}
-            {seed.budgetEstimate && (
+            {project.budgetEstimate && (
               <div className="mt-8">
                 <h2 className="mb-2 text-sm font-semibold">Budget estimate</h2>
                 <p className="text-muted-foreground text-sm">
-                  {seed.budgetEstimate}
+                  {project.budgetEstimate}
                 </p>
               </div>
             )}
@@ -357,11 +360,11 @@ export default async function SeedPage(props: {
             ))}
 
             {/* Obstacles */}
-            {seed.obstacles && (
+            {project.obstacles && (
               <div className="mt-8">
                 <h2 className="mb-2 text-sm font-semibold">Obstacles</h2>
                 <p className="text-muted-foreground whitespace-pre-wrap text-sm">
-                  {seed.obstacles}
+                  {project.obstacles}
                 </p>
               </div>
             )}
@@ -369,8 +372,8 @@ export default async function SeedPage(props: {
             {/* Community Insights */}
             <div className="mt-8">
               <CommentsSection
-                seedId={seed.id}
-                seedCreatorId={seed.createdBy}
+                projectId={project.id}
+                projectCreatorId={project.createdBy}
                 comments={comments}
                 canModerate={canEdit}
               />
@@ -405,7 +408,7 @@ export default async function SeedPage(props: {
                 {canEdit && (
                   <div className="mt-3 flex gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={routes.workspace(seed.id, "supporters")}>
+                      <Link href={routes.workspace(project.id, "supporters")}>
                         <Sun className="mr-1.5 size-3.5" />
                         View Supporters
                       </Link>
@@ -427,7 +430,7 @@ export default async function SeedPage(props: {
             <div className="mt-8">
               <Button variant="outline" size="sm" asChild>
                 <a
-                  href={routes.projectQr(seed.id)}
+                  href={routes.projectQr(project.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -438,11 +441,11 @@ export default async function SeedPage(props: {
             </div>
 
             {/* AI illustration — shown at bottom when a user photo is the cover */}
-            {seed.coverPhotoUrl && seed.imageUrl && (
+            {project.coverPhotoUrl && project.imageUrl && (
               <div className="mt-12 flex justify-center">
                 <ImageLightbox
-                  src={seed.imageUrl}
-                  alt={`${seed.name} illustration`}
+                  src={project.imageUrl}
+                  alt={`${project.name} illustration`}
                   thumbWidth={360}
                   thumbHeight={480}
                   sizes="320px"
@@ -455,10 +458,10 @@ export default async function SeedPage(props: {
 
         if (updates.length > 0) {
           return (
-            <SeedDetailTabs
+            <ProjectDetailTabs
               projectContent={projectContent}
               updates={updates}
-              seedId={seed.id}
+              projectId={project.id}
               canEdit={canEdit}
             />
           );

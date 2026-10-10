@@ -175,7 +175,7 @@ stage-gated pattern rather than forking a parallel feature:
 4. **Actions.** `lib/actions/resources.ts` using `requireProjectAccess` (pick
    `manage` or `team`, and `requireWorkspace: true` if it is a Sprout+
    feature), `firstIssue`, `revalidateProject`, returning `ActionResult`.
-5. **UI.** A client component in `components/seeds/` that owns the form state
+5. **UI.** A client component in `components/projects/` that owns the form state
    and calls the action; render it from the right workspace section page
    (`app/dashboard/projects/[id]/team/page.tsx` for team features). Public
    display, if any, goes in `app/seeds/[id]/page.tsx`. Follow
@@ -202,17 +202,20 @@ Add a boolean under `features` in `config/site.ts`, gate the route with
 
 ## Known rough edges
 
-Things an audit flagged that are left for later, in rough priority order:
+Things an audit flagged that are left for later:
 
-- The `components/seeds/` directory and many `seed*` names refer to the
-  project entity, not the Seed stage; `seedId` props are really `projectId`.
-  A rename-only PR would make this consistent.
+- Naming: the data model, components and props say "project"; the public
+  routes (`/seeds/…`) and all UI copy say "Seed", because that is the brand
+  and the first lifecycle stage. `SeedIcon` is the Seed-anatomy icon set and
+  keeps its name. Do not rename URLs.
 - The in-memory rate limiter in `lib/actions/generate-image.ts` is per
-  instance, so it is advisory on serverless.
-- `getAllProjects` (admin table), `getAllComments`, `getAllProjectsForMap` and
-  the dashboard lists are unbounded; they should paginate before Production
-  volumes grow.
-- "My Seeds" is defined by `createdBy` while management rights come from
-  participant rows, so a co-gardener does not see the project there.
-- `scripts/populate.ts` contains Chattanooga sample data and its own database
-  client without the safety check.
+  instance, so it is advisory on serverless. A durable limit would need a
+  table or Runtime Cache entry per user.
+- List queries are bounded (admin tables and comments page at the database;
+  dashboard lists, the supporters page and the explorer map have fixed caps)
+  but the public updates and team feeds still load a whole project's
+  history. Fine at today's volumes; paginate when a project passes a few
+  hundred posts.
+- `scripts/populate.ts` is Chattanooga sample data. It runs through the
+  same safety checks as the app but is not something another city should
+  run as-is.

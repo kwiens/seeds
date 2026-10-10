@@ -31,7 +31,7 @@ export default async function EditProjectUpdatePage(props: {
         </p>
       </div>
       <UpdateForm
-        seedId={project.id}
+        projectId={project.id}
         update={{
           id: update.id,
           title: update.title ?? "",

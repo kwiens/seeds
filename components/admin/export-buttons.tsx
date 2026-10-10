@@ -6,7 +6,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   exportContributorsCsv,
-  exportSeedsCsv,
+  exportProjectsCsv,
   exportSupportersCsv,
 } from "@/lib/actions/export";
 
@@ -39,7 +39,7 @@ export function ExportButtons() {
       <Button
         variant="outline"
         disabled={isPending}
-        onClick={() => handleExport(exportSeedsCsv, "seeds.csv")}
+        onClick={() => handleExport(exportProjectsCsv, "seeds.csv")}
       >
         <Download className="mr-2 h-4 w-4" />
         Download Seeds

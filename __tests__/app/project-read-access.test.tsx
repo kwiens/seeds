@@ -23,7 +23,7 @@ vi.mock("@/lib/db/queries/budgets", () => ({
   getPublicBudgets: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/app/seeds/[id]/seed-detail-map", () => ({
-  SeedDetailMap: () => null,
+  ProjectDetailMap: () => null,
 }));
 
 import { auth } from "@/auth";
@@ -33,7 +33,7 @@ import {
   getProjectSupporters,
 } from "@/lib/db/queries/projects";
 import { getPublicProjectUpdateById } from "@/lib/db/queries/project-updates";
-import SeedPage, {
+import ProjectPage, {
   generateMetadata as seedMetadata,
 } from "@/app/seeds/[id]/page";
 import UpdatePage, {
@@ -90,7 +90,7 @@ describe("public project pages and metadata share read authorization", () => {
       expect.soft(await updateMetadata(updateProps)).toEqual({
         title: "Update Not Found",
       });
-      await expect(SeedPage(seedProps)).rejects.toThrow("NEXT_NOT_FOUND");
+      await expect(ProjectPage(seedProps)).rejects.toThrow("NEXT_NOT_FOUND");
       await expect(UpdatePage(updateProps)).rejects.toThrow("NEXT_NOT_FOUND");
     }
     expect(getProjectSupporters).not.toHaveBeenCalled();
@@ -111,7 +111,7 @@ describe("public project pages and metadata share read authorization", () => {
       title: "Sensitive update",
       description: "Secret body",
     });
-    await expect(SeedPage(seedProps)).resolves.toBeTruthy();
+    await expect(ProjectPage(seedProps)).resolves.toBeTruthy();
     await expect(UpdatePage(updateProps)).resolves.toBeTruthy();
   });
 
@@ -130,7 +130,7 @@ describe("public project pages and metadata share read authorization", () => {
     expect(await updateMetadata(updateProps)).toMatchObject({
       title: "Sensitive update",
     });
-    await expect(SeedPage(seedProps)).resolves.toBeTruthy();
+    await expect(ProjectPage(seedProps)).resolves.toBeTruthy();
     await expect(UpdatePage(updateProps)).resolves.toBeTruthy();
   });
 
@@ -157,6 +157,6 @@ describe("public project pages and metadata share read authorization", () => {
     await expect(UpdatePage(updateProps)).rejects.toThrow("NEXT_NOT_FOUND");
     vi.mocked(getProjectById).mockResolvedValue(null);
     expect(await seedMetadata(seedProps)).toEqual({ title: "Seed Not Found" });
-    await expect(SeedPage(seedProps)).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(ProjectPage(seedProps)).rejects.toThrow("NEXT_NOT_FOUND");
   });
 });
