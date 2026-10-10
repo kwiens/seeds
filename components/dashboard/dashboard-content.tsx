@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Pagination } from "@/components/projects/pagination";
 import Link from "next/link";
 import { Leaf, Sprout, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,11 +45,13 @@ export function DashboardContent({
   createdProjects,
   supportedProjects,
   initialTab,
+  managedPage,
 }: {
   sprouts: MyProject[];
   createdProjects: DashboardProject[];
   supportedProjects: SupportedProject[];
   initialTab?: DashboardTab;
+  managedPage?: { currentPage: number; totalPages: number; totalCount: number };
 }) {
   const hasActiveProjects = createdProjects.some(
     (project) => !project.archivedAt,
@@ -149,7 +152,16 @@ export function DashboardContent({
             </Button>
           </div>
         ) : (
-          <DashboardProjectList projects={createdProjects} />
+          <>
+            <DashboardProjectList projects={createdProjects} />
+            {managedPage && (
+              <Pagination
+                currentPage={managedPage.currentPage}
+                totalPages={managedPage.totalPages}
+                fixedParams={{ tab: "my-seeds" }}
+              />
+            )}
+          </>
         )}
       </TabsContent>
 

@@ -287,4 +287,34 @@ describe("AdminPage", () => {
       }),
     ).rejects.toThrow("NEXT_REDIRECT:/admin?tab=users&page=3");
   });
+  it.each([
+    [
+      "seeds",
+      getProjectsPage,
+      { projects: [], pageSize: 25 },
+      { search: "garden", stage: "sprout" },
+      "tab=seeds&search=garden&stage=sprout&page=2",
+    ],
+    [
+      "insights",
+      getCommentsPage,
+      { comments: [], pageSize: 50 },
+      {},
+      "tab=insights&page=2",
+    ],
+  ] as const)("clamps the %s tab and preserves its filters", async (tab, query, rows, filters, target) => {
+    setAuthMock(auth, mockAdminSession());
+    vi.mocked(query).mockResolvedValue({
+      ...rows,
+      totalCount: 30,
+      totalPages: 2,
+      currentPage: 99,
+    } as never);
+    await expect(
+      AdminPage({
+        searchParams: Promise.resolve({ tab, page: "99", ...filters }),
+      }),
+    ).rejects.toThrow(`NEXT_REDIRECT:/admin?${target}`);
+    expect(getSupporterEmailsMap).not.toHaveBeenCalled();
+  });
 });

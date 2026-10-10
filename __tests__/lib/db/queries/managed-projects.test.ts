@@ -36,15 +36,27 @@ describe("getManagedProjectsByUser", () => {
     list.from = vi.fn().mockReturnValue(list);
     list.where = vi.fn().mockReturnValue(list);
     list.orderBy = vi.fn().mockReturnValue(list);
-    list.limit = vi.fn().mockResolvedValue([{ id: "p1" }]);
+    list.limit = vi.fn().mockReturnValue(list);
+    list.offset = vi.fn().mockResolvedValue([{ id: "p1" }]);
+    const countQuery = {
+      from: vi.fn(),
+      where: vi.fn().mockResolvedValue([{ count: 201 }]),
+    };
+    countQuery.from.mockReturnValue(countQuery);
 
     vi.mocked(db.select)
       .mockReturnValueOnce(subquery as never)
+      .mockReturnValueOnce(countQuery as never)
       .mockReturnValueOnce(list as never);
 
-    const result = await getManagedProjectsByUser("user-1");
+    const result = await getManagedProjectsByUser("user-1", 99);
 
-    expect(result).toEqual([{ id: "p1" }]);
+    expect(result).toEqual({
+      projects: [{ id: "p1" }],
+      totalCount: 201,
+      totalPages: 11,
+      currentPage: 11,
+    });
     expect(eq).toHaveBeenCalledWith(projects.createdBy, "user-1");
     expect(eq).toHaveBeenCalledWith(projectParticipants.userId, "user-1");
     expect(inArray).toHaveBeenCalledWith(
@@ -53,6 +65,7 @@ describe("getManagedProjectsByUser", () => {
     );
     expect(inArray).toHaveBeenCalledWith(projects.id, subquery);
     expect(or).toHaveBeenCalled();
-    expect(list.limit).toHaveBeenCalledWith(200);
+    expect(list.limit).toHaveBeenCalledWith(20);
+    expect(list.offset).toHaveBeenCalledWith(200);
   });
 });

@@ -32,7 +32,7 @@ export function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-center gap-2 pt-8">
+    <div className="flex flex-wrap items-center justify-center gap-2 pt-8">
       <Button
         variant="outline"
         size="sm"

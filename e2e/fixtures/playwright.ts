@@ -57,7 +57,12 @@ export const test = base.extend<AutomaticFixtures>({
 
 export { expect };
 
-export async function signInAs(page: Page, user: E2ETestUser) {
+export async function signInAs(
+  page: Page,
+  user:
+    | Pick<E2ETestUser, "email" | "role">
+    | { email: string; role: "user" | "admin" | "council" },
+) {
   const secret = process.env.E2E_TEST_AUTH_SECRET;
   expect(
     secret,

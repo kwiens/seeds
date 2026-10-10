@@ -1233,7 +1233,13 @@ async function main() {
   const clean = process.argv.includes("--clean");
   const withImages = process.argv.includes("--with-images");
 
-  assertSafeDatabaseUrl(process.env.DATABASE_URL);
+  if (process.env.VERCEL_ENV === "production") {
+    throw new Error("Development sample data must never run in Production.");
+  }
+  assertSafeDatabaseUrl(process.env.DATABASE_URL, {
+    environment: "development",
+    allowProduction: false,
+  });
   if (withImages) {
     assertSafeBlobStores({
       publicToken: process.env.BLOB_READ_WRITE_TOKEN,

@@ -119,18 +119,33 @@ export default async function AdminPage({
       : Promise.resolve(EMPTY_HARVEST_FEST_PAGE),
   ]);
 
+  const activePage =
+    activeTab === "seeds"
+      ? projectsPage
+      : activeTab === "users"
+        ? usersPage
+        : activeTab === "insights"
+          ? commentsPage
+          : undefined;
+  if (
+    activePage &&
+    activePage.currentPage > Math.max(1, activePage.totalPages)
+  ) {
+    const lastPageParams = new URLSearchParams({ tab: activeTab });
+    if (activeTab !== "insights" && search)
+      lastPageParams.set("search", search);
+    if (activeTab === "seeds" && stageFilter)
+      lastPageParams.set("stage", stageFilter);
+    if (activePage.totalPages > 1)
+      lastPageParams.set("page", String(activePage.totalPages));
+    redirect(`/admin?${lastPageParams}`);
+  }
+
   // Supporter emails are only needed for the rows on screen.
   const supporterEmailsMap =
     activeTab === "seeds"
       ? await getSupporterEmailsMap(projectsPage.projects.map((p) => p.id))
       : new Map<string, string[]>();
-
-  if (
-    activeTab === "users" &&
-    usersPage.currentPage > Math.max(1, usersPage.totalPages)
-  ) {
-    redirectToLastPeoplePage(usersPage.totalPages, search);
-  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -333,14 +348,4 @@ function getActiveTab(params: {
 function parsePage(value: string | undefined) {
   const page = Number(value);
   return Number.isSafeInteger(page) && page > 0 ? page : 1;
-}
-
-function redirectToLastPeoplePage(
-  totalPages: number,
-  search: string | undefined,
-): never {
-  const params = new URLSearchParams({ tab: "users" });
-  if (search) params.set("search", search);
-  if (totalPages > 1) params.set("page", String(totalPages));
-  redirect(`/admin?${params.toString()}`);
 }
