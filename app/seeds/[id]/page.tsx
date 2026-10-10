@@ -27,7 +27,7 @@ import {
 } from "@/lib/db/queries/projects";
 import type { ProjectParticipant } from "@/lib/db/types";
 import { getProjectAccess } from "@/lib/project-access";
-import { formatDisplayName } from "@/lib/format";
+import { formatCurrency, formatDisplayName } from "@/lib/format";
 import { buildImagePrompt } from "@/lib/image-prompt";
 import { routes } from "@/lib/routes";
 
@@ -346,11 +346,7 @@ export default async function ProjectPage(props: {
                         {item.label}
                       </span>
                       <span className="shrink-0 tabular-nums">
-                        {item.amount.toLocaleString("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                          maximumFractionDigits: 0,
-                        })}
+                        {formatCurrency(item.amount)}
                       </span>
                     </li>
                   ))}

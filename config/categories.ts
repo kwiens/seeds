@@ -33,7 +33,7 @@ export interface CategoryInfo {
   commitment?: string;
 }
 
-export const categories = {
+const cityCategories = {
   daily_access: {
     label: "Everyday Access",
     icon: Sun,
@@ -94,10 +94,13 @@ export const categories = {
   },
 } satisfies Record<string, CategoryInfo>;
 
-export type CategoryKey = keyof typeof categories;
+export type CategoryKey = keyof typeof cityCategories;
+
+// Keep optional presentation fields available even when a city omits them.
+export const categories: Record<CategoryKey, CategoryInfo> = cityCategories;
 
 export const categoryKeys = Object.keys(categories) as CategoryKey[];
 
 export function isCategoryKey(value: unknown): value is CategoryKey {
-  return typeof value === "string" && value in categories;
+  return typeof value === "string" && Object.hasOwn(categories, value);
 }

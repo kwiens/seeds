@@ -1,9 +1,23 @@
-import { describe, expect, it } from "vitest";
-import { categories, categoryKeys } from "@/config/categories";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import {
+  categories,
+  categoryKeys,
+  isCategoryKey,
+  type CategoryInfo,
+} from "@/config/categories";
 
 describe("categories", () => {
-  it("has 5 categories", () => {
-    expect(categoryKeys).toHaveLength(5);
+  it("defines a nonempty catalog with unique, valid keys", () => {
+    expect(categoryKeys.length).toBeGreaterThan(0);
+    expect(categoryKeys).toEqual(Object.keys(categories));
+    expect(new Set(categoryKeys).size).toBe(categoryKeys.length);
+    for (const key of categoryKeys) {
+      expect(key).toMatch(/^[a-z][a-z0-9_]*$/);
+    }
+  });
+
+  it("permits categories without optional About copy", () => {
+    expectTypeOf(categories[categoryKeys[0]]).toEqualTypeOf<CategoryInfo>();
   });
 
   it("each category has required fields", () => {
@@ -11,19 +25,25 @@ describe("categories", () => {
       const info = categories[key];
       expect(info.label).toBeTruthy();
       expect(info.icon).toBeTruthy();
+      expect(info.color).toBeTruthy();
       expect(info.bgClass).toBeTruthy();
       expect(info.textClass).toBeTruthy();
       expect(info.gradient).toBeTruthy();
     }
   });
 
-  it("category keys match expected values", () => {
-    expect(categoryKeys).toEqual([
-      "daily_access",
-      "outdoor_play",
-      "balanced_growth",
-      "respect",
-      "connected_communities",
-    ]);
+  it("recognizes only configured category keys", () => {
+    for (const key of categoryKeys) expect(isCategoryKey(key)).toBe(true);
+    for (const value of [
+      null,
+      undefined,
+      1,
+      "",
+      "toString",
+      "constructor",
+      "__proto__",
+    ]) {
+      expect(isCategoryKey(value)).toBe(false);
+    }
   });
 });

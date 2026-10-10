@@ -14,18 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { saveBudget } from "@/lib/actions/budgets";
 import type { Budget } from "@/lib/db/types";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toCsvRow } from "@/lib/csv";
 
 type LineItem = { label: string; amount: number };
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
-}
 
 function slugify(value: string): string {
   return (

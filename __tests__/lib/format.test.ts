@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { formatDisplayName, formatRelativeTime } from "@/lib/format";
+import { siteConfig } from "@/config/site";
+import {
+  formatCurrency,
+  formatDisplayName,
+  formatRelativeTime,
+} from "@/lib/format";
 
 describe("formatDisplayName", () => {
   it("returns a single name unchanged", () => {
@@ -89,5 +94,22 @@ describe("formatRelativeTime", () => {
     expect(formatRelativeTime(longAgo)).toBe(
       longAgo.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     );
+  });
+});
+
+describe("formatCurrency", () => {
+  const originalConfig = {
+    locale: siteConfig.locale,
+    currency: siteConfig.currency,
+  };
+  afterEach(() => Object.assign(siteConfig, originalConfig));
+
+  it.each([
+    ["en-GB", "GBP", "£1,235"],
+    ["de-DE", "EUR", "1.235\u00a0€"],
+    ["ja-JP", "JPY", "￥1,235"],
+  ])("uses the configured %s locale and %s currency", (locale, currency, expected) => {
+    Object.assign(siteConfig, { locale, currency });
+    expect(formatCurrency(1234.56)).toBe(expected);
   });
 });

@@ -23,3 +23,12 @@ export function formatRelativeTime(date: Date): string {
     day: "numeric",
   });
 }
+
+/** Currency used by both private and public detailed budgets. */
+export function formatCurrency(amount: number): string {
+  return amount.toLocaleString(siteConfig.locale, {
+    style: "currency",
+    currency: siteConfig.currency,
+    maximumFractionDigits: 0,
+  });
+}

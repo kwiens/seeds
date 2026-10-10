@@ -8,8 +8,10 @@ import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projectInvites, projectParticipants } from "@/lib/db/schema";
 import { teamRoleLabels, type TeamRole } from "@/lib/participant-roles";
-import { requireProjectAccess } from "@/lib/project-access";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import {
+  isTeamWorkspaceAvailable,
+  requireProjectAccess,
+} from "@/lib/project-access";
 import { revalidateProject } from "@/lib/revalidate";
 import { routes } from "@/lib/routes";
 import { isAdmin } from "@/lib/session";
@@ -135,14 +137,14 @@ export async function acceptInvite(
 
   const invite = await db.query.projectInvites.findFirst({
     where: eq(projectInvites.token, parsed.data.token),
-    with: { project: { columns: { id: true, stage: true } } },
+    with: { project: { columns: { id: true, stage: true, archivedAt: true } } },
   });
   if (!invite) return { error: "This invite link isn't valid." };
   if (invite.canceledAt) return { error: "This invite has been canceled." };
   if (invite.acceptedAt) {
     return { error: "This invite has already been used." };
   }
-  if (!hasTeamWorkspace(invite.project.stage)) {
+  if (!isTeamWorkspaceAvailable(invite.project)) {
     return { error: "This project's team workspace is no longer available." };
   }
 
