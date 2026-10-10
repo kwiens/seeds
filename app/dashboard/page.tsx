@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import {
-  getProjectsCreatedByUser,
+  getManagedProjectsByUser,
   getSupportedProjectsByUser,
 } from "@/lib/db/queries/projects";
 import { getMyProjects } from "@/lib/db/queries/my-projects";
@@ -33,7 +33,7 @@ export default async function DashboardPage({
     await Promise.all([
       searchParams,
       getMyProjects(session.user.id, session.user.role),
-      getProjectsCreatedByUser(session.user.id),
+      getManagedProjectsByUser(session.user.id),
       getSupportedProjectsByUser(session.user.id),
     ]);
   const initialTab = dashboardTabs.includes(tab as DashboardTab)

@@ -13,12 +13,19 @@ import type { CategoryKey } from "@/config/categories";
 import { db } from "@/lib/db";
 import { publicProject } from "@/lib/db/queries/filters";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
+import { managementRoles } from "@/lib/participant-roles";
 import {
   publicProjectStageOrder,
   type ProjectStage,
 } from "@/lib/project-stages";
 
 const PROJECTS_PER_PAGE = 20;
+/** Per-user dashboard lists. Nobody manages or supports more than this. */
+const DASHBOARD_LIST_LIMIT = 200;
+/** Supporters shown on a project's supporters page; CSV export has them all. */
+const SUPPORTERS_LIST_LIMIT = 500;
+/** Markers the explorer map will draw. */
+export const MAP_MAX_MARKERS = 2000;
 
 export const supportCountSql = sql<number>`(
   select count(*) from project_participants
@@ -228,7 +235,23 @@ export async function getPublicProjectNames(
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 
-export async function getProjectsCreatedByUser(userId: string) {
+/**
+ * Projects the user can manage: ones they created plus ones where they hold
+ * an active management role (gardener or co-gardener). Bounded because it
+ * feeds a dashboard list, not an export.
+ */
+export async function getManagedProjectsByUser(userId: string) {
+  const managementRoleRows = db
+    .select({ projectId: projectParticipants.projectId })
+    .from(projectParticipants)
+    .where(
+      and(
+        eq(projectParticipants.userId, userId),
+        inArray(projectParticipants.role, managementRoles),
+        eq(projectParticipants.state, "active"),
+      ),
+    );
+
   return db
     .select({
       id: projects.id,
@@ -241,8 +264,14 @@ export async function getProjectsCreatedByUser(userId: string) {
       supportCount: supportCountSql,
     })
     .from(projects)
-    .where(eq(projects.createdBy, userId))
-    .orderBy(desc(projects.createdAt));
+    .where(
+      or(
+        eq(projects.createdBy, userId),
+        inArray(projects.id, managementRoleRows),
+      ),
+    )
+    .orderBy(desc(projects.createdAt))
+    .limit(DASHBOARD_LIST_LIMIT);
 }
 
 export async function getSupportedProjectsByUser(userId: string) {
@@ -270,7 +299,8 @@ export async function getSupportedProjectsByUser(userId: string) {
         eq(projectParticipants.state, "active"),
       ),
     )
-    .orderBy(desc(projectParticipants.updatedAt));
+    .orderBy(desc(projectParticipants.updatedAt))
+    .limit(DASHBOARD_LIST_LIMIT);
 }
 
 export async function getProjectSupportCount(projectId: string) {
@@ -307,7 +337,8 @@ export async function getProjectSupporters(
         eq(projectParticipants.state, "active"),
       ),
     )
-    .orderBy(desc(projectParticipants.createdAt));
+    .orderBy(desc(projectParticipants.createdAt))
+    .limit(SUPPORTERS_LIST_LIMIT);
 
   if (options?.includeEmail) return rows;
   return rows.map((row) => ({ ...row, email: "" }));
@@ -354,7 +385,9 @@ export async function getAllProjectsForMap(options: {
     })
     .from(projects)
     .innerJoin(users, eq(projects.createdBy, users.id))
-    .where(where);
+    .where(where)
+    .orderBy(desc(projects.createdAt))
+    .limit(MAP_MAX_MARKERS);
 }
 
 const PREVIEW_LIMIT = 8;

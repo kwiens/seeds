@@ -20,16 +20,14 @@ export function AdminTabs({
   function changeTab(value: string) {
     if (!isAdminTab(value) || value === activeTab) return;
 
+    // Paging, search and filters belong to the tab they were set on.
     const params = new URLSearchParams(searchParams.toString());
     if (value === "seeds") {
       params.delete("tab");
     } else {
       params.set("tab", value);
     }
-    if (value !== "users") {
-      params.delete("page");
-      params.delete("search");
-    }
+    for (const key of ["page", "search", "stage"]) params.delete(key);
 
     const query = params.toString();
     startTransition(() => {

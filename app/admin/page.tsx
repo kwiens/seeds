@@ -14,17 +14,23 @@ import { HomepagePhaseToggle } from "@/components/admin/homepage-phase-toggle";
 import { AdminProjectTable } from "@/components/admin/project-data-table";
 import { UserList } from "@/components/admin/user-list";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/projects/pagination";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { siteConfig } from "@/config/site";
 import { getEnvAdminEmails } from "@/lib/admin-emails";
 import { type AdminTab, isAdminTab } from "@/lib/admin-tabs";
-import { getAllComments } from "@/lib/db/queries/comments";
 import {
+  ADMIN_COMMENTS_PER_PAGE,
+  getCommentsPage,
+} from "@/lib/db/queries/comments";
+import {
+  ADMIN_PROJECTS_PER_PAGE,
   getAdminEmails,
-  getAllProjects,
   getCouncilMembers,
+  getProjectsPage,
   getSupporterEmailsMap,
   getUsersPage,
+  isAdminProjectStageFilter,
   USERS_PER_PAGE,
 } from "@/lib/db/queries/admin";
 import {
@@ -48,6 +54,7 @@ export default async function AdminPage({
   searchParams: Promise<{
     page?: string;
     search?: string;
+    stage?: string;
     tab?: string;
   }>;
 }) {
@@ -58,28 +65,35 @@ export default async function AdminPage({
 
   const params = await searchParams;
   const activeTab = getActiveTab(params);
-  const peoplePage = parsePage(params.page);
-  const peopleSearch = params.search?.trim() || undefined;
+  const page = parsePage(params.page);
+  const search = params.search?.trim() || undefined;
+  const stageFilter = isAdminProjectStageFilter(params.stage)
+    ? params.stage
+    : undefined;
 
   const [
-    allProjects,
-    supporterEmailsMap,
+    projectsPage,
     adminEmails,
     councilMembers,
     usersPage,
-    allComments,
+    commentsPage,
     homepagePhase,
     bannerConfig,
     harvestFestPage,
   ] = await Promise.all([
-    activeTab === "seeds" ? getAllProjects() : Promise.resolve([]),
     activeTab === "seeds"
-      ? getSupporterEmailsMap()
-      : Promise.resolve(new Map<string, string[]>()),
+      ? getProjectsPage({ page, search, stage: stageFilter })
+      : Promise.resolve({
+          projects: [],
+          totalCount: 0,
+          totalPages: 0,
+          currentPage: 1,
+          pageSize: ADMIN_PROJECTS_PER_PAGE,
+        }),
     activeTab === "settings" ? getAdminEmails() : Promise.resolve([]),
     activeTab === "settings" ? getCouncilMembers() : Promise.resolve([]),
     activeTab === "users"
-      ? getUsersPage({ page: peoplePage, search: peopleSearch })
+      ? getUsersPage({ page, search })
       : Promise.resolve({
           users: [],
           totalCount: 0,
@@ -87,7 +101,15 @@ export default async function AdminPage({
           currentPage: 1,
           pageSize: USERS_PER_PAGE,
         }),
-    activeTab === "insights" ? getAllComments() : Promise.resolve([]),
+    activeTab === "insights"
+      ? getCommentsPage({ page })
+      : Promise.resolve({
+          comments: [],
+          totalCount: 0,
+          totalPages: 0,
+          currentPage: 1,
+          pageSize: ADMIN_COMMENTS_PER_PAGE,
+        }),
     activeTab === "settings" ? getHomepagePhase() : Promise.resolve<1 | 2>(1),
     activeTab === "settings"
       ? getBannerConfig()
@@ -97,11 +119,17 @@ export default async function AdminPage({
       : Promise.resolve(EMPTY_HARVEST_FEST_PAGE),
   ]);
 
+  // Supporter emails are only needed for the rows on screen.
+  const supporterEmailsMap =
+    activeTab === "seeds"
+      ? await getSupporterEmailsMap(projectsPage.projects.map((p) => p.id))
+      : new Map<string, string[]>();
+
   if (
     activeTab === "users" &&
     usersPage.currentPage > Math.max(1, usersPage.totalPages)
   ) {
-    redirectToLastPeoplePage(usersPage.totalPages, peopleSearch);
+    redirectToLastPeoplePage(usersPage.totalPages, search);
   }
 
   return (
@@ -159,7 +187,13 @@ export default async function AdminPage({
 
         <TabsContent value="seeds">
           <AdminProjectTable
-            projects={allProjects}
+            projects={projectsPage.projects}
+            totalCount={projectsPage.totalCount}
+            totalPages={projectsPage.totalPages}
+            currentPage={projectsPage.currentPage}
+            pageSize={projectsPage.pageSize}
+            search={search}
+            stage={stageFilter}
             supporterEmailsMap={Object.fromEntries(supporterEmailsMap)}
           />
         </TabsContent>
@@ -172,7 +206,12 @@ export default async function AdminPage({
                 View and moderate insights across all seeds.
               </p>
             </div>
-            <AdminCommentsTable comments={allComments} />
+            <AdminCommentsTable comments={commentsPage.comments} />
+            <Pagination
+              currentPage={commentsPage.currentPage}
+              totalPages={commentsPage.totalPages}
+              fixedParams={{ tab: "insights" }}
+            />
           </div>
         </TabsContent>
 
@@ -197,7 +236,7 @@ export default async function AdminPage({
               totalPages={usersPage.totalPages}
               currentPage={usersPage.currentPage}
               pageSize={usersPage.pageSize}
-              search={peopleSearch}
+              search={search}
             />
           </div>
         </TabsContent>
@@ -288,7 +327,7 @@ function getActiveTab(params: {
 }): AdminTab {
   if (params.tab === "harvestFest" && !harvestFestEnabled) return "seeds";
   if (isAdminTab(params.tab)) return params.tab;
-  return params.page || params.search ? "users" : "seeds";
+  return "seeds";
 }
 
 function parsePage(value: string | undefined) {

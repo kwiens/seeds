@@ -1,8 +1,11 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { Sun } from "lucide-react";
+import { ProjectActions } from "@/components/admin/project-actions";
+import { ProjectStageFilter } from "@/components/admin/project-stage-filter";
+import { ProjectStatusBadge } from "@/components/dashboard/project-status-badge";
+import { CategoryBadge } from "@/components/projects/category-badge";
+import { Pagination } from "@/components/projects/pagination";
+import { SearchInput } from "@/components/projects/search-input";
 import {
   Table,
   TableBody,
@@ -11,26 +14,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { CategoryBadge } from "@/components/projects/category-badge";
-import { ProjectStatusBadge } from "@/components/dashboard/project-status-badge";
-import { ProjectActions } from "@/components/admin/project-actions";
 import type { CategoryKey } from "@/config/categories";
+import { siteConfig } from "@/config/site";
+import type { ApprovalState, ProjectStage } from "@/lib/project-stages";
 import { routes } from "@/lib/routes";
 
 interface AdminProject {
   id: string;
   name: string;
   category: CategoryKey;
-  stage: "seed" | "sprout" | "tree";
-  approvalState: "draft" | "pending" | "approved";
+  stage: ProjectStage;
+  approvalState: ApprovalState;
   archivedAt: Date | null;
   badges: string[];
   createdAt: Date;
@@ -39,50 +33,56 @@ interface AdminProject {
   supportCount: number;
 }
 
-export function AdminProjectTable({
-  projects,
-  supporterEmailsMap,
-}: {
-  projects: AdminProject[];
-  supporterEmailsMap: Record<string, string[]>;
-}) {
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState<string>("all");
+const numberFormatter = new Intl.NumberFormat(siteConfig.locale);
+const createdFormatter = new Intl.DateTimeFormat(siteConfig.locale, {
+  timeZone: siteConfig.timeZone,
+});
 
-  const filtered = projects.filter((s) => {
-    if (stageFilter === "archived" && !s.archivedAt) return false;
-    if (
-      stageFilter !== "all" &&
-      stageFilter !== "archived" &&
-      s.stage !== stageFilter
-    )
-      return false;
-    if (search && !s.name.toLowerCase().includes(search.toLowerCase()))
-      return false;
-    return true;
-  });
+/**
+ * Server component: the page loads one database page and passes it in.
+ * Search, stage filter and paging all live in the URL.
+ */
+export function AdminProjectTable({
+  currentPage,
+  pageSize,
+  projects,
+  search,
+  stage,
+  supporterEmailsMap,
+  totalCount,
+  totalPages,
+}: {
+  currentPage: number;
+  pageSize: number;
+  projects: AdminProject[];
+  search?: string;
+  stage?: string;
+  supporterEmailsMap: Record<string, string[]>;
+  totalCount: number;
+  totalPages: number;
+}) {
+  const firstResult =
+    projects.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastResult = firstResult + projects.length - 1;
+  const resultSummary =
+    totalCount === 0
+      ? "0 seeds"
+      : `Showing ${numberFormatter.format(firstResult)}–${numberFormatter.format(lastResult)} of ${numberFormatter.format(totalCount)}`;
 
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-        <Input
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchInput
+          ariaLabel="Search seeds by name"
           placeholder="Search by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
         />
-        <Select value={stageFilter} onValueChange={setStageFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All stages</SelectItem>
-            <SelectItem value="seed">Seed</SelectItem>
-            <SelectItem value="sprout">Sprout</SelectItem>
-            <SelectItem value="tree">Tree</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+        <ProjectStageFilter value={stage} />
+        <p
+          role="status"
+          className="text-muted-foreground text-sm whitespace-nowrap sm:ml-auto"
+        >
+          {resultSummary}
+        </p>
       </div>
 
       <div className="rounded-lg border">
@@ -104,17 +104,17 @@ export function AdminProjectTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {projects.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  No seeds found.
+                  {search || stage ? "No seeds match." : "No seeds yet."}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((project) => (
+              projects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell>
                     <Link
@@ -130,11 +130,10 @@ export function AdminProjectTable({
                       <p className="text-sm">{project.creatorName}</p>
                       <a
                         href={`mailto:${project.creatorEmail}`}
-                        className="text-xs text-muted-foreground hover:underline"
+                        className="block max-w-[220px] truncate text-xs text-muted-foreground hover:underline"
+                        title={project.creatorEmail}
                       >
-                        {project.creatorEmail.length > 25
-                          ? `${project.creatorEmail.slice(0, 25)}…`
-                          : project.creatorEmail}
+                        {project.creatorEmail}
                       </a>
                     </div>
                   </TableCell>
@@ -161,7 +160,7 @@ export function AdminProjectTable({
                     )}
                   </TableCell>
                   <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                    {new Date(project.createdAt).toLocaleDateString("en-US")}
+                    {createdFormatter.format(project.createdAt)}
                   </TableCell>
                   <TableCell>
                     <ProjectActions
@@ -180,6 +179,8 @@ export function AdminProjectTable({
           </TableBody>
         </Table>
       </div>
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} />
     </div>
   );
 }
