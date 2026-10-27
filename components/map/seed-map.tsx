@@ -5,13 +5,10 @@ import Link from "next/link";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Sprout } from "lucide-react";
-import { categories, type CategoryKey } from "@/lib/categories";
-
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-
-// Chattanooga, TN
-const DEFAULT_CENTER = { latitude: 35.0456, longitude: -85.3097 };
-const DEFAULT_ZOOM = 12;
+import { categories, type CategoryKey } from "@/config/categories";
+import { siteConfig } from "@/config/site";
+import { MAPBOX_TOKEN } from "@/lib/mapbox-search";
+import { routes } from "@/lib/routes";
 
 interface MapSeed {
   id: string;
@@ -33,8 +30,8 @@ interface SeedMapProps {
 
 export function SeedMap({
   seeds = [],
-  center = DEFAULT_CENTER,
-  zoom = DEFAULT_ZOOM,
+  center = siteConfig.map.center,
+  zoom = siteConfig.map.zoom,
   singleMarker,
   className = "h-96 w-full rounded-lg",
   interactive = true,
@@ -62,7 +59,7 @@ export function SeedMap({
           zoom,
         }}
         style={{ width: "100%", height: "100%" }}
-        mapStyle="mapbox://styles/kwiens/cm6au0n48006h01s28k1p0faz"
+        mapStyle={siteConfig.map.style}
         mapboxAccessToken={MAPBOX_TOKEN}
         interactive={interactive}
         cooperativeGestures
@@ -111,7 +108,7 @@ export function SeedMap({
             offset={12}
           >
             <Link
-              href={`/seeds/${popupSeed.id}`}
+              href={routes.project(popupSeed.id)}
               className="block pr-4 no-underline"
             >
               <p className="text-sm font-semibold">{popupSeed.name}</p>

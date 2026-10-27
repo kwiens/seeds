@@ -12,7 +12,7 @@ import { getProjectSupporters } from "@/lib/db/queries/projects";
 import { getManagedProjectWorkspace } from "@/lib/project-workspace";
 
 export const metadata: Metadata = {
-  title: "Project Supporters | Seeds",
+  title: "Project Supporters",
 };
 
 export default async function ProjectSupportersPage(props: {

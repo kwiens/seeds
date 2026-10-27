@@ -1,29 +1,20 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
-import { auth } from "@/auth";
-import { canAccessTeamWorkspace } from "@/lib/auth-utils";
+import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { projectActivityReads, projects } from "@/lib/db/schema";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import { projectActivityReads } from "@/lib/db/schema";
+import { requireProjectAccess } from "@/lib/project-access";
 
+/**
+ * Records how far a team member has read in the private workspace. It fails
+ * silently: a lost read marker is a minor annoyance, not an error to surface.
+ */
 export async function markProjectActivityRead(
   projectId: string,
   readThrough: string,
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return;
-
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    columns: { id: true, stage: true },
-  });
-  if (
-    !project ||
-    !hasTeamWorkspace(project.stage) ||
-    !(await canAccessTeamWorkspace(session, project))
-  )
-    return;
+  const access = await requireProjectAccess(projectId, { level: "team" });
+  if ("error" in access) return;
 
   const requestedReadThrough = new Date(readThrough);
   if (Number.isNaN(requestedReadThrough.getTime())) return;
@@ -35,7 +26,7 @@ export async function markProjectActivityRead(
     .insert(projectActivityReads)
     .values({
       projectId,
-      userId: session.user.id,
+      userId: access.session.user.id,
       visibility: "team",
       lastReadAt: effectiveReadThrough,
     })

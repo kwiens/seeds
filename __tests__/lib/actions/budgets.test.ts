@@ -129,7 +129,8 @@ describe("saveBudget", () => {
     );
     expect(chain._onConflictDoUpdate).toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith(
-      "/dashboard/projects/seed-1/team",
+      "/dashboard/projects/seed-1",
+      "layout",
     );
   });
 

@@ -2,18 +2,11 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { requireAdmin } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
 import { findUserByEmail } from "@/lib/db/queries/users";
-
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin") {
-    throw new Error("Unauthorized");
-  }
-  return session;
-}
+import { users } from "@/lib/db/schema";
+import { routes } from "@/lib/routes";
 
 export async function promoteToCouncil(email: string) {
   await requireAdmin();
@@ -34,7 +27,7 @@ export async function promoteToCouncil(email: string) {
 
   await db.update(users).set({ role: "council" }).where(eq(users.id, user.id));
 
-  revalidatePath("/admin");
+  revalidatePath(routes.admin);
   return { success: true };
 }
 
@@ -54,6 +47,6 @@ export async function demoteFromCouncil(userId: string) {
 
   await db.update(users).set({ role: "user" }).where(eq(users.id, userId));
 
-  revalidatePath("/admin");
+  revalidatePath(routes.admin);
   return { success: true };
 }

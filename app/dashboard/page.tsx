@@ -11,9 +11,10 @@ import {
 } from "@/lib/db/queries/projects";
 import { getMyProjects } from "@/lib/db/queries/my-projects";
 import type { DashboardTab } from "@/components/dashboard/dashboard-content";
+import { routes } from "@/lib/routes";
 
 export const metadata: Metadata = {
-  title: "My Projects | Seeds",
+  title: "My Projects",
 };
 
 const dashboardTabs: DashboardTab[] = ["my-sprouts", "my-seeds", "supporting"];
@@ -48,7 +49,7 @@ export default async function DashboardPage({
           </p>
         </div>
         <Button asChild>
-          <Link href="/seeds/new" className="gap-1.5">
+          <Link href={routes.newProject} className="gap-1.5">
             <Plus className="size-4" />
             Plant a Seed
           </Link>

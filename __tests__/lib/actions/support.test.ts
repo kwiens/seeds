@@ -124,7 +124,7 @@ describe("toggleSupport participant state", () => {
     vi.mocked(db.update).mockReturnValue(updateChain(true) as never);
     await toggleSupport("project-1");
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
-    expect(revalidatePath).toHaveBeenCalledWith("/status/seeds");
+    expect(revalidatePath).toHaveBeenCalledWith("/status/[slug]", "page");
   });
 
   it("treats a concurrent unique insert as an idempotent success", async () => {

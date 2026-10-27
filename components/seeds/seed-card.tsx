@@ -3,8 +3,9 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { Badge } from "@/components/ui/badge";
-import { categories, type CategoryKey } from "@/lib/categories";
+import { categories, type CategoryKey } from "@/config/categories";
 import { Heart, Sun } from "lucide-react";
+import { routes } from "@/lib/routes";
 
 interface SeedCardProps {
   id: string;
@@ -39,7 +40,7 @@ export function SeedCard({
       : (coverPhotoUrl ?? imageUrl);
 
   return (
-    <Link href={`/seeds/${id}`} className="min-w-0">
+    <Link href={routes.project(id)} className="min-w-0">
       <Card className="group h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
         {displayImage ? (
           <div className="relative h-52 overflow-hidden rounded-t-lg sm:h-40">

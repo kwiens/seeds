@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Plus, Sprout, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/config/site";
 import { ImageUpload } from "@/components/forms/image-upload";
 import {
   Command,
@@ -106,7 +107,7 @@ export function HarvestFestSettings({ initial }: { initial: HarvestFestPage }) {
           id="hf-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="National Park City Harvest Fest"
+          placeholder={`${siteConfig.city.organization} Harvest Fest`}
           maxLength={100}
         />
       </div>

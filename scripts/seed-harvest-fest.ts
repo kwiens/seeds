@@ -10,7 +10,10 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { sql } from "drizzle-orm";
 import { assertSafeDatabaseUrl } from "../lib/db/safety";
 import * as schema from "../lib/db/schema";
-import type { HarvestFestPage } from "../lib/db/queries/settings";
+import {
+  HARVEST_FEST_SETTING_KEY,
+  type HarvestFestPage,
+} from "../lib/db/queries/settings";
 
 const databaseUrl = assertSafeDatabaseUrl(process.env.DATABASE_URL);
 const client = neon(databaseUrl);
@@ -85,7 +88,7 @@ async function main() {
   await db
     .insert(schema.siteSettings)
     .values({
-      key: "harvest_fest_page",
+      key: HARVEST_FEST_SETTING_KEY,
       value: JSON.stringify(page),
       updatedAt: new Date(),
     })

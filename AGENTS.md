@@ -6,8 +6,10 @@ This file provides guidance for AI coding agents when working with code in this 
 
 Read the guide for your focus area before starting work there; skip the others.
 
+- [docs/architecture.md](docs/architecture.md) — layers, data model, the authorization model, server-action conventions, and the recipe for adding a new object type. Read this before any change to `lib/`.
 - [docs/agents/design.md](docs/agents/design.md) — building or changing any UI: design workflow (shadcn/ui + Impeccable), mobile-first and accessibility floor
 - [docs/agents/database.md](docs/agents/database.md) — schema changes, migrations, Neon branches, seeding
+- [config/README.md](config/README.md) — anything city-specific: names, categories, copy, map, deployment ids. Never hard-code a city value outside `config/`.
 
 ## Commands
 
@@ -199,7 +201,10 @@ These three checks match what CI runs. If any fail locally, they will fail in CI
 ### Key Patterns
 
 - **Server Components First**: Minimize `use client` usage
-- **Server Actions**: All mutations via `"use server"` functions in `lib/actions/`
+- **Server Actions**: All mutations via `"use server"` functions in `lib/actions/`, returning `ActionResult` from `lib/actions/result.ts`
+- **One authorization model**: `requireProjectAccess` / `checkProjectAccess` in `lib/project-access.ts` for anything project-scoped; `requireAdmin()` from `lib/auth-guards.ts` for admin-only. Never re-implement the stage or archive gate.
+- **One place for URLs**: build paths with `routes` from `lib/routes.ts`; after a project mutation call `revalidateProject(id)` from `lib/revalidate.ts`
+- **City values come from `config/`**: name, origin, map, categories, badges, copy, deployment ids. Grep for the literal before adding one.
 - **Functional Programming**: No classes, use functions
 - **Error Handling**: Early returns, guard clauses, user-friendly errors
 - **File Structure**: component → subcomponents → helpers → static → types
@@ -210,48 +215,72 @@ These three checks match what CI runs. If any fail locally, they will fail in CI
 ### Project Structure
 
 ```
+config/                 # Everything city-specific. See config/README.md.
+  site.ts               # Name, origin, locale, map, analytics, features
+  categories.ts         # Project categories (stored as text on projects)
+  badges.ts             # Admin-pinned status badges
+  image-prompt.ts       # City description for AI posters
+  content/              # About and FAQ copy
+  deployment.ts         # Vercel / Neon / Blob identifiers for safety checks
+
 app/
-  page.tsx              # Home — project explorer with grid/map toggle
-  admin/page.tsx        # Admin — project management table
-  dashboard/            # "Mine" hub — user's projects and supported projects
-    projects/[id]/      # Private project workspace: layout + team, edit,
-                        # updates, supporters sections
+  page.tsx              # Explorer (phase 1 grid+map, phase 2 stage previews)
+  status/[slug]/        # Listing per stage: /status/seeds|sprouts|trees
   seeds/
     new/page.tsx        # Create project form
-    [id]/page.tsx       # Public project detail view
-  api/auth/             # NextAuth API routes
+    [id]/               # Public project page, update pages, QR route
+  dashboard/            # "My Projects"
+    projects/[id]/      # Private workspace: layout + edit, updates,
+                        # supporters, team sections
+  admin/page.tsx        # Admin tabs
+  invite/[token]/       # Accept a team invite
+  about/, faq/          # Content pages fed from config/content/
+  harvest-fest/         # Optional event page (features.harvestFest)
+  api/auth/             # NextAuth routes
+  api/upload/           # Blob client-upload tokens
+  api/team-files/       # Authenticated private-file proxy
+  gpx/, sitemap.ts, robots.ts
 
-auth.ts                 # NextAuth config (Google OAuth, user upsert)
-middleware.ts           # Route protection (dashboard, admin)
+auth.ts, auth.config.ts # NextAuth (Google OAuth, admin auto-promotion)
+proxy.ts                # Signed-out redirect for /dashboard and /admin
 
 components/
-  admin/                # Admin data table, actions, council list
-  auth/                 # Sign-in, sign-out, user menu
-  dashboard/            # Project lists, status badges, workspace nav
+  admin/                # Admin table, actions, settings editors
+  auth/                 # Sign-in, user menu, invite button
+  dashboard/            # Project lists, status badge, workspace nav
   forms/                # Project form, update form, uploads, location picker
-  layout/               # Header, footer, mobile nav
-  map/                  # Reusable Mapbox wrapper
-  seeds/                # Project cards, explorer, team workspace widgets
-                        # (updates, roster, budget, events, documents)
-  ui/                   # shadcn/ui components
+  layout/               # Header, footer, mobile nav, banner
+  map/                  # Mapbox wrapper
+  seeds/                # Project cards, explorer, filters, team workspace
+                        # widgets (updates, roster, budget, events, documents)
+  ui/                   # shadcn/ui primitives
 
 lib/
-  actions/              # Server actions (projects, updates, budgets,
-                        # team roster/events/activity, council, support)
+  routes.ts             # Every URL the app links to or revalidates
+  revalidate.ts         # revalidateProject(id)
+  session.ts            # Pure session helpers (isAdmin, isSignedIn)
+  auth-utils.ts         # Participant-table capability checks
+  auth-guards.ts        # requireAdmin()
+  project-access.ts     # The project authorization model
+  project-read-access.ts# Public read rule shared by pages and metadata
+  project-workspace.ts  # Workspace data boundary for the dashboard layout
   project-stages.ts     # Seed → Sprout → Tree lifecycle model
-  participant-roles.ts  # Team role definitions
-  project-workspace.ts  # Workspace access rules (+ -navigation.ts for nav)
+  participant-roles.ts  # Role sets: management, team access, form roles
+  mapbox-search.ts      # Shared Mapbox Search Box client
+  actions/              # Server actions, one file per domain; result.ts
   db/
     index.ts            # Neon + Drizzle connection (neon-http driver)
-    schema.ts           # users, projects, project_participants,
-                        # project_updates, project_budgets, project_events, …
+    schema.ts           # Tables and relations
+    safety.ts           # Fail-closed environment checks
     types.ts            # Inferred TypeScript types
-    queries/            # Read-only query functions
+    queries/            # Read-only query functions; filters.ts fragments
     migrations/         # Drizzle migration files
-  validations/          # Zod schemas (project, project-update, budget, …)
+  validations/          # Zod schemas (project, update, budget, invite, …)
 ```
 
-One data model serves the whole Seed → Sprout → Tree lifecycle: capabilities unlock by stage (`lib/project-stages.ts`, `lib/project-workspace.ts`) rather than by parallel tables or duplicated components. Extend that pattern — new stage-gated features should reuse the `projects` tables and shared components, not fork them.
+One data model serves the whole Seed → Sprout → Tree lifecycle: capabilities unlock by stage (`lib/project-stages.ts`, `lib/project-access.ts`) rather than by parallel tables or duplicated components. Extend that pattern — new stage-gated features should reuse the `projects` tables and shared components, not fork them. The step-by-step recipe is in [docs/architecture.md](docs/architecture.md#adding-a-new-object-type).
+
+Seeds runs as one deployment per city, not as a multi-tenant service. Do not add a `city_id` column or per-tenant branching; put the value in `config/` instead.
 
 ### React Best Practices
 

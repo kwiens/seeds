@@ -193,7 +193,7 @@ describe("generateProjectImage", () => {
 
     await generateProjectImage("seed-1");
 
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/");
   });
 });
@@ -309,7 +309,7 @@ describe("regenerateProjectImage", () => {
 
     await regenerateProjectImage("seed-1");
 
-    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/seeds/seed-1", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/");
   });
 });

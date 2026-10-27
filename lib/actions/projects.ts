@@ -2,17 +2,20 @@
 
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projectParticipants, projects } from "@/lib/db/schema";
+import { formParticipantRoles } from "@/lib/participant-roles";
 import { formParticipantInputs } from "@/lib/project-participants";
+import { revalidateProject, revalidateProjectListings } from "@/lib/revalidate";
+import { routes } from "@/lib/routes";
 import {
   projectFormSchema,
   type ProjectFormValues,
 } from "@/lib/validations/project";
+import { firstIssue } from "./result";
 
 function projectFormToDbFields(values: ProjectFormValues) {
   return {
@@ -40,9 +43,7 @@ export async function createProject(data: unknown) {
   }
 
   const parsed = projectFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
 
   const projectId = randomUUID();
   const creatorName = session.user.name?.trim() || "Project Gardener";
@@ -76,9 +77,8 @@ export async function createProject(data: unknown) {
     db.insert(projectParticipants).values(participantRows),
   ]);
 
-  revalidatePath("/");
-  revalidatePath("/dashboard");
-  redirect(`/dashboard/projects/${projectId}`);
+  revalidateProjectListings();
+  redirect(routes.workspace(projectId));
 }
 
 export async function updateProject(id: string, data: unknown) {
@@ -100,12 +100,10 @@ export async function updateProject(id: string, data: unknown) {
   }
 
   const parsed = projectFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
 
   const registeredNames = Object.fromEntries(
-    (["gardener", "roots", "guide"] as const).map((role) => [
+    formParticipantRoles.map((role) => [
       role,
       project.participants.flatMap((participant) =>
         participant.userId && participant.role === role
@@ -129,7 +127,7 @@ export async function updateProject(id: string, data: unknown) {
         and(
           eq(projectParticipants.projectId, id),
           isNull(projectParticipants.userId),
-          inArray(projectParticipants.role, ["gardener", "roots", "guide"]),
+          inArray(projectParticipants.role, [...formParticipantRoles]),
         ),
       ),
     ...(participantInputs.length
@@ -147,9 +145,6 @@ export async function updateProject(id: string, data: unknown) {
 
   await db.batch(statements);
 
-  revalidatePath(`/seeds/${id}`);
-  revalidatePath(`/dashboard/projects/${id}`);
-  revalidatePath("/");
-  revalidatePath("/dashboard");
-  redirect(`/dashboard/projects/${id}/edit`);
+  revalidateProject(id);
+  redirect(routes.workspace(id, "edit"));
 }

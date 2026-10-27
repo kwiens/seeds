@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { eq, isNull, like } from "drizzle-orm";
 import { GoogleGenAI } from "@google/genai";
 import { put } from "@vercel/blob";
+import type { CategoryKey } from "../config/categories";
 import * as schema from "../lib/db/schema";
 import { buildImagePrompt } from "../lib/image-prompt";
 
@@ -117,7 +118,7 @@ function randInt(min: number, max: number) {
 // ---------------------------------------------------------------------------
 // Seed data — 50 projects, 10 per category
 // ---------------------------------------------------------------------------
-type Category = (typeof schema.categoryEnum.enumValues)[number];
+type Category = CategoryKey;
 
 interface SeedData {
   name: string;

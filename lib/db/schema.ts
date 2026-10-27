@@ -1,4 +1,5 @@
 import { relations, sql } from "drizzle-orm";
+import type { CategoryKey } from "../../config/categories";
 import {
   type AnyPgColumn,
   boolean,
@@ -12,14 +13,6 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-
-export const categoryEnum = pgEnum("category", [
-  "daily_access",
-  "outdoor_play",
-  "balanced_growth",
-  "respect",
-  "connected_communities",
-]);
 
 export const projectStageEnum = pgEnum("project_stage", [
   "seed",
@@ -83,7 +76,9 @@ export const projects = pgTable(
     locationDescription: text("location_description"),
     locationLat: doublePrecision("location_lat"),
     locationLng: doublePrecision("location_lng"),
-    category: categoryEnum("category").notNull(),
+    // Category keys are defined per city in config/categories.ts, so the
+    // column is plain text rather than a Postgres enum.
+    category: text("category").$type<CategoryKey>().notNull(),
     waterHave: jsonb("water_have").$type<string[]>().notNull().default([]),
     waterNeed: jsonb("water_need").$type<string[]>().notNull().default([]),
     budgetEstimate: text("budget_estimate"),

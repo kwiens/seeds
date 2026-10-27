@@ -6,7 +6,7 @@ import { SignInButton } from "@/components/auth/sign-in-button";
 import { getInviteByToken } from "@/lib/db/queries/invites";
 
 export const metadata: Metadata = {
-  title: "You're invited | Seeds",
+  title: "You're invited",
 };
 
 export default async function InvitePage({

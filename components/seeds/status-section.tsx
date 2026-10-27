@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SeedListView } from "@/components/seeds/seed-list-view";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import { projectStages, type ProjectStage } from "@/lib/project-stages";
+import { routes } from "@/lib/routes";
 
 interface SeedPreview {
   id: string;
@@ -41,7 +42,7 @@ export function StatusSection({
           <span className="text-muted-foreground text-sm">({totalCount})</span>
         </div>
         <Link
-          href={`/status/${info.slug}`}
+          href={routes.stageListing(stage)}
           className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
         >
           View all

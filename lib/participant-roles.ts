@@ -22,4 +22,11 @@ export const participantRoleLabels: Record<ParticipantRole, string> = {
 
 export const teamRoleKeys = Object.keys(teamRoleLabels) as TeamRole[];
 
+/** Roles that may edit the project and run its team. */
+export const managementRoles: ParticipantRole[] = ["gardener", "co_gardener"];
+
+/** Roles that may enter the private team workspace. */
 export const teamAccessRoles: ParticipantRole[] = ["gardener", ...teamRoleKeys];
+
+/** Roles the project form captures as free-text names (no account needed). */
+export const formParticipantRoles = ["gardener", "roots", "guide"] as const;

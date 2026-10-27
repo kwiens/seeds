@@ -2,7 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
+import {
+  categories,
+  categoryKeys,
+  type CategoryKey,
+} from "@/config/categories";
 
 export function CategoryFilter({
   activeCategory,

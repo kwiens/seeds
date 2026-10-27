@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/config/site";
 import { useIsInAppBrowser } from "@/lib/hooks/use-is-in-app-browser";
 
 export function SignInButton() {
@@ -12,9 +13,9 @@ export function SignInButton() {
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <p className="font-medium">Open in your browser to sign in</p>
         <p className="mt-1 text-amber-700">
-          Google sign-in doesn&apos;t work inside app browsers. Tap the menu
-          (&hellip;) and choose &ldquo;Open in Chrome&rdquo; or &ldquo;Open in
-          Safari&rdquo;.
+          {siteConfig.auth.providerLabel} sign-in doesn&apos;t work inside app
+          browsers. Tap the menu (&hellip;) and choose &ldquo;Open in
+          Chrome&rdquo; or &ldquo;Open in Safari&rdquo;.
         </p>
       </div>
     );
@@ -22,7 +23,7 @@ export function SignInButton() {
 
   return (
     <Button type="button" onClick={() => signIn("google")} variant="default">
-      Sign in with Google
+      Sign in with {siteConfig.auth.providerLabel}
     </Button>
   );
 }

@@ -13,13 +13,11 @@ import { getTeamMembers } from "@/lib/db/queries/team-roster";
 import { getUpcomingEvents } from "@/lib/db/queries/team-events";
 import { getTeamProjectUpdates } from "@/lib/db/queries/project-updates";
 import { getProjectWorkspace } from "@/lib/project-workspace";
-import {
-  hasTeamWorkspace,
-  projectWorkspacePath,
-} from "@/lib/project-workspace-navigation";
+import { projectWorkspacePath } from "@/lib/project-workspace-navigation";
+import { routes } from "@/lib/routes";
 
 export const metadata: Metadata = {
-  title: "Team Workspace | Seeds",
+  title: "Team Workspace",
 };
 
 export default async function ProjectTeamPage(props: {
@@ -29,11 +27,12 @@ export default async function ProjectTeamPage(props: {
   const { session, project, canManage, canAccessTeam } =
     await getProjectWorkspace(id);
 
-  if (!hasTeamWorkspace(project.stage) || !canAccessTeam) {
+  // canAccessTeam already folds in the stage and archive gates.
+  if (!canAccessTeam) {
     redirect(
       canManage
         ? projectWorkspacePath(project.id, "edit")
-        : `/seeds/${project.id}`,
+        : routes.project(project.id),
     );
   }
 

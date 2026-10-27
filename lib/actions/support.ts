@@ -1,14 +1,17 @@
 "use server";
 
 import { and, eq, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { siteConfig } from "@/config/site";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { projectParticipants, projects } from "@/lib/db/schema";
+import { revalidateProject } from "@/lib/revalidate";
+import type { ActionResult } from "./result";
 
-const AUTO_APPROVE_THRESHOLD = 10;
+const AUTO_APPROVE_THRESHOLD = siteConfig.community.autoApproveSupportThreshold;
 
-export async function toggleSupport(projectId: string) {
+export async function toggleSupport(projectId: string): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "You must be signed in to support a seed." };
@@ -22,7 +25,6 @@ export async function toggleSupport(projectId: string) {
     ),
   });
 
-  let promoted = false;
   try {
     if (existing) {
       const nextState = existing.state === "active" ? "inactive" : "active";
@@ -30,9 +32,7 @@ export async function toggleSupport(projectId: string) {
         .update(projectParticipants)
         .set({ state: nextState, updatedAt: new Date() })
         .where(eq(projectParticipants.id, existing.id));
-      if (nextState === "active") {
-        promoted = await autoApproveIfEligible(projectId);
-      }
+      if (nextState === "active") await autoApproveIfEligible(projectId);
     } else {
       await db.insert(projectParticipants).values({
         projectId,
@@ -42,31 +42,18 @@ export async function toggleSupport(projectId: string) {
         state: "active",
         addedBy: session.user.id,
       });
-      promoted = await autoApproveIfEligible(projectId);
+      await autoApproveIfEligible(projectId);
     }
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
   }
 
-  revalidatePath(`/seeds/${projectId}`);
-  revalidatePath("/");
-  if (promoted) {
-    revalidatePath("/admin");
-    revalidatePath("/status/seeds");
-  }
+  revalidateProject(projectId);
   return { success: true };
 }
 
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
-
 async function autoApproveIfEligible(projectId: string) {
+  if (AUTO_APPROVE_THRESHOLD === null) return false;
   const updated = await db
     .update(projects)
     .set({ approvalState: "approved", updatedAt: new Date() })

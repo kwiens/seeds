@@ -1,12 +1,7 @@
 import { hasTeamWorkspace, type ProjectStage } from "@/lib/project-stages";
+import { routes, type ProjectWorkspaceSection } from "@/lib/routes";
 
-export { hasTeamWorkspace } from "@/lib/project-stages";
-
-export type ProjectWorkspaceSection =
-  | "edit"
-  | "updates"
-  | "supporters"
-  | "team";
+export type { ProjectWorkspaceSection } from "@/lib/routes";
 
 interface ProjectWorkspaceAccess {
   stage: ProjectStage;
@@ -24,10 +19,5 @@ export function getDefaultProjectWorkspaceSection({
   return null;
 }
 
-export function projectWorkspacePath(
-  projectId: string,
-  section?: ProjectWorkspaceSection,
-): string {
-  const base = `/dashboard/projects/${projectId}`;
-  return section ? `${base}/${section}` : base;
-}
+/** @deprecated Import `routes.workspace` from `@/lib/routes`. */
+export const projectWorkspacePath = routes.workspace;

@@ -8,6 +8,7 @@ import { getReadableProjectUpdate } from "@/lib/project-read-access";
 import { formatDisplayName } from "@/lib/format";
 import { PhotoGrid } from "@/components/photo-grid";
 import { renderTiptapHTML, extractPlainText } from "@/lib/tiptap";
+import { routes } from "@/lib/routes";
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string; updateId: string }>;
@@ -17,7 +18,7 @@ export async function generateMetadata(props: {
   if (!access) return { title: "Update Not Found" };
   const { update } = access;
   return {
-    title: `${update.title ?? "Update"} | Seeds`,
+    title: update.title ?? "Update",
     description: extractPlainText(update.body).slice(0, 160),
   };
 }
@@ -35,7 +36,7 @@ export default async function UpdatePage(props: {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link
-        href={`/seeds/${seed.id}`}
+        href={routes.project(seed.id)}
         className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-3.5" />
@@ -49,9 +50,7 @@ export default async function UpdatePage(props: {
           </h1>
           {canEdit && (
             <Button variant="outline" size="sm" asChild>
-              <Link
-                href={`/dashboard/projects/${seed.id}/updates/${update.id}/edit`}
-              >
+              <Link href={routes.workspaceEditUpdate(seed.id, update.id)}>
                 <Pencil className="mr-1.5 size-3.5" />
                 Edit
               </Link>

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/accordion";
 import type { ProjectDocument } from "@/lib/db/queries/documents";
 import { formatRelativeTime } from "@/lib/format";
+import { routes } from "@/lib/routes";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -44,7 +45,7 @@ export function SeedDocuments({
               {documents.map((doc) => (
                 <li key={`${doc.updateId}-${doc.attachmentIndex}`}>
                   <a
-                    href={`/dashboard/projects/${seedId}/team#update-${doc.updateId}`}
+                    href={`${routes.workspace(seedId, "team")}#update-${doc.updateId}`}
                     className="hover:bg-accent flex items-center gap-2 rounded-md p-1.5"
                   >
                     <FileText className="text-muted-foreground size-4 shrink-0" />

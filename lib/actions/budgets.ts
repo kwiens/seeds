@@ -1,66 +1,48 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { canManageProject } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
 import { projectBudgets } from "@/lib/db/schema";
-import { hasTeamWorkspace } from "@/lib/project-stages";
+import { requireProjectAccess } from "@/lib/project-access";
+import { revalidateProject } from "@/lib/revalidate";
 import { budgetFormSchema } from "@/lib/validations/budget";
+import { type ActionResult, firstIssue } from "./result";
 
 export async function saveBudget(
   projectId: string,
   status: string,
   data: unknown,
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "You must be signed in." };
+): Promise<ActionResult> {
   if (status !== "proposed" && status !== "final") {
     return { error: "Invalid budget stage." };
   }
 
-  const project = await db.query.projects.findFirst({
-    where: (projects, { eq }) => eq(projects.id, projectId),
-    columns: { id: true, stage: true },
+  const access = await requireProjectAccess(projectId, {
+    level: "manage",
+    requireWorkspace: true,
+    forbidden: "You do not have permission to edit this project's budget.",
+    unavailable: "Detailed budgets become available at the Sprout stage.",
   });
-  if (!project) return { error: "Project not found." };
-  if (!(await canManageProject(session, project))) {
-    return {
-      error: "You do not have permission to edit this project's budget.",
-    };
-  }
-  if (!hasTeamWorkspace(project.stage)) {
-    return { error: "Detailed budgets become available at the Sprout stage." };
-  }
+  if ("error" in access) return access;
+  const { session } = access;
 
   const parsed = budgetFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-  }
+  if (!parsed.success) return { error: firstIssue(parsed) };
 
+  const fields = {
+    lineItems: parsed.data.lineItems,
+    notes: parsed.data.notes || null,
+    isPublic: parsed.data.isPublic,
+    updatedBy: session.user.id,
+    updatedAt: new Date(),
+  };
   await db
     .insert(projectBudgets)
-    .values({
-      projectId,
-      status,
-      lineItems: parsed.data.lineItems,
-      notes: parsed.data.notes || null,
-      isPublic: parsed.data.isPublic,
-      updatedBy: session.user.id,
-      updatedAt: new Date(),
-    })
+    .values({ projectId, status, ...fields })
     .onConflictDoUpdate({
       target: [projectBudgets.projectId, projectBudgets.status],
-      set: {
-        lineItems: parsed.data.lineItems,
-        notes: parsed.data.notes || null,
-        isPublic: parsed.data.isPublic,
-        updatedBy: session.user.id,
-        updatedAt: new Date(),
-      },
+      set: fields,
     });
 
-  revalidatePath(`/seeds/${projectId}`);
-  revalidatePath(`/dashboard/projects/${projectId}/team`);
+  revalidateProject(projectId);
   return { success: true };
 }

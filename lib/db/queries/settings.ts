@@ -40,10 +40,19 @@ async function getSiteSettings(
   }
 }
 
-export async function getHomepagePhase(): Promise<1 | 2> {
-  const value = await getSiteSetting("homepage_phase");
-  return value === "2" ? 2 : 1;
-}
+export const HOMEPAGE_PHASE_CACHE_TAG = "homepage-phase";
+export const HOMEPAGE_PHASE_SETTING_KEY = "homepage_phase";
+
+// Read on every homepage request, so cached like the other settings and
+// tag-invalidated by setHomepagePhase.
+export const getHomepagePhase = unstable_cache(
+  async (): Promise<1 | 2> => {
+    const value = await getSiteSetting(HOMEPAGE_PHASE_SETTING_KEY);
+    return value === "2" ? 2 : 1;
+  },
+  ["homepage-phase"],
+  { tags: [HOMEPAGE_PHASE_CACHE_TAG] },
+);
 
 export const HARVEST_FEST_CACHE_TAG = "harvest-fest";
 export const HARVEST_FEST_SETTING_KEY = "harvest_fest_page";

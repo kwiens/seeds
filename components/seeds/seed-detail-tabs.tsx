@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UpdatesList } from "@/components/seeds/updates-list";
 import type { PublicProjectUpdateWithAuthor } from "@/lib/db/queries/project-updates";
+import { routes } from "@/lib/routes";
 
 export function SeedDetailTabs({
   projectContent,
@@ -30,7 +31,7 @@ export function SeedDetailTabs({
           {canEdit && (
             <div className="mb-6 flex justify-end">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/projects/${seedId}/updates`}>
+                <Link href={routes.workspace(seedId, "updates")}>
                   <Pencil className="mr-1.5 size-3.5" />
                   Manage Updates
                 </Link>

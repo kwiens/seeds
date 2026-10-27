@@ -45,11 +45,19 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-
+  --color-brand-hero: var(--brand-hero);
+  --color-brand-hero-accent: var(--brand-hero-accent);
+  --color-brand-hero-accent-soft: var(--brand-hero-accent-soft);
+  --color-brand-step: var(--brand-step);
 }
 
 :root {
   --radius: 0.625rem;
+  /* Brand hero palette for the About, FAQ and event pages. Set per city. */
+  --brand-hero: #2d5334;
+  --brand-hero-accent: #74bb23;
+  --brand-hero-accent-soft: #9bd84a;
+  --brand-step: #3aab9b;
   /* Earthy green primary */
   --background: oklch(0.985 0.003 120);
   --foreground: oklch(0.18 0.02 150);

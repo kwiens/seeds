@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import {
   getSeedStageProjects,
   getAllProjectsForMap,
@@ -11,8 +11,9 @@ import {
   type SortOption,
 } from "@/lib/db/queries/projects";
 import { getHomepagePhase } from "@/lib/db/queries/settings";
-import { HomeContent } from "./home-content";
+import { SeedExplorer } from "@/components/seeds/seed-explorer";
 import { HomePhase2 } from "./home-phase2";
+import { routes } from "@/lib/routes";
 
 export default async function HomePage(props: {
   searchParams: Promise<{
@@ -41,7 +42,7 @@ export default async function HomePage(props: {
           </p>
         </div>
         <Button asChild>
-          <Link href="/seeds/new" className="gap-1.5">
+          <Link href={routes.newProject} className="gap-1.5">
             <Plus className="size-4" />
             Plant a Seed
           </Link>
@@ -101,7 +102,7 @@ async function Phase1Content({
   ]);
 
   return (
-    <HomeContent
+    <SeedExplorer
       seeds={seedResult.projects}
       mapSeeds={mapSeeds}
       currentPage={seedResult.currentPage}
@@ -109,6 +110,8 @@ async function Phase1Content({
       activeCategory={category}
       activeSort={sort}
       isSignedIn={isSignedIn}
+      showCategoryFilter
+      showBadgeFilter={false}
     />
   );
 }

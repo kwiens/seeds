@@ -21,8 +21,13 @@ import {
 import { SortableList } from "@/components/forms/sortable-list";
 import { LocationPicker } from "@/components/forms/location-picker";
 import { SignInButton } from "@/components/auth/sign-in-button";
-import { badges, badgeKeys } from "@/lib/badges";
-import { categories, categoryKeys, type CategoryKey } from "@/lib/categories";
+import { badges, badgeKeys } from "@/config/badges";
+import {
+  categories,
+  categoryKeys,
+  type CategoryKey,
+} from "@/config/categories";
+import { siteConfig } from "@/config/site";
 import { createProject, updateProject } from "@/lib/actions/projects";
 import type { Project, ProjectParticipant } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
@@ -169,7 +174,7 @@ export function SeedForm({ project, planterName }: SeedFormProps) {
       {!isSignedIn && (
         <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
           <p className="mb-3 text-sm text-muted-foreground">
-            Sign in with Google to plant your seed
+            Sign in with {siteConfig.auth.providerLabel} to plant your seed
           </p>
           <SignInButton />
         </div>

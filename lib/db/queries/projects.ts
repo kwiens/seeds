@@ -6,12 +6,12 @@ import {
   ilike,
   inArray,
   isNull,
-  ne,
   or,
   sql,
 } from "drizzle-orm";
-import type { CategoryKey } from "@/lib/categories";
+import type { CategoryKey } from "@/config/categories";
 import { db } from "@/lib/db";
+import { publicProject } from "@/lib/db/queries/filters";
 import { projectParticipants, projects, users } from "@/lib/db/schema";
 import {
   publicProjectStageOrder,
@@ -33,10 +33,7 @@ function buildVisibilityFilter(options: {
   search?: string;
 }) {
   const conditions = [];
-  const publicFilter = and(
-    ne(projects.approvalState, "draft"),
-    isNull(projects.archivedAt),
-  );
+  const publicFilter = publicProject();
 
   // Creators also see their own draft/pending projects in listings, but
   // archived projects stay hidden from Explore for everyone — including
@@ -227,13 +224,7 @@ export async function getPublicProjectNames(
   const rows = await db
     .select({ id: projects.id, name: projects.name })
     .from(projects)
-    .where(
-      and(
-        inArray(projects.id, ids),
-        ne(projects.approvalState, "draft"),
-        isNull(projects.archivedAt),
-      ),
-    );
+    .where(and(inArray(projects.id, ids), publicProject()));
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
+import { publicProject } from "@/lib/db/queries/filters";
 import { projects } from "@/lib/db/schema";
-import { and, isNull, ne } from "drizzle-orm";
 
 export async function GET() {
   const allSeeds = await db
@@ -13,9 +13,7 @@ export async function GET() {
       locationDescription: projects.locationDescription,
     })
     .from(projects)
-    .where(
-      and(ne(projects.approvalState, "draft"), isNull(projects.archivedAt)),
-    );
+    .where(publicProject());
 
   const waypoints = allSeeds
     .filter((s) => s.locationLat != null && s.locationLng != null)

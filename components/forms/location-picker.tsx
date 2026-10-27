@@ -5,8 +5,13 @@ import { Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SeedIcon } from "@/components/icons/seed-icons";
 import { SeedMap } from "@/components/map/seed-map";
-
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+import { siteConfig } from "@/config/site";
+import {
+  newSearchSession,
+  type PlaceSuggestion,
+  retrievePlace,
+  suggestPlaces,
+} from "@/lib/mapbox-search";
 
 interface LocationPickerProps {
   address: string;
@@ -19,16 +24,6 @@ interface LocationPickerProps {
   }) => void;
 }
 
-interface Suggestion {
-  name: string;
-  full_address: string;
-  mapbox_id: string;
-}
-
-function generateSessionToken() {
-  return crypto.randomUUID();
-}
-
 export function LocationPicker({
   address,
   lat,
@@ -36,65 +31,38 @@ export function LocationPicker({
   onLocationChange,
 }: LocationPickerProps) {
   const [query, setQuery] = useState(address);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const sessionToken = useRef(generateSessionToken());
+  const sessionToken = useRef(newSearchSession());
 
   const searchAddress = useCallback(async (value: string) => {
-    if (value.length < 3 || !MAPBOX_TOKEN) {
+    if (value.length < 3) {
       setSuggestions([]);
       return;
     }
-
     try {
-      const res = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(value)}&access_token=${MAPBOX_TOKEN}&proximity=-85.3097,35.0456&limit=5&language=en&session_token=${sessionToken.current}`,
-      );
-      if (!res.ok) {
-        setSuggestions([]);
-        return;
-      }
-      const data = await res.json();
-      const items = (data.suggestions ?? []).filter(
-        (s: Suggestion) => s.mapbox_id && (s.full_address || s.name),
-      );
+      const items = await suggestPlaces(value, sessionToken.current);
       setSuggestions(items);
-      setShowSuggestions(true);
+      setShowSuggestions(items.length > 0);
     } catch {
       setSuggestions([]);
     }
   }, []);
 
-  async function selectSuggestion(suggestion: Suggestion) {
-    if (!MAPBOX_TOKEN) return;
-
+  async function selectSuggestion(suggestion: PlaceSuggestion) {
     setSuggestions([]);
     setShowSuggestions(false);
-
-    const displayName = suggestion.full_address || suggestion.name;
-    setQuery(displayName);
+    setQuery(suggestion.full_address || suggestion.name);
 
     try {
-      const res = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/retrieve/${suggestion.mapbox_id}?access_token=${MAPBOX_TOKEN}&session_token=${sessionToken.current}`,
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      const feature = data.features?.[0];
-      if (!feature?.geometry?.coordinates) return;
-
-      const [lngVal, latVal] = feature.geometry.coordinates;
-      onLocationChange({
-        address: feature.properties?.full_address || displayName,
-        lat: latVal,
-        lng: lngVal,
-      });
+      const place = await retrievePlace(suggestion, sessionToken.current);
+      if (place) onLocationChange(place);
     } catch {
       // Suggestion was already selected visually, coordinates just won't update
     }
 
     // Start a new session for the next search
-    sessionToken.current = generateSessionToken();
+    sessionToken.current = newSearchSession();
   }
 
   return (
@@ -150,7 +118,7 @@ export function LocationPicker({
           <SeedMap
             key={`${lat},${lng}`}
             singleMarker={{ lat, lng }}
-            zoom={14}
+            zoom={siteConfig.map.pickerZoom}
             className="h-48 w-full rounded-lg"
           />
         </div>

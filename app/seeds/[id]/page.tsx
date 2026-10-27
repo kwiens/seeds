@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Mail, QrCode, Settings2, Sun, Users } from "lucide-react";
 import { SeedIcon, type SeedIconName } from "@/components/icons/seed-icons";
-import { canAccessTeamWorkspace } from "@/lib/auth-utils";
 import { getReadableProject } from "@/lib/project-read-access";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +26,10 @@ import {
   hasUserSupported,
 } from "@/lib/db/queries/projects";
 import type { ProjectParticipant } from "@/lib/db/types";
-import { hasTeamWorkspace } from "@/lib/project-stages";
-import { formatDisplayName } from "@/lib/format";
+import { getProjectAccess } from "@/lib/project-access";
+import { formatCurrency, formatDisplayName } from "@/lib/format";
 import { buildImagePrompt } from "@/lib/image-prompt";
+import { routes } from "@/lib/routes";
 
 function DetailList({
   items,
@@ -105,7 +105,7 @@ export async function generateMetadata(props: {
   const { project: seed } = access;
   const ogImage = seed.coverPhotoUrl ?? seed.imageUrl;
   return {
-    title: `${seed.name} | Seeds`,
+    title: seed.name,
     description: seed.summary.slice(0, 160),
     openGraph: {
       title: seed.name,
@@ -132,10 +132,10 @@ export default async function SeedPage(props: {
   const access = await getReadableProject(params.id);
   if (!access) notFound();
   const { project: seed, session, canManage: canEdit } = access;
-  const hasTeamAccess =
-    !seed.archivedAt && hasTeamWorkspace(seed.stage)
-      ? await canAccessTeamWorkspace(session, seed)
-      : false;
+  const { canAccessTeam: hasTeamAccess } = await getProjectAccess(
+    session,
+    seed,
+  );
 
   const [
     supportCount,
@@ -179,14 +179,14 @@ export default async function SeedPage(props: {
         <div className="flex flex-wrap gap-2">
           {canEdit ? (
             <Button variant="outline" asChild>
-              <Link href={`/dashboard/projects/${seed.id}`}>
+              <Link href={routes.workspace(seed.id)}>
                 <Settings2 className="mr-1.5 size-3.5" />
                 Manage project
               </Link>
             </Button>
           ) : hasTeamAccess ? (
             <Button variant="outline" asChild>
-              <Link href={`/dashboard/projects/${seed.id}/team`}>
+              <Link href={routes.workspace(seed.id, "team")}>
                 <Users className="mr-1.5 size-3.5" />
                 Team workspace
               </Link>
@@ -343,11 +343,7 @@ export default async function SeedPage(props: {
                         {item.label}
                       </span>
                       <span className="shrink-0 tabular-nums">
-                        {item.amount.toLocaleString("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                          maximumFractionDigits: 0,
-                        })}
+                        {formatCurrency(item.amount)}
                       </span>
                     </li>
                   ))}
@@ -409,7 +405,7 @@ export default async function SeedPage(props: {
                 {canEdit && (
                   <div className="mt-3 flex gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/projects/${seed.id}/supporters`}>
+                      <Link href={routes.workspace(seed.id, "supporters")}>
                         <Sun className="mr-1.5 size-3.5" />
                         View Supporters
                       </Link>
@@ -431,7 +427,7 @@ export default async function SeedPage(props: {
             <div className="mt-8">
               <Button variant="outline" size="sm" asChild>
                 <a
-                  href={`/seeds/${seed.id}/qr`}
+                  href={routes.projectQr(seed.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

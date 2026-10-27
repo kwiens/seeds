@@ -1,14 +1,12 @@
 import { eq } from "drizzle-orm";
 import NextAuth from "next-auth";
+import { getEnvAdminEmails } from "@/lib/admin-emails";
 import { db } from "@/lib/db";
 import { isDbAdminEmail } from "@/lib/db/queries/admin";
 import { users } from "@/lib/db/schema";
 import { authConfig } from "./auth.config";
 
-const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
+const adminEmails = getEnvAdminEmails();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,

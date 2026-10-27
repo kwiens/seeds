@@ -15,6 +15,8 @@ import { AdminSeedTable } from "@/components/admin/seed-data-table";
 import { UserList } from "@/components/admin/user-list";
 import { Button } from "@/components/ui/button";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { siteConfig } from "@/config/site";
+import { getEnvAdminEmails } from "@/lib/admin-emails";
 import { type AdminTab, isAdminTab } from "@/lib/admin-tabs";
 import { getAllComments } from "@/lib/db/queries/comments";
 import {
@@ -33,13 +35,12 @@ import {
 } from "@/lib/db/queries/settings";
 
 export const metadata: Metadata = {
-  title: "Admin | Seeds",
+  title: "Admin",
 };
 
-const envEmails = (process.env.ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
+const harvestFestEnabled = siteConfig.features.harvestFest;
+
+const envEmails = getEnvAdminEmails();
 
 export default async function AdminPage({
   searchParams,
@@ -139,12 +140,14 @@ export default async function AdminPage({
             >
               People
             </TabsTrigger>
-            <TabsTrigger
-              className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
-              value="harvestFest"
-            >
-              Harvest Fest
-            </TabsTrigger>
+            {harvestFestEnabled && (
+              <TabsTrigger
+                className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
+                value="harvestFest"
+              >
+                Harvest Fest
+              </TabsTrigger>
+            )}
             <TabsTrigger
               className="h-11 flex-none min-w-0 sm:h-[calc(100%-1px)]"
               value="settings"
@@ -199,26 +202,29 @@ export default async function AdminPage({
           </div>
         </TabsContent>
 
-        <TabsContent value="harvestFest">
-          <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">Harvest Fest Page</h2>
-                <p className="text-muted-foreground text-sm">
-                  Edit the public /harvest-fest page — title, intro, and the
-                  list of events. Changes go live immediately, no deploy needed.
-                </p>
+        {harvestFestEnabled && (
+          <TabsContent value="harvestFest">
+            <div className="mt-4 space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold">Harvest Fest Page</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Edit the public /harvest-fest page — title, intro, and the
+                    list of events. Changes go live immediately, no deploy
+                    needed.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/harvest-fest" target="_blank">
+                    View public page
+                    <ExternalLink className="ml-1.5 size-3.5" />
+                  </Link>
+                </Button>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/harvest-fest" target="_blank">
-                  View public page
-                  <ExternalLink className="ml-1.5 size-3.5" />
-                </Link>
-              </Button>
+              <HarvestFestSettings initial={harvestFestPage} />
             </div>
-            <HarvestFestSettings initial={harvestFestPage} />
-          </div>
-        </TabsContent>
+          </TabsContent>
+        )}
 
         <TabsContent value="settings">
           <div className="mt-4 space-y-8">
@@ -280,6 +286,7 @@ function getActiveTab(params: {
   search?: string;
   tab?: string;
 }): AdminTab {
+  if (params.tab === "harvestFest" && !harvestFestEnabled) return "seeds";
   if (isAdminTab(params.tab)) return params.tab;
   return params.page || params.search ? "users" : "seeds";
 }

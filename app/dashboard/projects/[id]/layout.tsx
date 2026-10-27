@@ -5,7 +5,8 @@ import { SeedStatusBadge } from "@/components/dashboard/seed-status-badge";
 import { CategoryBadge } from "@/components/seeds/category-badge";
 import { Button } from "@/components/ui/button";
 import { getProjectWorkspace } from "@/lib/project-workspace";
-import { hasTeamWorkspace } from "@/lib/project-workspace-navigation";
+import { isTeamWorkspaceAvailable } from "@/lib/project-access";
+import { routes } from "@/lib/routes";
 
 export default async function ProjectWorkspaceLayout({
   children,
@@ -16,8 +17,7 @@ export default async function ProjectWorkspaceLayout({
 }>) {
   const { id } = await params;
   const { project, canManage, canAccessTeam } = await getProjectWorkspace(id);
-  const teamToolsUnlocked =
-    !project.archivedAt && hasTeamWorkspace(project.stage);
+  const teamToolsUnlocked = isTeamWorkspaceAvailable(project);
   const mineTab = canAccessTeam ? "my-sprouts" : "my-seeds";
 
   return (
@@ -49,7 +49,7 @@ export default async function ProjectWorkspaceLayout({
           </p>
         </div>
         <Button variant="outline" size="sm" asChild className="shrink-0">
-          <Link href={`/seeds/${project.id}`}>
+          <Link href={routes.project(project.id)}>
             View public page
             <ExternalLink className="ml-1.5 size-3.5" />
           </Link>
