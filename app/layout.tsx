@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Archivo } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/header";
@@ -8,10 +8,10 @@ import { EventBanner } from "@/components/layout/event-banner";
 import { Footer } from "@/components/layout/footer";
 import "./globals.css";
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -63,7 +63,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={`${archivo.variable} antialiased`}>
+      <body className={`${montserrat.variable} antialiased`}>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow"

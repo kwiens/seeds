@@ -35,10 +35,10 @@ export function MobileNav({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Image
-              src="/logo.svg"
-              alt="National Park City Seeds"
+              src="/wild-chattanooga-logo.png"
+              alt="Wild Chattanooga"
               width={120}
-              height={39}
+              height={48}
             />
           </SheetTitle>
           <SheetDescription className="sr-only">
