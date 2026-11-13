@@ -23,13 +23,18 @@ export async function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center px-4">
         <Link href="/" className="flex items-center gap-2 font-bold">
           <Image
-            src="/logo.svg"
-            alt="National Park City Seeds"
-            width={137}
-            height={44}
+            src="/wild-chattanooga-logo.png"
+            alt="Wild Chattanooga"
+            width={125}
+            height={50}
             priority
           />
         </Link>
+
+        <span className="border-border text-foreground ml-4 hidden border-l pl-4 text-sm font-semibold lg:inline">
+          Where Wild Things{" "}
+          <span className="border-brand-sun border-b-2">Grow.</span>
+        </span>
 
         <nav className="ml-8 hidden items-center gap-6 md:flex">
           <Link
